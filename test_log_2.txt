@@ -1,0 +1,3 @@
+Hello from test_simple.js
+Google imported
+Done

@@ -1,0 +1,5 @@
+moviepy
+numpy
+Pillow
+pydub
+requests

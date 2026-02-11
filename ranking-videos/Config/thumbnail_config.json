@@ -1,0 +1,30 @@
+{
+  "title_lines": [
+    {
+      "text": "TOP 5",
+      "words": [
+        {
+          "text": "TOP",
+          "color": "#FFFFFF"
+        },
+        {
+          "text": "5",
+          "color": "#FFD700"
+        }
+      ]
+    },
+    {
+      "text": "EPIC MOMENTS",
+      "words": [
+        {
+          "text": "EPIC",
+          "color": "#00FF00"
+        },
+        {
+          "text": "MOMENTS",
+          "color": "#FFFFFF"
+        }
+      ]
+    }
+  ]
+}

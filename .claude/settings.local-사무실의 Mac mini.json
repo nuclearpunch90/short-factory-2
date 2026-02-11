@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm install @google/generative-ai)",
+      "Bash(cat:*)",
+      "Bash(node -e:*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Shorts Factory 프로젝트 설정\n\n- Electron 데스크톱 앱 구조 추가\n- Firebase 호스팅 \\(관리자 + 랜딩\\) 설정\n- TTS, STT, 이미지 생성, 비디오 제작 기능\n- 민감한 파일\\(.env, firebase-service-account.json\\) .gitignore에 추가\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

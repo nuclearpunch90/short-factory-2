@@ -1,0 +1,48 @@
+# YouTube 계정 목록
+
+Account 1: [채널명 입력]
+  - 채널 URL:
+  - 이메일:
+  - 메모:
+
+Account 2: [채널명 입력]
+  - 채널 URL:
+  - 이메일:
+  - 메모:
+
+Account 3: [채널명 입력]
+  - 채널 URL:
+  - 이메일:
+  - 메모:
+
+Account 4: [채널명 입력]
+  - 채널 URL:
+  - 이메일:
+  - 메모:
+
+Account 5: [채널명 입력]
+  - 채널 URL:
+  - 이메일:
+  - 메모:
+
+Account 6: [채널명 입력]
+  - 채널 URL:
+  - 이메일:
+  - 메모:
+
+Account 7: [채널명 입력]
+  - 채널 URL:
+  - 이메일:
+  - 메모:
+
+Account 8: [채널명 입력]
+  - 채널 URL:
+  - 이메일:
+  - 메모:
+
+---
+마지막 업데이트: 2026-02-11
+
+사용법:
+  ./scripts/switch_youtube_account.sh [1-8]  # 계정 전환
+  node scripts/youtube_upload.js --file <경로> --title <제목> --privacy public

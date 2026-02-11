@@ -1,0 +1,59 @@
+{
+  "hosting": [
+    {
+      "target": "admin",
+      "public": "hosting",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/api/auth/users",
+          "function": "getUsers"
+        },
+        {
+          "source": "/api/auth/create-user",
+          "function": "createUser"
+        },
+        {
+          "source": "/api/auth/delete-user",
+          "function": "deleteUser"
+        },
+        {
+          "source": "/api/auth/update-user",
+          "function": "updateUser"
+        },
+        {
+          "source": "/api/auth/force-logout",
+          "function": "forceLogout"
+        },
+        {
+          "source": "/admin",
+          "destination": "/admin.html"
+        },
+        {
+          "source": "/login",
+          "destination": "/login.html"
+        }
+      ]
+    },
+    {
+      "target": "landing",
+      "public": "hosting-landing",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ]
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20"
+  }
+}

@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쇼츠공장 - AI 숏폼 영상 제작 플랫폼</title>
+    <meta name="description" content="대본만 입력하면 AI가 음성, 자막, 영상까지 자동으로 제작합니다. 전문 편집 기술 없이도 프로급 숏폼 콘텐츠를 만들어보세요.">
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --accent: #f59e0b;
+            --accent-glow: rgba(245, 158, 11, 0.4);
+            --bg-dark: #0a0a0f;
+            --bg-card: #13131a;
+            --bg-card-hover: #1a1a24;
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --gradient-1: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            --gradient-2: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(150px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-glow-1 {
+            top: -200px;
+            left: -200px;
+            background: #6366f1;
+        }
+
+        .bg-glow-2 {
+            bottom: -200px;
+            right: -200px;
+            background: #ec4899;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 0;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-cta {
+            background: var(--gradient-1);
+            color: white;
+            padding: 12px 28px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(99, 102, 241, 0.5);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 120px 0 80px;
+            text-align: center;
+        }
+
+        .hero-content {
+            width: 100%;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            color: var(--accent);
+            margin-bottom: 32px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+            50% { box-shadow: 0 0 0 10px transparent; }
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 .highlight {
+            background: var(--gradient-2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero h1 .underline-effect {
+            position: relative;
+            display: inline-block;
+        }
+
+        .hero h1 .underline-effect::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: var(--gradient-1);
+            opacity: 0.5;
+            border-radius: 4px;
+        }
+
+        .hero-subtitle {
+            font-size: 1.4rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 48px;
+        }
+
+        .hero-subtitle strong {
+            color: var(--text-primary);
+        }
+
+        .hero-cta-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 64px;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--gradient-1);
+            color: white;
+            padding: 18px 40px;
+            border-radius: 16px;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 40px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 50px rgba(99, 102, 241, 0.6);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: transparent;
+            color: var(--text-primary);
+            padding: 18px 40px;
+            border-radius: 16px;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Stats */
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Pain Points Section */
+        .pain-section {
+            padding: 120px 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(239, 68, 68, 0.03) 50%, transparent 100%);
+        }
+
+        .section-label {
+            text-align: center;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 800;
+            margin-bottom: 64px;
+        }
+
+        .pain-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .pain-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 20px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .pain-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .pain-icon {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .pain-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: #ef4444;
+        }
+
+        .pain-card p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        /* Solution Section */
+        .solution-section {
+            padding: 120px 0;
+        }
+
+        .solution-header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .solution-header h2 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 900;
+            margin-bottom: 24px;
+        }
+
+        .solution-header h2 .gradient-text {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .solution-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 32px;
+            margin-bottom: 80px;
+        }
+
+        .step-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 24px;
+            padding: 40px 32px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .step-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.15);
+        }
+
+        .step-number {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 800;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .step-icon {
+            font-size: 4rem;
+            margin: 20px 0 24px;
+        }
+
+        .step-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+        }
+
+        .step-card p {
+            color: var(--text-secondary);
+        }
+
+        .step-time {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 6px 16px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 50px;
+            color: #22c55e;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Demo Video Section */
+        .demo-section {
+            padding: 80px 0 120px;
+        }
+
+        .demo-container {
+            background: var(--bg-card);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 32px;
+            padding: 48px;
+            text-align: center;
+        }
+
+        .demo-container h2 {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+
+        .demo-container p {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        .demo-placeholder {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+            border: 2px dashed rgba(99, 102, 241, 0.3);
+            border-radius: 20px;
+            padding: 80px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .demo-placeholder .play-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 8px 40px rgba(99, 102, 241, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .demo-placeholder .play-icon:hover {
+            transform: scale(1.1);
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 120px 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.03) 50%, transparent 100%);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 40px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            background: var(--bg-card-hover);
+            transform: translateY(-4px);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 24px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 6px 14px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 50px;
+            color: var(--primary);
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Testimonials */
+        .testimonials-section {
+            padding: 120px 0;
+        }
+
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+        }
+
+        .testimonial-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 40px;
+        }
+
+        .testimonial-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .testimonial-avatar {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .testimonial-info h4 {
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .testimonial-info span {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .testimonial-stars {
+            color: #fbbf24;
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+        }
+
+        .testimonial-card p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            font-size: 1.05rem;
+        }
+
+        .testimonial-highlight {
+            color: var(--text-primary) !important;
+            font-weight: 600;
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            padding: 120px 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(99, 102, 241, 0.05) 100%);
+        }
+
+        .pricing-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            border-radius: 32px;
+            padding: 60px 48px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-1);
+        }
+
+        .pricing-badge {
+            display: inline-block;
+            background: var(--gradient-2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        .pricing-card h3 {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+
+        .pricing-amount {
+            margin-bottom: 32px;
+        }
+
+        .pricing-amount .original {
+            color: var(--text-secondary);
+            text-decoration: line-through;
+            font-size: 1.5rem;
+            margin-right: 12px;
+        }
+
+        .pricing-amount .current {
+            font-size: 4rem;
+            font-weight: 900;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .pricing-amount .period {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        .pricing-features {
+            text-align: left;
+            margin-bottom: 40px;
+        }
+
+        .pricing-features li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .pricing-features .check {
+            color: #22c55e;
+            font-size: 1.2rem;
+        }
+
+        .pricing-cta {
+            width: 100%;
+            background: var(--gradient-1);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 16px;
+            border: none;
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 40px rgba(99, 102, 241, 0.4);
+        }
+
+        .pricing-cta:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 50px rgba(99, 102, 241, 0.6);
+        }
+
+        .pricing-guarantee {
+            margin-top: 24px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* FAQ Section */
+        .faq-section {
+            padding: 120px 0;
+        }
+
+        .faq-grid {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            padding: 24px 32px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .faq-question:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .faq-question .icon {
+            font-size: 1.5rem;
+            color: var(--primary);
+            transition: transform 0.3s ease;
+        }
+
+        .faq-item.active .faq-question .icon {
+            transform: rotate(45deg);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 500px;
+        }
+
+        .faq-answer-content {
+            padding: 0 32px 24px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        /* Final CTA Section */
+        .final-cta-section {
+            padding: 120px 0;
+            text-align: center;
+        }
+
+        .final-cta-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .final-cta-content h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 900;
+            margin-bottom: 24px;
+        }
+
+        .final-cta-content p {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 48px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-stats {
+                gap: 32px;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+
+            .hero-cta-group {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-primary, .btn-secondary {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+
+            .pain-grid, .solution-steps, .features-grid, .testimonials-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-card {
+                padding: 40px 24px;
+            }
+
+            .pricing-amount .current {
+                font-size: 3rem;
+            }
+        }
+
+        /* Scroll Animations */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .fade-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Floating Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="container">
+            <div class="logo"><img src="/logo.svg" alt="쇼츠공장" style="width: 32px; height: 32px; margin-right: 8px; vertical-align: middle;">쇼츠공장</div>
+            <a href="#pricing" class="nav-cta">시작하기</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span>강의팔이 ❌ 월구독 ❌</span> 프로그램 하나로 끝
+                </div>
+                <h1>
+                    영상을 공장처럼<br>
+                    <span class="highlight">찍어내세요</span>
+                </h1>
+                <p class="hero-subtitle">
+                    대본만 넣으면 <strong>쇼츠, 롱폼 영상이 자동 생성</strong><br>
+                    하루에 수십 개씩 양산하는 나만의 영상 공장
+                </p>
+                <div class="hero-cta-group">
+                    <a href="#pricing" class="btn-primary">
+                        <span>지금 시작하기</span>
+                        <span>-></span>
+                    </a>
+                    <a href="#demo" class="btn-secondary">
+                        <span>데모 영상 보기</span>
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">1분</div>
+                        <div class="stat-label">영상 1개 생산</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">무제한</div>
+                        <div class="stat-label">배치 생성</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">몇십~몇백원</div>
+                        <div class="stat-label">영상당 AI 원가</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pain Points Section -->
+    <section class="pain-section">
+        <div class="container">
+            <div class="section-label">이런 고민, 있으셨죠?</div>
+            <h2 class="section-title">영상 제작의 진입장벽을 낮춥니다</h2>
+            <div class="pain-grid">
+                <div class="pain-card fade-up">
+                    <div class="pain-icon">😵</div>
+                    <h3>복잡한 편집 프로그램</h3>
+                    <p>프리미어, 다빈치... 전문 툴을 배우는 데만 몇 달이 걸립니다</p>
+                </div>
+                <div class="pain-card fade-up">
+                    <div class="pain-icon">💸</div>
+                    <h3>부담스러운 외주 비용</h3>
+                    <p>외주 제작은 영상 하나에 10만원 이상, 지속하기 어렵습니다</p>
+                </div>
+                <div class="pain-card fade-up">
+                    <div class="pain-icon">⏰</div>
+                    <h3>시간 대비 낮은 효율</h3>
+                    <p>1분 영상에 편집만 3시간, 콘텐츠보다 편집에 시간을 뺏깁니다</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section class="solution-section">
+        <div class="container">
+            <div class="solution-header fade-up">
+                <div class="section-label">솔루션</div>
+                <h2>
+                    AI 기반 영상 제작<br>
+                    <span class="gradient-text">쇼츠공장</span>
+                </h2>
+            </div>
+            <div class="solution-steps">
+                <div class="step-card fade-up">
+                    <div class="step-number">1</div>
+                    <div class="step-icon float-animation">📝</div>
+                    <h3>대본 입력</h3>
+                    <p>준비한 대본을 붙여넣기</p>
+                    <div class="step-time">10초</div>
+                </div>
+                <div class="step-card fade-up">
+                    <div class="step-number">2</div>
+                    <div class="step-icon float-animation">🎙️</div>
+                    <h3>AI 음성 생성</h3>
+                    <p>자연스러운 AI 보이스로 변환</p>
+                    <div class="step-time">20초</div>
+                </div>
+                <div class="step-card fade-up">
+                    <div class="step-number">3</div>
+                    <div class="step-icon float-animation">🎬</div>
+                    <h3>영상 자동 생성</h3>
+                    <p>자막, 배경음악, 영상까지 완성</p>
+                    <div class="step-time">30초</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section class="demo-section" id="demo">
+        <div class="container">
+            <div class="demo-container fade-up">
+                <h2>백문이 불여일견</h2>
+                <p>직접 보면 이해됨. 진짜 1분이면 영상 나옴 ㄹㅇ</p>
+                <div class="demo-placeholder">
+                    <div class="play-icon">▶</div>
+                    <span style="color: var(--text-secondary);">데모 영상 보기</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="container">
+            <div class="section-label">핵심 기능</div>
+            <h2 class="section-title fade-up">모든 과정이 자동화됩니다</h2>
+            <div class="features-grid">
+                <div class="feature-card fade-up">
+                    <div class="feature-icon">🗣️</div>
+                    <h3>100가지 AI 음성</h3>
+                    <p>MiniMax TTS 기반 초고품질 한국어 음성. 다양한 감정 표현으로 콘텐츠에 생동감을 더합니다</p>
+                    <span class="feature-tag">한국어 최적화</span>
+                </div>
+                <div class="feature-card fade-up">
+                    <div class="feature-icon">📝</div>
+                    <h3>자동 자막 생성</h3>
+                    <p>OpenAI Whisper 기반 음성 분석으로 자막 싱크가 정확하게 맞춰집니다</p>
+                    <span class="feature-tag">AI 싱크</span>
+                </div>
+                <div class="feature-card fade-up">
+                    <div class="feature-icon">🎨</div>
+                    <h3>배경 영상 자동 매칭</h3>
+                    <p>영상 소스 폴더만 지정하면 자동으로 배경이 적용됩니다. 편집 지식 불필요</p>
+                    <span class="feature-tag">원클릭</span>
+                </div>
+                <div class="feature-card fade-up">
+                    <div class="feature-icon">🎵</div>
+                    <h3>배경음악 자동 믹싱</h3>
+                    <p>음성과 BGM 볼륨이 자동으로 조절됩니다. 전문가 수준의 믹싱 품질</p>
+                    <span class="feature-tag">스마트 믹싱</span>
+                </div>
+                <div class="feature-card fade-up">
+                    <div class="feature-icon">🚀</div>
+                    <h3>배치 생성</h3>
+                    <p>10개, 20개의 영상도 한 번에 생성 가능. 대량 제작 시 시간을 획기적으로 절약</p>
+                    <span class="feature-tag">대량 생산</span>
+                </div>
+                <div class="feature-card fade-up">
+                    <div class="feature-icon">💻</div>
+                    <h3>내 컴퓨터에서 실행</h3>
+                    <p>클라우드 비용 없이 내 PC에서 무제한 생성 가능</p>
+                    <span class="feature-tag">무제한</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials-section">
+        <div class="container">
+            <div class="section-label">사용자 후기</div>
+            <h2 class="section-title fade-up">실제 사용자들의 이야기</h2>
+            <div class="testimonials-grid">
+                <div class="testimonial-card fade-up">
+                    <div class="testimonial-header">
+                        <div class="testimonial-avatar">😲</div>
+                        <div class="testimonial-info">
+                            <h4>유튜브초보</h4>
+                            <span>유튜브 쇼츠 채널 운영</span>
+                        </div>
+                    </div>
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p><span class="testimonial-highlight">진짜 1분 컷임ㅋㅋㅋ</span> 농담인 줄 알았는데 대본 넣고 버튼 누르니까 영상 나와서 깜놀... 편집 프로그램 배우려고 결제한 강의 환불함</p>
+                </div>
+                <div class="testimonial-card fade-up">
+                    <div class="testimonial-header">
+                        <div class="testimonial-avatar">🔥</div>
+                        <div class="testimonial-info">
+                            <h4>마케터K</h4>
+                            <span>콘텐츠 마케팅 에이전시</span>
+                        </div>
+                    </div>
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p>클라이언트 영상 10개씩 뽑아야 하는데 <span class="testimonial-highlight">이거 도입하고 업무시간 70% 줄었음.</span> 월급은 그대로인데 일이 줄어드는 기적</p>
+                </div>
+                <div class="testimonial-card fade-up">
+                    <div class="testimonial-header">
+                        <div class="testimonial-avatar">💎</div>
+                        <div class="testimonial-info">
+                            <h4>부업러</h4>
+                            <span>부업으로 쇼츠 채널 운영중</span>
+                        </div>
+                    </div>
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p>퇴근 후에 쇼츠 만들려면 너무 힘들었는데 <span class="testimonial-highlight">이젠 자기 전에 10분만 투자하면 일주일치 영상 완성.</span> 진짜 꿀템임</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing-section" id="pricing">
+        <div class="container">
+            <div class="section-label">가격</div>
+            <h2 class="section-title fade-up">단 한 번 결제로 평생 사용</h2>
+            <div class="pricing-card fade-up">
+                <div class="pricing-badge">평생이용권</div>
+                <h3>쇼츠공장</h3>
+                <div class="pricing-amount">
+                    <span class="current">19만원</span>
+                    <span class="period">/ 평생</span>
+                </div>
+                <ul class="pricing-features">
+                    <li><span class="check">✓</span> 프로그램 평생 이용</li>
+                    <li><span class="check">✓</span> 월정액 구독료 없음</li>
+                    <li><span class="check">✓</span> AI 비용만 원가 그대로</li>
+                    <li><span class="check">✓</span> 업데이트 평생 무료</li>
+                    <li><span class="check">✓</span> 텔레그램 커뮤니티 지원</li>
+                </ul>
+                <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 1.25rem; margin: 1.5rem 0; text-align: left;">
+                    <p style="color: #a5b4fc; font-weight: 600; margin-bottom: 0.5rem;">다른 서비스 vs 쇼츠공장</p>
+                    <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; line-height: 1.6;">
+                        타 서비스: 월 5~20만원 구독료 + 마진 붙은 AI 비용<br>
+                        쇼츠공장: 19만원 한 번 + AI 원가만 (영상당 몇십~몇백원)
+                    </p>
+                </div>
+                <button class="pricing-cta" onclick="requestPayment()">평생 이용권 구매하기</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+        <div class="container">
+            <div class="section-label">자주 묻는 질문</div>
+            <h2 class="section-title fade-up">궁금하신 점을 확인하세요</h2>
+            <div class="faq-grid">
+                <div class="faq-item fade-up">
+                    <div class="faq-question">
+                        <span>컴퓨터 잘 몰라도 사용 가능한가요?</span>
+                        <span class="icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            네! 웹 브라우저만 열 줄 알면 됩니다. 설치 가이드도 영상으로 제공해서 따라하기만 하면 10분 안에 세팅 끝나요.
+                        </div>
+                    </div>
+                </div>
+                <div class="faq-item fade-up">
+                    <div class="faq-question">
+                        <span>맥(Mac)에서도 되나요?</span>
+                        <span class="icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            네! Windows, Mac 모두 지원합니다. FFmpeg만 설치하면 동일하게 사용 가능해요.
+                        </div>
+                    </div>
+                </div>
+                <div class="faq-item fade-up">
+                    <div class="faq-question">
+                        <span>AI 비용은 어떻게 되나요?</span>
+                        <span class="icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            평생이용권 19만원으로 프로그램을 구매하시면 됩니다. 이후 AI 비용은 원가 그대로 내시면 돼요. 저희가 중간 마진을 안 붙여서 영상 하나당 몇십~몇백원 수준입니다. 타 서비스처럼 월 구독료도 없고, 강의 떠넘기기도 없어요!
+                        </div>
+                    </div>
+                </div>
+                <div class="faq-item fade-up">
+                    <div class="faq-question">
+                        <span>공지나 업데이트는 어디서 확인하나요?</span>
+                        <span class="icon">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        <div class="faq-answer-content">
+                            구매하신 분들께는 텔레그램 채널 초대 드려요. 새로운 기능 업데이트, 공지사항, 사용 팁 등 공유됩니다!
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA Section -->
+    <section class="final-cta-section">
+        <div class="container">
+            <div class="final-cta-content fade-up">
+                <h2>나만의 영상 공장을 가동하세요</h2>
+                <p>대본만 준비하면 끝<br>쇼츠와 롱폼을 무한 양산하세요</p>
+                <a href="#pricing" class="btn-primary">
+                    <span>지금 바로 시작하기</span>
+                    <span>-></span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>웨이브랩 | <a href="mailto:wavelab.ai@gmail.com">wavelab.ai@gmail.com</a></p>
+            <p style="margin-top: 8px; font-size: 0.85rem;">Copyright 2024 WaveLab. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Telegram Floating Button -->
+    <a href="https://t.me/shorts_factory" target="_blank" class="telegram-float" title="텔레그램 채널">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+        </svg>
+        <span class="telegram-tooltip">텔레그램 채널</span>
+    </a>
+
+    <style>
+        .telegram-float {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            width: 60px;
+            height: 60px;
+            background: #0088cc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            box-shadow: 0 4px 20px rgba(0, 136, 204, 0.4);
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .telegram-float:hover {
+            transform: scale(1.1) translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 136, 204, 0.5);
+        }
+
+        .telegram-tooltip {
+            position: absolute;
+            right: 70px;
+            background: #333;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .telegram-tooltip::after {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent transparent transparent #333;
+        }
+
+        .telegram-float:hover .telegram-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        @media (max-width: 768px) {
+            .telegram-float {
+                bottom: 20px;
+                right: 20px;
+                width: 54px;
+                height: 54px;
+            }
+
+            .telegram-tooltip {
+                display: none;
+            }
+        }
+    </style>
+
+    <!-- NICEPAY 결제 스크립트 -->
+    <script src="https://pay.nicepay.co.kr/v1/js/"></script>
+    <script>
+        // 나이스페이먼츠 결제 요청 함수
+        function requestPayment() {
+            const clientId = 'YOUR_CLIENT_ID'; // TODO: 실제 클라이언트 ID로 교체
+            const orderId = 'ORDER_' + new Date().getTime();
+
+            AUTHNICE.requestPay({
+                clientId: clientId,
+                method: 'card',
+                orderId: orderId,
+                amount: 190000,
+                goodsName: '쇼츠공장 평생이용권',
+                returnUrl: window.location.origin + '/api/payment/nicepay/callback',
+                fnError: function(result) {
+                    alert('결제 오류: ' + result.errorMsg);
+                }
+            });
+        }
+    </script>
+
+    <script>
+        // FAQ Toggle
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', () => {
+                const item = question.parentElement;
+                item.classList.toggle('active');
+            });
+        });
+
+        // Scroll Animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

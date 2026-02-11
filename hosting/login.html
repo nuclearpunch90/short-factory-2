@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - 쇼츠공장</title>
+    <link rel="stylesheet" href="/css/toss-style.css">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-bg-primary);
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-logo h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--color-gray-900);
+            margin: 0;
+        }
+
+        .login-logo p {
+            color: var(--color-gray-500);
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .login-card {
+            background: var(--color-bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-gray-700);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 12px;
+            font-size: 1rem;
+            background: var(--color-bg-tertiary);
+            color: var(--color-gray-900);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: var(--color-gray-400);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .login-btn:hover {
+            background: var(--color-primary-dark);
+        }
+
+        .login-btn:active {
+            transform: scale(0.98);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            display: none;
+            text-align: center;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .force-logout-btn {
+            width: 100%;
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            background: var(--color-gray-700);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .force-logout-btn:hover {
+            background: var(--color-gray-800);
+        }
+
+        .force-logout-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.8125rem;
+            color: var(--color-gray-500);
+        }
+    </style>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-logo">
+            <h1>쇼츠공장</h1>
+            <p>AI 숏폼 영상 제작 플랫폼</p>
+        </div>
+
+        <div class="login-card">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">이메일</label>
+                    <input type="email" id="email" required placeholder="이메일 주소를 입력하세요" autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="password">비밀번호</label>
+                    <input type="password" id="password" required placeholder="비밀번호를 입력하세요" autocomplete="current-password">
+                </div>
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <span id="loginBtnText">로그인</span>
+                    <div class="spinner" id="loginSpinner" style="display: none;"></div>
+                </button>
+                <div class="error-message" id="errorMessage">
+                    <span id="errorText"></span>
+                    <button type="button" class="force-logout-btn" id="forceLogoutBtn" style="display: none;">
+                        다른 기기 로그아웃시키고 여기서 로그인
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="login-footer">
+            <p>계정이 없으신가요? 관리자에게 문의하세요.</p>
+        </div>
+    </div>
+
+    <script src="/js/firebase-config.js"></script>
+    <script src="/js/firebase-auth.js"></script>
+    <script>
+        // Check if already logged in
+        checkAuth().then(authState => {
+            if (authState) {
+                window.location.href = '/';
+            }
+        });
+
+        // Store credentials for force login
+        let pendingEmail = '';
+        let pendingPassword = '';
+
+        // Handle login form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await attemptLogin(false);
+        });
+
+        async function attemptLogin(forceOverride) {
+            const email = forceOverride ? pendingEmail : document.getElementById('email').value.trim();
+            const password = forceOverride ? pendingPassword : document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginBtnText = document.getElementById('loginBtnText');
+            const loginSpinner = document.getElementById('loginSpinner');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const forceLogoutBtn = document.getElementById('forceLogoutBtn');
+
+            // Store credentials for potential force login
+            if (!forceOverride) {
+                pendingEmail = email;
+                pendingPassword = password;
+            }
+
+            // Disable button and show spinner
+            loginBtn.disabled = true;
+            loginBtnText.style.display = 'none';
+            loginSpinner.style.display = 'block';
+            errorMessage.classList.remove('show');
+            forceLogoutBtn.style.display = 'none';
+
+            try {
+                const result = await login(email, password, forceOverride);
+                if (result.success) {
+                    // Clear stored credentials
+                    pendingEmail = '';
+                    pendingPassword = '';
+                    // Start token refresh
+                    startTokenRefresh();
+                    // Redirect based on admin status
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                // Check if it's a session conflict error
+                if (error.name === 'SessionConflictError') {
+                    errorText.textContent = error.message;
+                    forceLogoutBtn.style.display = 'block';
+                } else {
+                    errorText.textContent = error.message || '로그인에 실패했습니다.';
+                    forceLogoutBtn.style.display = 'none';
+                }
+                errorMessage.classList.add('show');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtnText.style.display = 'inline';
+                loginSpinner.style.display = 'none';
+            }
+        }
+
+        // Handle force logout button
+        document.getElementById('forceLogoutBtn').addEventListener('click', async () => {
+            const forceLogoutBtn = document.getElementById('forceLogoutBtn');
+            forceLogoutBtn.disabled = true;
+            forceLogoutBtn.textContent = '처리 중...';
+
+            await attemptLogin(true);
+
+            forceLogoutBtn.disabled = false;
+            forceLogoutBtn.textContent = '다른 기기 로그아웃시키고 여기서 로그인';
+        });
+
+        // Enter key support
+        document.getElementById('password').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>

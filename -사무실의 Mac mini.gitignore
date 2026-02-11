@@ -1,0 +1,96 @@
+node_modules/
+.env
+folder-paths.json
+
+# Firebase sensitive files
+firebase-service-account.json
+.firebase/
+.firebaserc
+
+# Generated/uploaded content
+uploads/
+data/remix-shorts/outputs/
+data/remix-shorts/videos/
+data/ai-shorts/outputs/
+data/ai-longform/outputs/
+outputs/
+final_shorts/
+data/common/audio/
+ranking-videos/background music/
+public/audio/
+*.mp3
+*.wav
+*.m4a
+*.mp4
+*.srt
+*.ass
+
+memes/
+transition_outputs/
+
+# Output folder (all generated videos)
+Output/ai-videos/**
+Output/ai-shorts/**
+Output/ai-longform/**
+Output/ranking-videos/**
+!Output/ai-videos/.gitkeep
+!Output/ai-shorts/.gitkeep
+!Output/ai-longform/.gitkeep
+!Output/ranking-videos/.gitkeep
+
+# AI Video sources (uploaded images)
+public/images/video-sources/**
+!public/images/video-sources/.gitkeep
+
+# Keep folder structure but ignore contents
+!data/remix-shorts/outputs/.gitkeep
+!data/ai-shorts/outputs/.gitkeep
+!data/ai-longform/outputs/.gitkeep
+
+# Temp files
+*.log
+.DS_Store
+Thumbs.db
+nul
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# API Keys and sensitive config
+**/Config/config.json
+!**/Config/config.example.json
+ranking-videos/Config/config.json
+ranking-videos/Config/ranking_config.json
+
+# Cookies (browser authentication)
+*_cookies.txt
+chrome_cookies.txt
+instagram_cookies.txt
+tiktok_cookies.txt
+
+# Ranking Videos Project
+ranking-videos/Input/**
+ranking-videos/Output/**
+ranking-videos/Temp/**
+ranking-videos/venv/
+!ranking-videos/Input/.gitkeep
+!ranking-videos/Output/.gitkeep
+!ranking-videos/Temp/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# User specific folders
+인풋/
+완성본들 자료/
+*.zip

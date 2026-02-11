@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>랭킹 숏폼 생성기 - 쇼츠공장</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <link rel="stylesheet" href="/css/toss-style.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        /* URL 입력 스타일 */
+        .url-input-container {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .url-input-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--color-bg-tertiary);
+            border-radius: var(--radius-xs);
+            border: 1px solid var(--color-gray-200);
+        }
+
+        .url-input-row input[type="text"] {
+            flex: 1;
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: var(--color-bg-secondary);
+            color: var(--color-gray-900);
+        }
+
+        .url-input-row input[type="text"]:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(77, 158, 255, 0.15);
+        }
+
+        .url-input-row label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--color-gray-600);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .url-number {
+            font-weight: 600;
+            min-width: 60px;
+            color: var(--color-gray-700);
+        }
+
+        /* 언어 토글 */
+        .language-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .language-toggle button {
+            padding: 0.6rem 1.25rem;
+            border: 2px solid var(--color-gray-200);
+            background: var(--color-bg-tertiary);
+            border-radius: var(--radius-xs);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            color: var(--color-gray-600);
+            font-size: 0.9rem;
+        }
+
+        .language-toggle button:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .language-toggle button.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        /* 썸네일 에디터 */
+        .thumbnail-editor {
+            border: 1px solid var(--color-gray-200);
+            border-radius: var(--radius-xs);
+            padding: 1rem;
+            background: var(--color-bg-tertiary);
+        }
+
+        .thumbnail-line {
+            margin-bottom: 1rem;
+        }
+
+        .thumbnail-line:last-child {
+            margin-bottom: 0;
+        }
+
+        .thumbnail-line input {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 6px;
+            background: var(--color-bg-secondary);
+            color: var(--color-gray-900);
+        }
+
+        .word-color-editor {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .word-color-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.6rem;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-gray-200);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--color-gray-700);
+        }
+
+        .word-color-item input[type="color"] {
+            width: 24px;
+            height: 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* 액션 버튼 그리드 */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .action-buttons .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-download:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+
+        .btn-download-auto {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-download-auto:hover:not(:disabled) {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .btn-run {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-run:hover:not(:disabled) {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-stop:hover:not(:disabled) {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+
+        .btn-log {
+            background: var(--color-bg-elevated);
+            color: var(--color-gray-700);
+            border: 1px solid var(--color-gray-300);
+        }
+
+        .btn-log:hover:not(:disabled) {
+            background: var(--color-gray-200);
+        }
+
+        /* 로그 뷰어 */
+        .log-viewer {
+            background: var(--color-code-bg);
+            color: var(--color-code-text);
+            padding: 1rem;
+            border-radius: var(--radius-xs);
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 0.8rem;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            display: none;
+            border: 1px solid var(--color-gray-200);
+        }
+
+        .log-viewer.active {
+            display: block;
+        }
+
+        /* 상태 배지 */
+        .status-badge {
+            display: inline-block;
+            padding: 0.625rem 1rem;
+            border-radius: var(--radius-xs);
+            font-size: 0.875rem;
+            font-weight: 600;
+            white-space: pre-line;
+            line-height: 1.6;
+            max-width: 100%;
+        }
+
+        .status-success {
+            background: rgba(0, 196, 113, 0.15);
+            color: var(--color-success);
+        }
+
+        .status-error {
+            background: rgba(240, 68, 82, 0.15);
+            color: var(--color-error);
+        }
+
+        .status-processing {
+            background: rgba(49, 130, 246, 0.15);
+            color: var(--color-primary);
+        }
+
+        /* 접힘 가능 섹션 */
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--color-gray-900);
+        }
+
+        .collapsible-header:hover {
+            color: var(--color-primary);
+        }
+
+        .collapsible-icon {
+            font-size: 0.9rem;
+            color: var(--color-gray-500);
+            transition: transform 0.3s;
+        }
+
+        .collapsible-content {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .collapsible-content.active {
+            display: block;
+        }
+
+        /* 가이드 박스 */
+        .guide-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .guide-box h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .guide-content {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-sm);
+            padding: 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .guide-content h4 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            color: white;
+        }
+
+        .guide-content ol,
+        .guide-content ul {
+            line-height: 2;
+            padding-left: 1.5rem;
+        }
+
+        .guide-content table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .guide-content table tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .guide-content table tr:last-child {
+            border-bottom: none;
+        }
+
+        .guide-content table td {
+            padding: 0.75rem;
+        }
+
+        .guide-content code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        /* 알림 박스 */
+        .notice-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: var(--radius-md);
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .notice-box h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .notice-box p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .notice-box .btn {
+            background: white;
+            color: #667eea;
+            white-space: nowrap;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .notice-box .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .action-buttons {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .notice-box {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .url-input-row {
+                flex-wrap: wrap;
+            }
+
+            .url-number {
+                min-width: auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Floating Menu Styles */
+        .floating-menu {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+        }
+
+        .floating-menu-toggle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-primary) 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-menu-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .floating-menu-toggle svg {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .floating-menu.open .menu-icon {
+            display: none;
+        }
+
+        .floating-menu.open .close-icon {
+            display: block !important;
+        }
+
+        .floating-menu-items {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-end;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-menu.open .floating-menu-items {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .floating-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            transform: translateX(20px);
+            opacity: 0;
+        }
+
+        .floating-menu.open .floating-menu-item {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(1) {
+            transition-delay: 0.05s;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(2) {
+            transition-delay: 0.1s;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(3) {
+            transition-delay: 0.15s;
+        }
+
+        .floating-menu-item:hover {
+            transform: translateX(-4px) !important;
+        }
+
+        .floating-menu-item svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .float-guide {
+            background: var(--color-primary);
+            color: white;
+            box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .float-telegram {
+            background: #0088cc;
+            color: white;
+            box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
+        }
+
+        .float-intro {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .floating-menu-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 99;
+            display: none;
+        }
+
+        .floating-menu.open+.floating-menu-backdrop {
+            display: block;
+        }
+    </style>
+</head>
+
+<body style="visibility: hidden;">
+    <!-- Header (injected by header.js) -->
+    <div id="header-placeholder"></div>
+    <script src="/js/header.js"></script>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>API 설정</h2>
+                <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- API 키 발급 가이드 -->
+                <div
+                    style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--color-gray-900); margin-bottom: 0.75rem; font-size: 0.95rem;">🔑 302.AI API
+                        키 준비</h4>
+                    <p
+                        style="color: var(--color-gray-600); font-size: 0.85rem; line-height: 1.6; margin-bottom: 0.75rem;">
+                        • 하나의 키로 모든 AI 모델 사용<br>
+                        • GPT, Claude, Gemini, DALL-E, Whisper 등 지원<br>
+                        • 사용한 만큼만 결제 (종량제)
+                    </p>
+                    <p style="color: var(--color-gray-500); font-size: 0.8rem; margin: 0;">
+                        API 키는 <a href="https://dash.302.ai/apis/markets" target="_blank"
+                            style="color: var(--color-primary);">302.AI 대시보드</a>에서 발급하세요.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label for="ai302ApiKey">302.AI API Key</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="password" id="ai302ApiKey" placeholder="sk-..." style="flex: 1;">
+                        <button class="btn btn-sm" onclick="toggleKeyVisibility('ai302ApiKey')">👁️</button>
+                    </div>
+                    <small style="color: var(--color-gray-500);">모든 AI 기능(대본 생성, 이미지 생성, 자막 생성 등)에 사용됩니다.</small>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button class="btn" onclick="test302AIConnection()" id="test302AIBtn">302.AI 테스트</button>
+                            <span id="ai302TestResult" style="margin-left: 0.5rem;"></span>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button class="btn btn-secondary" onclick="saveSettings()">저장</button>
+                            <span id="openaiTestResult" style="margin-left: 0.5rem;"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 테마 설정 -->
+                <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--color-gray-200);">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <label style="font-weight: 600; color: var(--color-gray-900);">화면 테마</label>
+                            <p style="font-size: 0.8rem; color: var(--color-gray-500); margin-top: 0.25rem;">라이트/다크 모드를
+                                선택하세요</p>
+                        </div>
+                        <button onclick="toggleTheme()" id="themeToggleBtn"
+                            style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; background: var(--color-bg-tertiary); border: 1px solid var(--color-gray-300); border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: var(--color-gray-700); font-weight: 500;">
+                            <span id="themeIcon">🌙 다크</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSettingsModal()">취소</button>
+                <button class="btn btn-primary" onclick="saveSettings()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guide Modal -->
+    <div id="guideModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>📖 사용 설명서</h3>
+                <button class="modal-close" onclick="closeGuideModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="background: var(--color-bg-tertiary); border-radius: var(--radius-sm); padding: 1.25rem;">
+                    <h4 style="color: var(--color-gray-900); margin-bottom: 0.75rem;">📋 사용 방법</h4>
+                    <ol
+                        style="line-height: 1.8; margin-bottom: 1.25rem; padding-left: 1.5rem; color: var(--color-gray-700);">
+                        <li>언어 선택 (English/한국어)</li>
+                        <li>Instagram/TikTok URL 5개 입력</li>
+                        <li>썸네일 제목 설정 (선택)</li>
+                        <li><strong>📥⚡ 다운로드 + 자동실행</strong> 클릭 (권장)</li>
+                        <li>📜 로그 보기로 진행 상황 확인</li>
+                    </ol>
+
+                    <h4 style="color: var(--color-gray-900); margin-bottom: 0.75rem;">🔧 버튼 설명</h4>
+                    <ul
+                        style="line-height: 1.8; margin-bottom: 1.25rem; padding-left: 1.5rem; color: var(--color-gray-700);">
+                        <li><strong>📥 다운로드만</strong> - 비디오 다운로드만</li>
+                        <li><strong>📥⚡ 다운로드 + 자동실행</strong> - 다운로드 후 자동 처리 (권장)</li>
+                        <li><strong>▶️ 스크립트 실행</strong> - 이미 다운로드된 비디오 처리</li>
+                        <li><strong>⏹️ 스크립트 중지</strong> - 긴급 중단</li>
+                    </ul>
+
+                    <h4 style="color: var(--color-gray-900); margin-bottom: 0.75rem;">⚠️ 주의사항</h4>
+                    <ul style="line-height: 1.8; padding-left: 1.5rem; color: var(--color-gray-700);">
+                        <li>처리 시간: 약 <strong>10-15분</strong> (5개 기준)</li>
+                        <li>Chrome에 Instagram/TikTok 로그인 필요</li>
+                        <li>결과물: <code
+                                style="background: var(--color-bg-secondary); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.8rem;">Output/공유 폴더/ranking_*.mp4</code>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- 페이지 타이틀 -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1
+                style="font-size: 2rem; font-weight: 800; color: var(--color-gray-900); margin-bottom: 0.5rem; letter-spacing: -0.02em;">
+                🏆 랭킹 숏폼 자동 생성기
+            </h1>
+            <p style="color: var(--color-gray-600); font-size: 1rem;">
+                Instagram/TikTok URL 입력 → AI 분석 → 자동 랭킹 비디오 생성
+            </p>
+        </div>
+
+        <!-- 소셜 로그인 안내 -->
+        <div class="section">
+            <div class="section-title">🔐 Instagram/TikTok 다운로드</div>
+            <div
+                style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                <p style="color: var(--color-gray-600); margin: 0;">Instagram이나 TikTok 비디오를 다운로드하려면 먼저 로그인이 필요합니다.</p>
+                <button onclick="openSocialLogin()" class="btn btn-primary">소셜 로그인 →</button>
+            </div>
+        </div>
+
+        <!-- 언어 설정 -->
+        <div class="section">
+            <div class="section-title">🌐 언어 설정</div>
+            <div class="language-toggle">
+                <button id="btnEnglish" onclick="setLanguage('en')">English</button>
+                <button id="btnKorean" onclick="setLanguage('ko')">한국어</button>
+            </div>
+        </div>
+
+
+
+        <!-- URL 입력 -->
+        <div class="section">
+            <div class="section-title">📹 비디오 URL 입력 (5개)</div>
+            <div class="url-input-container" id="urlInputContainer">
+                <!-- 동적 생성 -->
+            </div>
+            <button class="btn btn-secondary" onclick="clearAllUrls()" style="margin-top: 1rem;">
+                🗑️ 모두 지우기
+            </button>
+        </div>
+
+        <!-- 썸네일 설정 -->
+        <div class="section">
+            <div class="collapsible-header" onclick="toggleCollapsible('thumbnailConfig')">
+                <span>🖼️ 썸네일 제목 설정</span>
+                <span id="thumbnailConfigIcon" class="collapsible-icon">▼</span>
+            </div>
+            <div class="collapsible-content" id="thumbnailConfig">
+                <div class="thumbnail-editor" id="thumbnailEditor">
+                    <!-- 동적 생성 -->
+                </div>
+                <button class="btn btn-primary" onclick="saveThumbnailConfig()" style="margin-top: 1rem;">
+                    💾 썸네일 설정 저장
+                </button>
+            </div>
+        </div>
+
+        <!-- 액션 버튼 -->
+        <div class="section">
+            <div class="section-title">⚡ 실행</div>
+            <div class="action-buttons">
+                <button class="btn btn-download" onclick="downloadOnly()">
+                    📥 다운로드만
+                </button>
+                <button class="btn btn-download-auto" onclick="downloadAndRun()">
+                    📥⚡ 다운로드 + 자동실행
+                </button>
+                <button class="btn btn-run" onclick="runScriptOnly()">
+                    ▶️ 스크립트 실행
+                </button>
+                <button class="btn btn-stop" onclick="stopScript()">
+                    ⏹️ 스크립트 중지
+                </button>
+                <button class="btn btn-log" onclick="toggleLog()">
+                    📜 로그 보기
+                </button>
+            </div>
+        </div>
+
+        <!-- 상태 표시 -->
+        <div id="statusContainer" style="margin-bottom: 1.5rem;"></div>
+
+        <!-- 로그 뷰어 -->
+        <div class="section" id="logSection" style="display: none;">
+            <div class="section-title">📜 실행 로그</div>
+            <div class="log-viewer active" id="logViewer"></div>
+        </div>
+    </div>
+
+    <!-- Floating Menu -->
+    <div class="floating-menu" id="floatingMenu">
+        <div class="floating-menu-items">
+            <button class="floating-menu-item float-guide" onclick="openGuideModal(); toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                <span>사용법</span>
+            </button>
+            <a href="https://t.me/shorts_factory" target="_blank" class="floating-menu-item float-telegram"
+                onclick="toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+                <span>공지채널</span>
+            </a>
+            <a href="https://shorts-factory-landing.web.app" target="_blank" class="floating-menu-item float-intro"
+                onclick="toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                <span>서비스 소개</span>
+            </a>
+        </div>
+        <button class="floating-menu-toggle" onclick="toggleFloatingMenu()" title="도움말">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" class="menu-icon">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" class="close-icon" style="display:none;">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        </button>
+    </div>
+    <div class="floating-menu-backdrop" onclick="toggleFloatingMenu()"></div>
+    <script>
+        function toggleFloatingMenu() {
+            document.getElementById('floatingMenu').classList.toggle('open');
+        }
+    </script>
+
+    <script>
+        // 전역 변수
+        let currentLanguage = 'en';
+        let thumbnailConfig = { title_lines: [] };
+        let logInterval = null;
+        let autoScroll = true;
+
+        // 가이드 모달 함수
+        function openGuideModal() {
+            document.getElementById('guideModal').style.display = 'flex';
+        }
+
+        function closeGuideModal() {
+            document.getElementById('guideModal').style.display = 'none';
+        }
+
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function (event) {
+            const guideModal = document.getElementById('guideModal');
+            if (event.target == guideModal) {
+                closeGuideModal();
+            }
+        }
+
+        // 개발 로그 함수
+        function devLog(action, data) {
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            console.log(`[${timestamp}] ${action}`, data || '');
+        }
+
+        // 소셜 로그인 페이지 열기
+        function openSocialLogin() {
+            devLog('🔐 소셜 로그인 버튼 클릭');
+            const url = '/cookie-login.html';
+            devLog('Opening URL:', url);
+            window.location.href = url;
+        }
+
+        // 페이지 로드
+        document.addEventListener('DOMContentLoaded', () => {
+            devLog('📄 DOMContentLoaded 이벤트 발생');
+            document.body.style.visibility = 'visible';
+            initializeUI();
+            loadLanguage();
+            loadThumbnailConfig();
+            loadUrlsFromStorage();
+        });
+
+        // UI 초기화
+        function initializeUI() {
+            // URL 입력 필드 생성
+            const container = document.getElementById('urlInputContainer');
+            for (let i = 0; i < 5; i++) {
+                const row = document.createElement('div');
+                row.className = 'url-input-row';
+                row.innerHTML = `
+                    <span class="url-number">URL ${i + 1}:</span>
+                    <input type="text" id="url${i}" placeholder="Instagram 또는 TikTok URL" oninput="saveUrlsToStorage()">
+                    <label>
+                        <input type="checkbox" id="mute${i}" onchange="saveUrlsToStorage()">
+                        <span>🔇 음소거</span>
+                    </label>
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        // 언어 로드
+        async function loadLanguage() {
+            try {
+                const res = await authFetch('/api/ranking-video/get-language');
+                const data = await res.json();
+                if (data.success) {
+                    currentLanguage = data.language;
+                    updateLanguageUI();
+                }
+            } catch (error) {
+                console.error('언어 로드 실패:', error);
+            }
+        }
+
+        // 언어 설정
+        async function setLanguage(lang) {
+            devLog(`🌐 언어 설정 버튼 클릭: ${lang}`);
+            try {
+                const res = await authFetch('/api/ranking-video/set-language', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ language: lang })
+                });
+                const data = await res.json();
+                devLog('🌐 언어 설정 응답:', data);
+                if (data.success) {
+                    currentLanguage = lang;
+                    updateLanguageUI();
+                    showStatus(data.message, 'success');
+                    devLog(`✅ 언어 변경 완료: ${lang}`);
+                }
+            } catch (error) {
+                console.error('언어 설정 실패:', error);
+                devLog('❌ 언어 설정 실패:', error);
+                showStatus('언어 설정 실패', 'error');
+            }
+        }
+
+        // 언어 UI 업데이트
+        function updateLanguageUI() {
+            document.getElementById('btnEnglish').classList.toggle('active', currentLanguage === 'en');
+            document.getElementById('btnKorean').classList.toggle('active', currentLanguage === 'ko');
+        }
+
+        // 썸네일 설정 로드
+        async function loadThumbnailConfig() {
+            try {
+                const res = await authFetch('/api/ranking-video/get-thumbnail-config');
+                const data = await res.json();
+                if (data.success) {
+                    thumbnailConfig = data.config;
+                    renderThumbnailEditor();
+                }
+            } catch (error) {
+                console.error('썸네일 설정 로드 실패:', error);
+            }
+        }
+
+        // 썸네일 에디터 렌더링
+        function renderThumbnailEditor() {
+            const editor = document.getElementById('thumbnailEditor');
+            editor.innerHTML = '';
+
+            if (!thumbnailConfig.title_lines) {
+                thumbnailConfig.title_lines = [];
+            }
+
+            // 최대 3줄
+            for (let i = 0; i < 3; i++) {
+                const line = thumbnailConfig.title_lines[i] || { text: '', words: [] };
+
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'thumbnail-line';
+                lineDiv.innerHTML = `
+                    <input type="text" id="thumbLine${i}" value="${line.text || ''}"
+                           placeholder="줄 ${i + 1} 입력" onchange="updateThumbnailLine(${i}, this.value)">
+                    <div id="thumbWords${i}" class="word-color-editor"></div>
+                `;
+                editor.appendChild(lineDiv);
+
+                if (line.text) {
+                    renderWordColors(i, line.text, line.words);
+                }
+            }
+        }
+
+        // 단어별 색상 렌더링
+        function renderWordColors(lineIndex, text, words) {
+            const container = document.getElementById(`thumbWords${lineIndex}`);
+            const textWords = text.split(/\s+/).filter(w => w);
+
+            container.innerHTML = textWords.map((word, idx) => {
+                const wordData = words && words[idx] ? words[idx] : { text: word, color: '#FFFFFF' };
+                return `
+                    <div class="word-color-item">
+                        <span>${word}</span>
+                        <input type="color" value="${wordData.color || '#FFFFFF'}"
+                               onchange="updateWordColor(${lineIndex}, ${idx}, this.value)">
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 썸네일 줄 업데이트
+        function updateThumbnailLine(lineIndex, text) {
+            if (!thumbnailConfig.title_lines[lineIndex]) {
+                thumbnailConfig.title_lines[lineIndex] = { text: '', words: [] };
+            }
+            thumbnailConfig.title_lines[lineIndex].text = text;
+
+            // 단어 분리
+            const textWords = text.split(/\s+/).filter(w => w);
+            thumbnailConfig.title_lines[lineIndex].words = textWords.map((word, idx) => ({
+                text: word,
+                color: thumbnailConfig.title_lines[lineIndex].words[idx]?.color || '#FFFFFF'
+            }));
+
+            renderWordColors(lineIndex, text, thumbnailConfig.title_lines[lineIndex].words);
+        }
+
+        // 단어 색상 업데이트
+        function updateWordColor(lineIndex, wordIndex, color) {
+            if (thumbnailConfig.title_lines[lineIndex] && thumbnailConfig.title_lines[lineIndex].words[wordIndex]) {
+                thumbnailConfig.title_lines[lineIndex].words[wordIndex].color = color;
+            }
+        }
+
+        // 썸네일 설정 저장
+        async function saveThumbnailConfig() {
+            try {
+                const res = await authFetch('/api/ranking-video/set-thumbnail-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ config: thumbnailConfig })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showStatus('썸네일 설정이 저장되었습니다', 'success');
+                }
+            } catch (error) {
+                console.error('썸네일 설정 저장 실패:', error);
+                showStatus('썸네일 설정 저장 실패', 'error');
+            }
+        }
+
+        // URL localStorage 저장
+        function saveUrlsToStorage() {
+            const urls = [];
+            for (let i = 0; i < 5; i++) {
+                urls.push({
+                    url: document.getElementById(`url${i}`).value,
+                    mute: document.getElementById(`mute${i}`).checked
+                });
+            }
+            localStorage.setItem('ranking_urls', JSON.stringify(urls));
+        }
+
+        // URL localStorage 로드
+        function loadUrlsFromStorage() {
+            const saved = localStorage.getItem('ranking_urls');
+            if (saved) {
+                const urls = JSON.parse(saved);
+                for (let i = 0; i < 5; i++) {
+                    if (urls[i]) {
+                        document.getElementById(`url${i}`).value = urls[i].url || '';
+                        document.getElementById(`mute${i}`).checked = urls[i].mute || false;
+                    }
+                }
+            }
+        }
+
+        // URL 모두 지우기
+        function clearAllUrls() {
+            for (let i = 0; i < 5; i++) {
+                document.getElementById(`url${i}`).value = '';
+                document.getElementById(`mute${i}`).checked = false;
+            }
+            localStorage.removeItem('ranking_urls');
+        }
+
+        // 다운로드만
+        async function downloadOnly() {
+            devLog('📥 다운로드만 버튼 클릭');
+            const urls = getUrls();
+            devLog('URLs:', urls);
+            if (!validateUrls(urls)) return;
+
+            showStatus('다운로드 시작...', 'processing');
+
+            for (let i = 0; i < urls.length; i++) {
+                if (urls[i].url) {
+                    try {
+                        devLog(`📥 비디오 ${i + 1} 다운로드 요청`, { url: urls[i].url, mute: urls[i].mute });
+                        showStatus(`비디오 ${i + 1} 다운로드 중...`, 'processing');
+                        const res = await authFetch('/api/ranking-video/download-single', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                url: urls[i].url,
+                                index: i,
+                                mute: urls[i].mute
+                            })
+                        });
+                        const data = await res.json();
+                        devLog(`📥 비디오 ${i + 1} 응답`, data);
+                        if (data.success) {
+                            devLog(`✅ 비디오 ${i + 1} 성공`);
+                            const pathInfo = data.filePath ? `\n📁 경로: ${data.filePath}` : '';
+                            showStatus(`✅ 비디오 ${i + 1} 다운로드 완료${pathInfo}`, 'success');
+                        } else {
+                            devLog(`❌ 비디오 ${i + 1} 실패:`, data.error);
+                            // Unauthorized 에러 체크
+                            if (data.error && data.error.includes('Unauthorized')) {
+                                showStatus(`비디오 ${i + 1}: 🔐 Instagram/TikTok 로그인이 필요합니다. 위의 "소셜 로그인" 버튼을 클릭하세요!`, 'error');
+                            } else {
+                                showStatus(`비디오 ${i + 1} 다운로드 실패: ${data.error}`, 'error');
+                            }
+                        }
+                    } catch (error) {
+                        devLog(`💥 비디오 ${i + 1} 예외:`, error);
+                        showStatus(`비디오 ${i + 1} 다운로드 오류: ${error.message}`, 'error');
+                    }
+                }
+            }
+            devLog('📥 모든 다운로드 완료');
+        }
+
+        // 다운로드 + 자동실행
+        async function downloadAndRun() {
+            const urls = getUrls();
+            if (!validateUrls(urls)) return;
+
+            showStatus('다운로드 + 자동실행 시작...', 'processing');
+
+            try {
+                const res = await authFetch('/api/ranking-video/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ urls: urls })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (data.autoRun) {
+                        showStatus('다운로드 완료! 스크립트 자동 실행 시작...', 'success');
+                        startLogPolling();
+                    } else {
+                        showStatus('일부 다운로드 실패', 'error');
+                    }
+                }
+            } catch (error) {
+                showStatus('다운로드 실패: ' + error.message, 'error');
+            }
+        }
+
+        // 스크립트만 실행
+        async function runScriptOnly() {
+            showStatus('스크립트 실행 중...', 'processing');
+
+            try {
+                const res = await authFetch('/api/ranking-video/run-script', {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showStatus('스크립트 실행 시작', 'success');
+                    startLogPolling();
+                }
+            } catch (error) {
+                showStatus('스크립트 실행 실패: ' + error.message, 'error');
+            }
+        }
+
+        // 스크립트 중지
+        async function stopScript() {
+            try {
+                const res = await authFetch('/api/ranking-video/stop-script', {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                showStatus(data.message, data.success ? 'success' : 'error');
+                stopLogPolling();
+            } catch (error) {
+                showStatus('스크립트 중지 실패: ' + error.message, 'error');
+            }
+        }
+
+        // 로그 토글
+        function toggleLog() {
+            const logSection = document.getElementById('logSection');
+            const logViewer = document.getElementById('logViewer');
+
+            if (logSection.style.display === 'none') {
+                logSection.style.display = 'block';
+                logViewer.classList.add('active');
+                startLogPolling();
+            } else {
+                logSection.style.display = 'none';
+                logViewer.classList.remove('active');
+                stopLogPolling();
+            }
+        }
+
+        // 로그 폴링 시작
+        function startLogPolling() {
+            if (logInterval) return;
+
+            const logSection = document.getElementById('logSection');
+            const logViewer = document.getElementById('logViewer');
+            logSection.style.display = 'block';
+            logViewer.classList.add('active');
+
+            loadLog();
+            logInterval = setInterval(loadLog, 2000);
+        }
+
+        // 로그 폴링 중지
+        function stopLogPolling() {
+            if (logInterval) {
+                clearInterval(logInterval);
+                logInterval = null;
+            }
+        }
+
+        // 로그 로드
+        async function loadLog() {
+            try {
+                const res = await authFetch('/api/ranking-video/script-log?lines=200');
+                const data = await res.json();
+
+                if (data.success) {
+                    const logViewer = document.getElementById('logViewer');
+                    const wasAtBottom = logViewer.scrollHeight - logViewer.scrollTop <= logViewer.clientHeight + 50;
+
+                    logViewer.textContent = data.log || '로그가 없습니다.';
+
+                    if (autoScroll && wasAtBottom) {
+                        logViewer.scrollTop = logViewer.scrollHeight;
+                    }
+                }
+            } catch (error) {
+                console.error('로그 로드 실패:', error);
+            }
+        }
+
+        // 로그 스크롤 감지
+        document.getElementById('logViewer').addEventListener('scroll', function () {
+            const isAtBottom = this.scrollHeight - this.scrollTop <= this.clientHeight + 50;
+            autoScroll = isAtBottom;
+        });
+
+        // URL 가져오기
+        function getUrls() {
+            const urls = [];
+            for (let i = 0; i < 5; i++) {
+                const url = document.getElementById(`url${i}`).value.trim();
+                const mute = document.getElementById(`mute${i}`).checked;
+                urls.push({ url, mute });
+            }
+            return urls;
+        }
+
+        // URL 유효성 검사
+        function validateUrls(urls) {
+            const validUrls = urls.filter(u => u.url).length;
+            if (validUrls === 0) {
+                showStatus('최소 1개 이상의 URL을 입력해주세요', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        // 상태 표시
+        function showStatus(message, type) {
+            const container = document.getElementById('statusContainer');
+            const badge = document.createElement('div');
+            badge.className = `status-badge status-${type}`;
+            badge.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(badge);
+
+            // 자동으로 사라지지 않음 - 새로운 알림이 뜨면 덮어쓰기만 함
+        }
+
+        // Collapsible 토글
+        function toggleCollapsible(id) {
+            const content = document.getElementById(id);
+            const icon = document.getElementById(id + 'Icon');
+            content.classList.toggle('active');
+            icon.textContent = content.classList.contains('active') ? '▲' : '▼';
+        }
+
+        // 설정 모달 열기
+        function openSettingsModal() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                loadApiKeys();
+            }
+        }
+
+        // 설정 모달 닫기
+        function closeSettingsModal() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // API 키 불러오기
+        async function loadApiKeys() {
+            try {
+                const response = await authFetch('/api/settings/keys');
+                const data = await response.json();
+
+                if (data.success && data.keys) {
+                    document.getElementById('ai302ApiKey').value = data.keys.AI_302_API_KEY || '';
+                }
+            } catch (error) {
+                console.error('API 키 불러오기 실패:', error);
+            }
+        }
+
+        // API 키 저장
+        async function saveSettings() {
+            const ai302Key = document.getElementById('ai302ApiKey').value.trim();
+
+            try {
+                const response = await authFetch('/api/settings/keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        AI_302_API_KEY: ai302Key
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('설정이 저장되었습니다.');
+                    closeSettingsModal();
+                } else {
+                    alert('설정 저장 실패: ' + (data.error || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('설정 저장 오류:', error);
+                alert('설정 저장 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 302.AI API 연결 테스트
+        async function test302AIConnection() {
+            const btn = document.getElementById('test302AIBtn');
+            const result = document.getElementById('ai302TestResult');
+            const apiKey = document.getElementById('ai302ApiKey').value.trim();
+
+            if (!apiKey) {
+                result.innerHTML = '<span style="color: var(--color-error);">❌ API 키를 입력하세요</span>';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '테스트 중...';
+            result.innerHTML = '<span style="color: var(--color-gray-600);">테스트 중...</span>';
+
+            try {
+                const response = await authFetch('/api/settings/test-302ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiKey })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    result.innerHTML = '<span style="color: var(--color-success);">✅ ' + data.message + '</span>';
+                } else {
+                    result.innerHTML = '<span style="color: var(--color-error);">❌ ' + data.error + '</span>';
+                }
+            } catch (error) {
+                result.innerHTML = '<span style="color: var(--color-error);">❌ 연결 실패</span>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '302.AI 테스트';
+            }
+        }
+
+        // 키 가시성 토글
+        function toggleKeyVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function (event) {
+            const modal = document.getElementById('settingsModal');
+            if (event.target === modal) {
+                closeSettingsModal();
+            }
+        }
+    </script>
+
+    <!-- Firebase Auth & Settings -->
+    <script src="/js/firebase-config.js"></script>
+    <script src="/js/firebase-auth.js"></script>
+    <script src="/js/main.js"></script>
+
+    <script>
+            // Initialize page after Firebase auth
+            (async function () {
+                try {
+                    const authState = await requireAuth();
+                    if (authState) {
+                        // Update header auth UI
+                        setHeaderAuthState(authState);
+                        startTokenRefresh();
+
+                        // Initialize page-specific features
+                        await Promise.all([
+                            loadLanguage(),
+                            loadThumbnailConfig(),
+                            loadUrlsFromStorage()
+                        ]);
+                    }
+                } catch (error) {
+                    console.error('Page initialization error:', error);
+                    // Make page visible even on error to show error message
+                    document.body.style.visibility = 'visible';
+                }
+            })();
+    </script>
+</body>
+
+</html>

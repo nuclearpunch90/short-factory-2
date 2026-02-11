@@ -1,0 +1,11 @@
+{
+    "ignore": [
+        "data/*",
+        "outputs/*",
+        "Output/*",
+        "uploads/*",
+        "background music/*",
+        "inputs/*",
+        "*.log"
+    ]
+}

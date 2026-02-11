@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shorts Maker</title>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: #f9fafb;
+            color: #191f28;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: #ffffff;
+            padding: 2rem 0;
+            border-bottom: 1px solid #e5e8eb;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #191f28;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: #4e5968;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .header-nav {
+            margin-top: 1.5rem;
+        }
+
+        .header-nav a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            background: #f2f4f6;
+            color: #191f28;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .header-nav a:hover {
+            background: #3182f6;
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(49, 130, 246, 0.3);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        /* Section */
+        .section {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .section:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .section-title {
+            font-size: 1.375rem;
+            font-weight: 700;
+            color: #191f28;
+            margin-bottom: 2rem;
+            letter-spacing: -0.02em;
+        }
+
+        /* Form Controls */
+        label {
+            display: block;
+            font-size: 0.875rem;
+            color: #888888;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        select,
+        textarea,
+        input[type="number"] {
+            width: 100%;
+            padding: 0.75rem;
+            background: #2a2a2a;
+            border: 1px solid #333333;
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        select:focus,
+        textarea:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #4a4a4a;
+            background: #303030;
+        }
+
+        textarea {
+            font-family: 'Monaco', 'Courier New', monospace;
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        select {
+            cursor: pointer;
+            margin-bottom: 1rem;
+        }
+
+        /* Video Grid */
+        .video-grid {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .video-item {
+            background: #2a2a2a;
+            border: 1px solid #333333;
+            border-radius: 6px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .video-item:hover {
+            background: #303030;
+            border-color: #444444;
+        }
+
+        .video-item.posted {
+            border-color: #2a2a2a;
+        }
+
+        .video-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.5rem;
+        }
+
+        .video-item-title {
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .video-badge {
+            font-size: 0.75rem;
+            color: #888888;
+            padding: 0.25rem 0.5rem;
+            background: #111111;
+            border-radius: 4px;
+            border: 1px solid #222222;
+        }
+
+        .video-item-meta {
+            font-size: 0.8125rem;
+            color: #666666;
+            margin-bottom: 0.5rem;
+        }
+
+        .video-item-desc {
+            font-size: 0.8125rem;
+            color: #888888;
+            line-height: 1.5;
+        }
+
+        /* Batch Grid */
+        .batch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .batch-item {
+            background: #2a2a2a;
+            border: 1px solid #363636;
+            border-radius: 6px;
+            padding: 1.5rem;
+        }
+
+        .batch-item-header {
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: #ffffff;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .batch-item label {
+            margin-top: 0.75rem;
+        }
+
+        .batch-item label:first-of-type {
+            margin-top: 0;
+        }
+
+        .batch-item select,
+        .batch-item textarea,
+        .batch-item input[type="number"] {
+            background: #1f1f1f;
+        }
+
+        /* Social Settings */
+        .social-settings {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #1a1a1a;
+        }
+
+        .social-settings h5 {
+            font-size: 0.875rem;
+            color: #888888;
+            margin-bottom: 0.75rem;
+            font-weight: 500;
+        }
+
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+            grid-auto-rows: minmax(60px, auto);
+            align-items: start;
+        }
+
+        .platform-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: #1f1f1f;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9375rem;
+            color: #ffffff;
+            font-weight: 500;
+            min-height: 60px;
+            box-sizing: border-box;
+        }
+
+        .platform-item input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .platform-item input[type="checkbox"]:checked + .platform-content {
+            opacity: 1;
+        }
+
+        .platform-item input[type="checkbox"]:checked ~ .checkmark {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .platform-item:has(input:checked) {
+            background: #2a2a2a;
+            border-color: #4a4a4a;
+        }
+
+        .platform-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            flex: 1;
+        }
+
+        .platform-item svg {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            display: block;
+        }
+
+        .checkmark {
+            position: absolute;
+            right: 1rem;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4CAF50;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.2s ease;
+        }
+
+        .checkmark::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .platform-item:hover {
+            background: #252525;
+            border-color: #3a3a3a;
+        }
+
+        .platform-item:hover .platform-content {
+            opacity: 0.8;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.8125rem;
+            color: #888888;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: 1px solid #222222;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+            background: #0a0a0a;
+            color: #ffffff;
+        }
+
+        .btn:hover {
+            background: #111111;
+            border-color: #333333;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.8125rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #333333;
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Status Messages */
+        .status-messages {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #000000;
+            border: 1px solid #1a1a1a;
+            border-radius: 6px;
+            padding: 1rem;
+        }
+
+        .status-message {
+            padding: 0.5rem 0;
+            font-size: 0.8125rem;
+            color: #888888;
+            border-bottom: 1px solid #0a0a0a;
+        }
+
+        .status-message:last-child {
+            border-bottom: none;
+        }
+
+        .status-message.info { color: #4a9eff; }
+        .status-message.success { color: #52c41a; }
+        .status-message.error { color: #ff4d4f; }
+        .status-message.warning { color: #faad14; }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #0a0a0a;
+            border: 1px solid #222222;
+            border-radius: 8px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .video-info-box {
+            background: #000000;
+            border: 1px solid #1a1a1a;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .video-info-row {
+            font-size: 0.8125rem;
+            color: #888888;
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+
+        .video-info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .video-info-row strong {
+            color: #ffffff;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #222222;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #333333;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .section {
+                padding: 1.5rem;
+            }
+
+            .batch-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.25rem;
+            }
+        }
+
+        /* Hide empty sections */
+        .section:empty {
+            display: none;
+        }
+
+        /* Folder Grid */
+        .folder-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .folder-card {
+            background: #2a2a2a;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .folder-card:hover {
+            background: #303030;
+            border-color: #444444;
+        }
+
+        .folder-card.selected {
+            background: #1a2a3a;
+            border-color: #4a90e2;
+        }
+
+        .folder-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .folder-icon {
+            width: 40px;
+            height: 40px;
+            background: #1a1a1a;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .folder-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .folder-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.25rem;
+        }
+
+        .folder-count {
+            font-size: 0.75rem;
+            color: #888888;
+        }
+
+        .folder-checkbox {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #555555;
+            border-radius: 4px;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .folder-card.selected .folder-checkbox {
+            background: #4a90e2;
+            border-color: #4a90e2;
+        }
+
+        .folder-checkbox::after {
+            content: '✓';
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.2s;
+        }
+
+        .folder-card.selected .folder-checkbox::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .folder-videos {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .folder-video-item {
+            font-size: 0.75rem;
+            color: #666666;
+            padding: 0.5rem;
+            background: #1a1a1a;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            border-left: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .folder-video-item.will-schedule {
+            color: #4a90e2;
+            border-left-color: #4a90e2;
+            background: #0a1a2a;
+        }
+
+        /* Schedule List */
+        .schedule-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .schedule-item {
+            background: #2a2a2a;
+            border: 1px solid #333333;
+            border-radius: 6px;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 1rem;
+        }
+
+        .schedule-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .schedule-video {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .schedule-meta {
+            font-size: 0.75rem;
+            color: #888888;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .schedule-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .schedule-status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .schedule-status.pending {
+            background: #2a2a1a;
+            color: #faad14;
+            border: 1px solid #3a3a1a;
+        }
+
+        .schedule-status.completed {
+            background: #1a2a1a;
+            color: #52c41a;
+            border: 1px solid #1a3a1a;
+        }
+
+        .schedule-status.failed {
+            background: #2a1a1a;
+            color: #ff4d4f;
+            border: 1px solid #3a1a1a;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>Shorts Maker</h1>
+        <p>Video generation and social media posting</p>
+        <div class="header-nav">
+            <a href="/transition-editor">Transition Editor →</a>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Status Section (Top Priority) -->
+        <div class="section">
+            <h2 class="section-title">진행 상태</h2>
+            <div class="status-messages" id="statusMessages">
+                <div class="status-message info">시스템 준비 완료</div>
+            </div>
+        </div>
+
+        <!-- Folder Posting Section -->
+        <div class="section">
+            <h2 class="section-title">폴더에서 비디오 선택하여 스케줄 포스팅</h2>
+
+            <div class="folder-grid" id="folderGrid"></div>
+
+            <div id="selectedVideosSection" style="display: none; margin-top: 2rem;">
+                <h3 style="font-size: 1rem; color: #ffffff; margin-bottom: 1rem;">선택된 비디오 (<span id="selectedCount">0</span>개)</h3>
+
+                <div style="display: grid; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div>
+                        <label>프로필 선택</label>
+                        <select id="scheduleProfileSelect">
+                            <option value="">프로필을 선택하세요...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>포스팅 간격</label>
+                        <select id="scheduleInterval">
+                            <option value="1">1시간 간격</option>
+                            <option value="2">2시간 간격</option>
+                            <option value="3">3시간 간격</option>
+                            <option value="6">6시간 간격</option>
+                            <option value="12">12시간 간격</option>
+                            <option value="24" selected>1일 간격</option>
+                            <option value="48">2일 간격</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>시작 시간</label>
+                        <input type="datetime-local" id="scheduleStartTime" style="width: 100%; padding: 0.75rem; background: #2a2a2a; border: 1px solid #333333; border-radius: 6px; color: #ffffff; font-size: 0.875rem;">
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn" id="scheduleAddBtn" style="flex: 1;">
+                        <span id="scheduleAddBtnText">스케줄에 추가</span>
+                        <span class="loading" id="scheduleAddLoading" style="display: none;"></span>
+                    </button>
+                    <button class="btn btn-small" id="clearSelectionBtn">선택 초기화</button>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <h3 style="font-size: 1rem; color: #ffffff; margin-bottom: 1rem;">등록된 스케줄 (<span id="scheduleCount">0</span>개)</h3>
+                    <div class="schedule-list" id="scheduleList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch Generation Section -->
+        <div class="section">
+            <h2 class="section-title">배치 작업 생성</h2>
+
+            <div class="batch-grid" id="batchGrid"></div>
+
+            <button class="btn btn-block" id="generateAllBtn" style="margin-top: 1.5rem;">
+                <span id="generateBtnText">전체 생성하기</span>
+                <span class="loading" id="generateLoading" style="display: none;"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Posting Modal -->
+    <div class="modal" id="postingModal">
+        <div class="modal-content">
+            <h3 class="modal-header">소셜 미디어에 포스팅</h3>
+
+            <div class="video-info-box" id="modalVideoInfo"></div>
+
+            <label>프로필 선택</label>
+            <select id="modalProfileSelect">
+                <option value="">프로필을 선택하세요...</option>
+            </select>
+
+            <label style="margin-top: 1rem; display: block; margin-bottom: 0.75rem;">포스팅할 플랫폼</label>
+            <div class="platform-grid">
+                <label class="platform-item">
+                    <input type="checkbox" class="modal-platform-checkbox" value="youtube">
+                    <div class="platform-content">
+                        <svg viewBox="0 0 24 24" fill="#FF0000"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        <span>YouTube</span>
+                    </div>
+                    <div class="checkmark"></div>
+                </label>
+                <label class="platform-item">
+                    <input type="checkbox" class="modal-platform-checkbox" value="tiktok">
+                    <div class="platform-content">
+                        <svg viewBox="0 0 24 24" fill="#ffffff"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+                        <span>TikTok</span>
+                    </div>
+                    <div class="checkmark"></div>
+                </label>
+                <label class="platform-item">
+                    <input type="checkbox" class="modal-platform-checkbox" value="instagram">
+                    <div class="platform-content">
+                        <svg viewBox="0 0 24 24" fill="url(#instagram-gradient)"><defs><linearGradient id="instagram-gradient" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#FD5949;stop-opacity:1" /><stop offset="50%" style="stop-color:#D6249F;stop-opacity:1" /><stop offset="100%" style="stop-color:#285AEB;stop-opacity:1" /></linearGradient></defs><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                        <span>Instagram</span>
+                    </div>
+                    <div class="checkmark"></div>
+                </label>
+                <label class="platform-item">
+                    <input type="checkbox" class="modal-platform-checkbox" value="facebook">
+                    <div class="platform-content">
+                        <svg viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        <span>Facebook</span>
+                    </div>
+                    <div class="checkmark"></div>
+                </label>
+                <label class="platform-item">
+                    <input type="checkbox" class="modal-platform-checkbox" value="twitter">
+                    <div class="platform-content">
+                        <svg viewBox="0 0 24 24" fill="#1DA1F2"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+                        <span>Twitter</span>
+                    </div>
+                    <div class="checkmark"></div>
+                </label>
+                <label class="platform-item">
+                    <input type="checkbox" class="modal-platform-checkbox" value="linkedin">
+                    <div class="platform-content">
+                        <svg viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                        <span>LinkedIn</span>
+                    </div>
+                    <div class="checkmark"></div>
+                </label>
+            </div>
+            <label class="checkbox-label" style="margin-top: 1rem; justify-content: center; padding: 0.75rem; background: #0a0a0a; border: 1px solid #1a1a1a; border-radius: 6px; cursor: pointer;">
+                <input type="checkbox" id="modalSelectAllPlatforms">
+                <span style="color: #ffffff; font-weight: 500;">모든 플랫폼 선택</span>
+            </label>
+
+            <div class="btn-group" style="margin-top: 1.5rem;">
+                <button class="btn" id="modalCancelBtn" style="flex: 1;">취소</button>
+                <button class="btn" id="modalPostBtn" style="flex: 2;">
+                    <span id="modalPostBtnText">포스팅</span>
+                    <span class="loading" id="modalPostLoading" style="display: none;"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/js/main.js"></script>
+</body>
+</html>

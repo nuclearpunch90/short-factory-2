@@ -1,0 +1,3251 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>쇼츠공장 - 리믹스 숏폼</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <link rel="stylesheet" href="/css/toss-style.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body style="visibility: hidden;">
+    <!-- Header (injected by header.js) -->
+    <div id="header-placeholder"></div>
+    <script src="/js/header.js"></script>
+
+    <!-- 사용법 모달 -->
+    <div id="guideModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>📖 사용법</h3>
+                <button class="modal-close" onclick="closeGuideModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- API 키 안내 -->
+                <div
+                    style="background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #ffc107;">
+                    <p style="color: #856404; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">⚠️ 먼저 API 키가
+                        필요해요!</p>
+                    <p style="color: #856404; font-size: 0.85rem; line-height: 1.6;">
+                        대본 생성은 <strong>Gemini</strong>, 음성/이미지는 <strong>OpenAI</strong> 키가 필요해요.<br>
+                        오른쪽 위 설정 버튼을 눌러서 API 키를 먼저 등록해주세요!
+                    </p>
+                </div>
+
+                <div
+                    style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;">
+                    <p style="color: var(--color-gray-700); font-size: 0.9rem; line-height: 1.8;">
+                        <strong style="color: var(--color-primary);">TTS 숏폼</strong>은 글을 입력하면 AI가 목소리로 읽어주고, 영상까지 자동으로
+                        만들어줍니다!
+                    </p>
+                    <div
+                        style="margin-top: 1rem; padding: 1rem; background: var(--color-bg-secondary); border-radius: 8px; border-left: 3px solid var(--color-primary);">
+                        <p
+                            style="color: var(--color-gray-800); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">
+                            3단계로 끝!</p>
+                        <p style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8;">
+                            1️⃣ 아래 버튼 눌러서 ChatGPT로 대본 만들기<br>
+                            2️⃣ 만들어진 대본 복사해서 붙여넣기<br>
+                            3️⃣ "생성하기" 버튼 클릭!
+                        </p>
+                    </div>
+                </div>
+                <div
+                    style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;">
+                    <h4 style="color: var(--color-gray-900); margin-bottom: 0.75rem; font-size: 0.95rem;">💬 AI한테 대본
+                        만들어달라고 하기</h4>
+                    <p style="color: var(--color-gray-500); font-size: 0.8rem; margin-bottom: 0.75rem;">ChatGPT, Claude,
+                        Gemini 등 아무 AI나 사용 가능!</p>
+
+                    <div style="display: grid; gap: 0.75rem; margin-bottom: 1rem;">
+                        <div>
+                            <label
+                                style="font-size: 0.8rem; color: var(--color-gray-600); margin-bottom: 0.25rem; display: block;">주제</label>
+                            <input type="text" id="promptTopic" placeholder="예: 아침 루틴, 재테크 꿀팁"
+                                oninput="updatePromptPreview()"
+                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.85rem;">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 0.75rem;">
+                        <label
+                            style="font-size: 0.8rem; color: var(--color-gray-600); margin-bottom: 0.25rem; display: block;">생성된
+                            프롬프트</label>
+                        <textarea id="promptPreview" readonly
+                            style="width: 100%; min-height: 180px; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.8rem; font-family: 'Consolas', monospace; background: var(--color-code-bg); color: var(--color-code-text); resize: vertical;">유튜브 숏폼 대본 만들어줘
+
+주제: [주제를 입력하세요]
+
+조건:
+- 50초~60초 읽을 수 있는 분량 (약 350~400자)
+- 재미있게 시작
+- 마지막에 "구독 좋아요" 멘트 넣기
+
+이 형식으로 만들어줘:
+{
+  "script": "대본 내용",
+  "title": "영상 제목",
+  "description": "영상 설명 #해시태그"
+}</textarea>
+                    </div>
+
+                    <button onclick="copyPromptFromTextarea()"
+                        style="width: 100%; background: var(--color-primary); color: white; border: none; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600;">📋
+                        프롬프트 복사하기</button>
+                </div>
+                <div style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1.25rem;">
+                    <h4 style="color: var(--color-gray-900); margin-bottom: 0.75rem; font-size: 0.95rem;">📁 영상 소스 폴더 설정
+                    </h4>
+                    <p
+                        style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8; margin-bottom: 0.75rem;">
+                        배경 영상으로 사용할 파일들을 <code
+                            style="background: var(--color-code-bg); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.8rem;">videos</code>
+                        폴더에 넣어주세요.
+                    </p>
+                    <div
+                        style="background: var(--color-code-bg); border-radius: 8px; padding: 1rem; font-family: 'Consolas', monospace; font-size: 0.8rem; color: var(--color-code-text);">
+                        📂 videos/<br>
+                        &nbsp;&nbsp;├── 📂 요리/ <span style="color: var(--color-gray-500);">(폴더명 = 영상소스 이름)</span><br>
+                        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── 🎬 video1.mp4<br>
+                        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── 🎬 video2.mp4<br>
+                        &nbsp;&nbsp;├── 📂 게임/<br>
+                        &nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── 🎬 gameplay.mp4<br>
+                        &nbsp;&nbsp;└── 📂 일상/<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── 🎬 vlog.mp4
+                    </div>
+                    <p style="color: var(--color-gray-500); font-size: 0.8rem; margin-top: 0.75rem;">
+                        💡 폴더별로 영상을 분류하면 "영상 소스" 드롭다운에서 선택할 수 있어요!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- 페이지 타이틀 -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1
+                style="font-size: 2rem; font-weight: 800; color: var(--color-gray-900); margin-bottom: 0.5rem; letter-spacing: -0.02em;">
+                🎬 리믹스 숏폼 생성기
+            </h1>
+            <p style="color: var(--color-gray-600); font-size: 1rem;">
+                대본 입력 → AI 음성 생성 → 배경영상 믹스 → 자동 숏폼 완성
+            </p>
+        </div>
+
+        <!-- 대본 생성기 + 단일 생성 가로 배치 -->
+        <div class="main-row" style="display: flex; gap: 1.5rem; width: 100%;">
+            <!-- 대본 생성기 -->
+            <div class="section" style="flex: 1; min-width: 0;">
+                <h2 class="section-title">📝 대본 생성기</h2>
+                <div style="display:none;">
+                    <!-- OLD Script Gen (Hidden) -->
+                    <div id="scriptGenContent">
+                        <!-- 방식 선택 탭 -->
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                            <button type="button" class="script-mode-btn active" data-mode="manual"
+                                onclick="selectScriptMode('manual')"
+                                style="flex: 1; padding: 0.75rem; border: 2px solid var(--color-primary); background: var(--color-primary); color: white; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 600; transition: all 0.2s;">
+                                ChatGPT/Gemini 직접 사용 (추천)
+                            </button>
+                            <button type="button" class="script-mode-btn" data-mode="auto"
+                                onclick="selectScriptMode('auto')"
+                                style="flex: 1; padding: 0.75rem; border: 2px solid var(--color-gray-300); background: var(--color-bg-secondary); color: var(--color-gray-700); border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 500; transition: all 0.2s;">
+                                자동 AI 생성
+                            </button>
+                        </div>
+
+                        <!-- 방식 1: 직접 LLM 사용 (추천) -->
+                        <div id="manualModeContent"
+                            style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1rem;">
+                            <div
+                                style="background: var(--color-bg-secondary); border: 1px solid var(--color-gray-300); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem;">
+                                <div
+                                    style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; color: var(--color-gray-800);">
+                                    왜 직접 사용을 추천하나요?
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--color-gray-700);">
+                                    • 비용 절약: ChatGPT, Gemini 무료 버전 사용 가능<br>
+                                    • 품질 보장: 원하는 대본 나올 때까지 직접 수정 가능<br>
+                                    • 무제한 생성: API 비용 걱정 없이 마음껏 생성
+                                </div>
+                            </div>
+
+                            <label
+                                style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.5rem; display: block;">참고할
+                                내용 붙여넣기 (뉴스, 영상 스크립트, 아이디어 등)</label>
+                            <textarea id="manualTopic" placeholder="여기에 참고할 내용을 자유롭게 붙여넣으세요!
+    
+    예시:
+    • 뉴스 기사 내용
+    • 다른 유튜브 영상 스크립트
+    • 블로그 글
+    • 아이디어나 키워드" style="width: 100%; min-height: 120px; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.9rem; margin-bottom: 0.75rem; resize: vertical;"
+                                oninput="updateManualPrompt()"></textarea>
+
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                                <select id="manualTone"
+                                    style="flex: 1; padding: 0.6rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.85rem; background: var(--color-bg-secondary); color: var(--color-gray-900);"
+                                    onchange="updateManualPrompt()">
+                                    <option value="casual">🗣️ 친근한 해요체</option>
+                                    <option value="formal">📢 정중한 합니다체</option>
+                                    <option value="info">📚 정보 전달형</option>
+                                    <option value="hype">🔥 흥분 자극형</option>
+                                    <option value="community">💬 커뮤 감성 (중립)</option>
+                                    <option value="rough">😤 거친 직설형</option>
+                                    <option value="sarcastic">😏 냉소적 비꼼</option>
+                                    <option value="cute">💕 귀여운 애교</option>
+                                </select>
+                            </div>
+
+                            <label
+                                style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.5rem; display: block;">생성된
+                                프롬프트 (복사해서 ChatGPT/Gemini에 붙여넣기)</label>
+                            <textarea id="manualPromptPreview" readonly
+                                style="width: 100%; min-height: 200px; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.8rem; font-family: 'Consolas', monospace; background: var(--color-code-bg); color: var(--color-code-text); resize: vertical; margin-bottom: 0.75rem;"></textarea>
+
+                            <button type="button" onclick="copyManualPrompt(this)"
+                                style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600;">
+                                📋 프롬프트 복사하기
+                            </button>
+                            <p class="copy-instruction">
+                                👉 복사한 후 <a href="https://chatgpt.com" target="_blank">ChatGPT</a> 또는
+                                <a href="https://gemini.google.com" target="_blank">Gemini</a>에
+                                붙여넣으세요!
+                            </p>
+                        </div>
+
+                        <!-- 방식 2: 자동 AI 생성 -->
+                        <div id="autoModeContent"
+                            style="display: none; background: var(--color-bg-tertiary); border-radius: 8px; padding: 1rem;">
+                            <label
+                                style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.5rem; display: block;">AI로
+                                대본 만들기</label>
+                            <!-- 주제 예시 보기 -->
+                            <div style="margin-bottom: 0.5rem;">
+                                <div id="autoPromptExamplesToggle" onclick="toggleAutoPromptExamples()"
+                                    style="cursor: pointer; font-size: 0.75rem; color: var(--color-primary); display: flex; align-items: center; gap: 0.25rem;">
+                                    <span id="autoPromptExamplesIcon">▶</span> 대본 예시 보기 (클릭하면 바로 적용)
+                                </div>
+                                <div id="autoPromptExamples" style="display: none; margin-top: 0.5rem;">
+                                    <!-- 카테고리 탭 -->
+                                    <div id="autoCategoryTabs" class="category-tabs"
+                                        style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.75rem;">
+                                        <!-- 동적으로 채워짐 -->
+                                    </div>
+                                    <!-- 예시 목록 -->
+                                    <div id="autoPromptExamplesContent"
+                                        style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                                        <!-- 테마별로 동적으로 채워짐 -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="text" id="customScriptTopic" placeholder="만들고 싶은 주제 입력"
+                                style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.9rem; margin-bottom: 0.5rem;">
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+                                <select id="scriptTone"
+                                    style="flex: 1; padding: 0.6rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.85rem; background: var(--color-bg-secondary); color: var(--color-gray-900);">
+                                    <option value="casual">🗣️ 친근한 해요체</option>
+                                    <option value="formal">📢 정중한 합니다체</option>
+                                    <option value="info">📚 정보 전달형</option>
+                                    <option value="hype">🔥 흥분 자극형</option>
+                                    <option value="community">💬 커뮤 감성 (중립)</option>
+                                    <option value="rough">😤 거친 직설형</option>
+                                    <option value="sarcastic">😏 냉소적 비꼼</option>
+                                    <option value="cute">💕 귀여운 애교</option>
+                                </select>
+                            </div>
+                            <button type="button" id="generateScriptBtn" onclick="generateScriptWithAI()"
+                                style="width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%); color: white; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                <span id="generateScriptBtnText">✨ AI가 대본 만들어주기</span>
+                                <span class="loading" id="generateScriptLoading" style="display: none;"></span>
+                            </button>
+                            <p
+                                style="font-size: 0.75rem; color: var(--color-gray-500); margin-top: 0.5rem; text-align: center;">
+                                버튼을 누르면 AI가 대본을 자동으로 만들어줘요! (API 비용 발생)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW Script Gen (from ai-video.html) -->
+                <div class="collapsible-section">
+                    <div id="scriptSectionContent">
+                        <style>
+                            .style-grid {
+                                display: grid;
+                                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                                gap: 0.5rem;
+                            }
+
+                            .style-option-chip {
+                                padding: 0.5rem;
+                                border: 1px solid var(--color-border);
+                                border-radius: 8px;
+                                background: var(--color-bg-primary);
+                                cursor: pointer;
+                                text-align: center;
+                                font-size: 0.85rem;
+                                transition: all 0.2s;
+                            }
+
+                            .style-option-chip.selected {
+                                border-color: var(--color-primary);
+                                background: var(--color-bg-secondary);
+                                color: var(--color-primary);
+                                font-weight: 600;
+                            }
+
+                            .script-result-card {
+                                background: var(--color-bg-secondary);
+                                border: 1px solid var(--color-border);
+                                border-radius: 8px;
+                                padding: 1rem;
+                                margin-bottom: 1rem;
+                            }
+
+                            .script-result-header {
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                margin-bottom: 0.5rem;
+                                font-weight: 600;
+                            }
+                        </style>
+
+                        <!-- Content Mode Toggle -->
+                        <div
+                            style="background: var(--color-bg-secondary); padding: 5px; border-radius: 8px; display: flex; gap: 5px; margin-bottom: 15px;">
+                            <label style="flex: 1; cursor: pointer;">
+                                <input type="radio" name="scriptMode" value="business" checked
+                                    onchange="toggleScriptMode()" style="display: none;">
+                                <div class="script-mode-chip"
+                                    style="padding: 10px; text-align: center; border-radius: 6px; transition: all 0.2s;">
+                                    📢 업체 홍보형
+                                </div>
+                            </label>
+                            <label style="flex: 1; cursor: pointer;">
+                                <input type="radio" name="scriptMode" value="entertainment"
+                                    onchange="toggleScriptMode()" style="display: none;">
+                                <div class="script-mode-chip"
+                                    style="padding: 10px; text-align: center; border-radius: 6px; transition: all 0.2s;">
+                                    🎭 엔터테인먼트형
+                                </div>
+                            </label>
+                        </div>
+                        <style>
+                            input[name="scriptMode"]:checked+div {
+                                background: var(--color-primary);
+                                color: white;
+                                font-weight: 600;
+                                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                            }
+
+                            input[name="scriptMode"]:not(:checked)+div {
+                                background: transparent;
+                                color: var(--color-gray-600);
+                            }
+                        </style>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                <span id="labelName">🏪 가게 이름</span>
+                            </label>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <input type="text" id="storeName" class="form-control"
+                                    style="flex: 1; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
+                                    placeholder="예: 고양시 맛집 할매순대국">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" id="includeName" checked>
+                                    <label for="includeName" style="font-size: 0.9rem;"><span
+                                            id="labelDetailInclude">이름</span> 포함</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="locationGroup" style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📍 위치 정보
+                                (선택)</label>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <input type="text" id="storeLocation" class="form-control"
+                                    style="flex: 1; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
+                                    placeholder="예: 홍대입구역 3번 출구 도보 5분">
+                            </div>
+                            <div style="display: flex; gap: 1rem; font-size: 0.9rem;">
+                                <label><input type="radio" name="locationIn" value="intro" checked> 인트로에 넣기</label>
+                                <label><input type="radio" name="locationIn" value="outro"> 아웃트로에 넣기</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                <span id="labelDescription">✏️ 가게 설명 / 특징</span>
+                            </label>
+                            <textarea id="storeDescription" class="form-control"
+                                style="width: 100%; min-height: 100px; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px; resize: vertical;"
+                                placeholder="예: 40년 전통의 순대국 전문점입니다. 국물이 진하고 고기가 많아요. 24시간 영업합니다."></textarea>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">🎨 대본 스타일 (다중 선택
+                                가능)</label>
+                            <div class="style-grid" id="scriptStyleGrid">
+                                <!-- JS puts chips here -->
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+                                <div>
+                                    <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">🌐
+                                        언어</label>
+                                    <select id="scriptLanguage"
+                                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                        <option value="Korean">한국어</option>
+                                        <option value="English">English</option>
+                                        <option value="Japanese">Japanese</option>
+                                        <option value="Chinese">Chinese</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">🎤
+                                        인트로</label>
+                                    <select id="introStyle"
+                                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                        <!-- JS populates -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">🎬
+                                        아웃트로</label>
+                                    <select id="outroStyle"
+                                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                        <!-- JS populates -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group"
+                            style="margin-bottom: 1rem; padding: 0.75rem; background: var(--color-bg-secondary); border-radius: 8px;">
+                            <label
+                                style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display: block;">🔊
+                                TTS 설정 (오디오 생성용)</label>
+                            <select id="ttsProvider"
+                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                <option value="Google">Google Cloud TTS (기본)</option>
+                                <option value="Azure">Azure Speech (고품질)</option>
+                                <!-- <option value="ElevenLabs">ElevenLabs (프리미엄)</option> -->
+                            </select>
+                        </div>
+
+                        <!-- Video Filter Settings -->
+                        <div class="form-group"
+                            style="margin-bottom: 1rem; padding: 0.75rem; background: var(--color-bg-secondary); border-radius: 8px;">
+                            <label
+                                style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display: block;">🎨
+                                영상 필터</label>
+                            <select id="videoFilter"
+                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                <option value="none">원본 (기본)</option>
+                                <option value="western">서양식 감성 (따뜻한 톤 + 고대비)</option>
+                            </select>
+                        </div>
+
+                        <!-- Count and Batch Options -->
+                        <div class="form-group"
+                            style="margin-bottom: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div>
+                                <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">📝 생성
+                                    개수</label>
+                                <input type="number" id="scriptCount" value="1" min="1" max="10"
+                                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                            </div>
+                            <div style="display: flex; align-items: flex-end; padding-bottom: 0.5rem;">
+                                <div style="display: flex; align-items: center;">
+                                    <input type="checkbox" id="autoAddToBatch" checked
+                                        style="width: 1.1em; height: 1.1em; margin-right: 0.5rem; cursor: pointer;">
+                                    <label for="autoAddToBatch"
+                                        style="font-size: 0.85rem; font-weight: 600; cursor: pointer;">배치 생성기에 자동
+                                        추가</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="generateScriptsBtn" class="btn btn-primary" onclick="generateScripts()"
+                            style="width: 100%; padding: 1rem; font-weight: 700;">
+                            ✨ 대본 생성 시작
+                        </button>
+                    </div>
+
+                    <!-- 결과 표시 영역 -->
+                    <div id="scriptResultsArea"
+                        style="display: none; margin-top: 1.5rem; border-top: 2px solid var(--color-border); padding-top: 1.5rem;">
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">✅ 생성된 대본 목록</h3>
+                        <div id="generatedScriptsList">
+                            <!-- Results go here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 단일 생성 -->
+            <div class="section" style="flex: 1; min-width: 0;">
+                <h2 class="section-title">🎬 단일 생성</h2>
+
+                <!-- 대본 예시 (카테고리 탭) -->
+                <div style="margin-bottom: 0.75rem;">
+                    <div id="singleExampleToggle" onclick="toggleSingleExamples()"
+                        style="cursor: pointer; font-size: 0.85rem; color: var(--color-primary); display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.5rem;">
+                        <span id="singleExampleIcon">▶</span> <span style="font-weight: 500;">대본 예시 보기 (클릭하면 바로
+                            적용)</span>
+                    </div>
+                    <div id="singleExamples" style="display: none;">
+                        <!-- 카테고리 탭 -->
+                        <div id="singleCategoryTabs"
+                            style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.75rem;"></div>
+                        <!-- 예시 목록 -->
+                        <div id="singleExamplesContent"
+                            style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto;">
+                        </div>
+                    </div>
+                </div>
+
+                <label>대본 입력</label>
+                <textarea id="singleJson" class="batch-json"
+                    placeholder='{"script": "대본 내용...", "title": "제목", "description": "설명"}'
+                    style="min-height: 120px;"></textarea>
+
+                <div style="margin-top: 1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 1rem;">
+                    <label style="margin: 0; font-weight: 600; color: var(--color-gray-700);">음성 모드:</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <label style="display: flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                            <input type="radio" name="voiceMode" value="tts" checked onclick="toggleVoiceMode('tts')">
+                            <span>AI 성우 (TTS)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.25rem; cursor: pointer;">
+                            <input type="radio" name="voiceMode" value="file" onclick="toggleVoiceMode('file')">
+                            <span>오디오 파일 (Voiceover)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="voiceFileSection"
+                    style="display: none; margin-bottom: 1rem; padding: 0.75rem; background: var(--color-bg-secondary); border-radius: 6px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <label style="font-weight: 600; font-size: 0.9rem;">오디오 파일 선택</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button type="button" class="btn-xs" onclick="toggleAllCheckboxes('voiceFileList', true)">전체
+                                선택</button>
+                            <button type="button" class="btn-xs"
+                                onclick="toggleAllCheckboxes('voiceFileList', false)">해제</button>
+                            <button type="button" onclick="refreshVoiceFiles(this)"
+                                style="background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0.2rem; line-height: 1;"
+                                title="목록 새로고침">🔄</button>
+                        </div>
+                    </div>
+
+                    <div id="voiceFileList"
+                        style="width: 100%; height: 150px; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 4px; overflow-y: auto; background: var(--color-bg-primary);">
+                        <!-- JS populate -->
+                        <div class="empty-message"
+                            style="color: var(--color-gray-500); text-align: center; padding: 1rem;">오디오 파일 로딩 중...
+                        </div>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--color-gray-500); margin-top: 0.25rem;">
+                        * 선택한 파일 개수만큼 영상이 생성됩니다.
+                    </p>
+                </div>
+
+                <div id="ttsEmotionSection" style="margin-bottom: 0.5rem;">
+                    <label
+                        style="font-weight: 600; color: var(--color-gray-700); margin-bottom: 0.25rem; display: block;">AI
+                        목소리 선택</label>
+                    <select id="singleEmotion" class="form-select"
+                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 6px;">
+                        <option value="random">Random (Default - 랜덤 선택)</option>
+                        <option value="mYk0rAapHek2oTw18z8x">Voice 1 (남성 - 차분함)</option>
+                        <option value="4JJwo477JUAx3HV0T7n7">Voice 2 (여성 - 밝음)</option>
+                        <option value="QPFsEL6IBxlT15xfiD6C">Voice 3 (남성 - 신뢰)</option>
+                        <option value="uyVNoMrnUku1dZyVEXwD">Voice 4 (여성 - 차분함)</option>
+                    </select>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-top: 0.75rem;">
+                    <div style="grid-column: span 2;">
+                        <input type="hidden" id="singleFolder" value="ai-videos">
+
+                        <div style="display: flex; flex-direction: column; margin-bottom: 0.5rem;">
+                            <label
+                                style="font-weight: 600; color: var(--color-gray-700); display: flex; justify-content: space-between; align-items: center;">
+                                <span>영상 설정</span>
+                                <span style="font-size: 0.7rem; color: var(--color-gray-500); font-weight: normal;">📁
+                                    Output 팩토리 폴더 사용</span>
+                            </label>
+                        </div>
+
+                        <!-- Video File Selection List -->
+                        <div id="videoFileSection"
+                            style="display: block; padding: 0.75rem; background: var(--color-bg-secondary); border-radius: 6px; border: 1px solid var(--color-gray-200); margin-bottom: 0.5rem;">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                                <label style="font-weight: 600; font-size: 0.85rem;">영상 목록</label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button type="button" class="btn-xs"
+                                        onclick="toggleAllCheckboxes('videoFileList', true)">전체 선택</button>
+                                    <button type="button" class="btn-xs"
+                                        onclick="toggleAllCheckboxes('videoFileList', false)">해제</button>
+                                    <button type="button" onclick="refreshVideoFiles(this)"
+                                        style="background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 0.2rem; line-height: 1;"
+                                        title="목록 새로고침">🔄</button>
+                                </div>
+                            </div>
+
+                            <div id="videoFileList"
+                                style="width: 100%; height: 200px; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 4px; overflow-y: auto; background: var(--color-bg-primary);">
+                                <!-- JS populate -->
+                                <div class="empty-message"
+                                    style="color: var(--color-gray-500); text-align: center; padding: 1rem;">
+                                    <div style="margin-bottom: 0.5rem;">📂</div>
+                                    <div>폴더를 선택해주세요</div>
+                                    <div style="font-size: 0.7rem; margin-top: 0.5rem; color: var(--color-gray-400);">
+                                        또는 AI 동영상 숏폼 생성기에서<br>
+                                        영상을 드래그 앤 드롭으로 업로드하세요
+                                    </div>
+                                </div>
+                            </div>
+                            <p style="font-size: 0.75rem; color: var(--color-gray-500); margin-top: 0.3rem;">
+                                💡 체크박스로 원하는 영상을 선택하세요 (미선택 시 랜덤)
+                            </p>
+                        </div>
+                    </div>
+                    <div>
+                        <label>배경음악</label>
+                        <input type="hidden" id="singleMusic" class="music-select" value="">
+                        <button type="button" onclick="openMusicPreviewModal()" id="musicSelectBtn"
+                            style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; background: var(--color-bg-tertiary); color: var(--color-gray-900); font-size: 0.85rem; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                            <span id="musicSelectText">없음</span>
+                            <span style="color: var(--color-gray-400);">▼</span>
+                        </button>
+                    </div>
+                    <div>
+                        <label>배경 화면</label>
+                        <input type="hidden" id="singleTemplate" class="template-select" value="">
+                        <button type="button" onclick="openTemplatePreviewModal()" id="templateSelectBtn"
+                            style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; background: var(--color-bg-tertiary); color: var(--color-gray-900); font-size: 0.85rem; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                            <span id="templateSelectText">없음</span>
+                            <span style="color: var(--color-gray-400);">▼</span>
+                        </button>
+                    </div>
+                    <div>
+                        <label>엔딩 영상</label>
+                        <input type="hidden" id="singleOutro" class="outro-select" value="">
+                        <button type="button" onclick="openOutroPreviewModal()" id="outroSelectBtn"
+                            style="width: 100%; padding: 0.6rem 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; background: var(--color-bg-tertiary); color: var(--color-gray-900); font-size: 0.85rem; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                            <span id="outroSelectText">없음</span>
+                            <span style="color: var(--color-gray-400);">▼</span>
+                        </button>
+                    </div>
+                    <div>
+                        <label>영상 개수</label>
+                        <input type="number" id="singleVideoCount" min="1" max="10" value="1">
+                        <div style="margin-top: 0.5rem; display: flex; align-items: center;">
+                            <input type="checkbox" id="singleIncludeTitle" style="margin-right: 0.5rem;">
+                            <label for="singleIncludeTitle" style="font-size: 0.85rem; cursor: pointer;">영상에 제목
+                                포함하기</label>
+                        </div>
+                        <div style="margin-top: 0.3rem; display: flex; align-items: center;">
+                            <input type="checkbox" id="singleVideoFilter" style="margin-right: 0.5rem;">
+                            <label for="singleVideoFilter" style="font-size: 0.85rem; cursor: pointer;">영상 필터 (서양식
+                                감성)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary btn-block" id="singleGenerateBtn" style="margin-top: 1rem;">
+                    <span id="singleGenerateBtnText">🎬 숏폼 생성</span>
+                    <span class="loading" id="singleGenerateLoading" style="display: none;"></span>
+                </button>
+                <button class="btn btn-success btn-block" id="singleOpenFolderBtn" style="margin-top: 0.5rem;"
+                    onclick="openResultFolder()">
+                    📂 결과 폴더 열기
+                </button>
+            </div>
+        </div><!-- main-row 끝 -->
+
+        <!-- 여러개 생성 (접힘) -->
+        <div class="section">
+            <h2 class="section-title batch-toggle" id="batchToggle" onclick="toggleBatchSection()"
+                style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <span>여러개 생성</span>
+                <span id="batchToggleIcon" style="font-size: 0.9rem; color: var(--color-gray-500);">▼ 펼치기</span>
+            </h2>
+
+            <div id="batchContent" style="display: none;">
+                <div class="batch-grid" id="batchGrid"></div>
+
+                <button class="btn btn-primary btn-block" id="generateAllBtn" style="margin-top: 1.5rem;">
+                    <span id="generateBtnText">전체 생성하기</span>
+                    <span class="loading" id="generateLoading" style="display: none;"></span>
+                </button>
+
+                <div id="batchStatus" class="status-container"
+                    style="display: none; margin-top: 1rem; padding: 1rem; background: var(--color-bg-secondary); border-radius: 8px;">
+                    <div id="batchStatusMessages" style="color: var(--color-gray-600); font-size: 0.9rem;"></div>
+                </div>
+
+                <div id="batchResults" style="display: none; margin-top: 1.5rem;">
+                    <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--color-gray-800); margin-bottom: 1rem;">
+                        생성된 영상</h3>
+                    <div id="batchResultsGrid" class="batch-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 대본 편집 모달 -->
+    <div id="scriptEditModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>✨ AI 생성 대본</h3>
+                <button class="modal-close" onclick="closeScriptEditModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 1rem;">
+                <p
+                    style="font-size: 0.8rem; color: var(--color-gray-500); margin-bottom: 1rem; background: #FEF3C7; padding: 0.5rem; border-radius: 6px; color: #92400E;">
+                    💡 수정하고 싶은 부분을 직접 고쳐주세요!
+                </p>
+
+                <div style="margin-bottom: 1rem;">
+                    <label
+                        style="font-size: 0.85rem; font-weight: 600; color: var(--color-gray-700); margin-bottom: 0.25rem; display: block;">대본
+                        내용</label>
+                    <textarea id="editScript"
+                        style="width: 100%; min-height: 150px; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.9rem; line-height: 1.6; resize: vertical;"></textarea>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label
+                        style="font-size: 0.85rem; font-weight: 600; color: var(--color-gray-700); margin-bottom: 0.25rem; display: block;">영상
+                        제목</label>
+                    <input type="text" id="editTitle"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.9rem;">
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label
+                        style="font-size: 0.85rem; font-weight: 600; color: var(--color-gray-700); margin-bottom: 0.25rem; display: block;">영상
+                        설명 & 해시태그</label>
+                    <textarea id="editDescription"
+                        style="width: 100%; min-height: 60px; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.9rem; resize: vertical;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" onclick="regenerateScript()"
+                        style="flex: 1; padding: 0.75rem; background: var(--color-bg-tertiary); color: var(--color-gray-700); border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 500;">
+                        🔄 다시 생성
+                    </button>
+                    <button type="button" onclick="applyEditedScript()"
+                        style="flex: 2; padding: 0.75rem; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600;">
+                        ✅ 이대로 적용하기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* 프롬프트 예시 스타일 */
+        .prompt-example {
+            padding: 0.35rem 0.6rem;
+            border: 1px solid var(--color-gray-300);
+            background: var(--color-bg-secondary);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: var(--color-gray-600);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .prompt-example:hover {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-primary);
+        }
+
+        /* 카테고리 탭 스타일 */
+        .category-tab {
+            padding: 0.4rem 0.75rem;
+            border: 1px solid var(--color-gray-300);
+            background: var(--color-bg-secondary);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--color-gray-600);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .category-tab:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .category-tab.active {
+            border-color: var(--color-primary);
+            background: var(--color-primary);
+            color: white;
+        }
+
+        /* 테마 버튼 스타일 */
+        .theme-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--color-gray-300);
+            background: var(--color-bg-tertiary);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--color-gray-600);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .theme-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .theme-btn.active {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-primary);
+        }
+
+        .example-card {
+            padding: 0.75rem;
+            border: 1px solid var(--color-gray-200);
+            border-radius: 8px;
+            background: var(--color-bg-tertiary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .example-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+        }
+
+        .example-card-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-gray-800);
+            margin-bottom: 0.25rem;
+        }
+
+        .example-card-preview {
+            font-size: 0.75rem;
+            color: var(--color-gray-500);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .floating-menu {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+        }
+
+        .floating-menu-toggle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-primary) 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-menu-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .floating-menu-toggle svg {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .floating-menu.open .menu-icon {
+            display: none;
+        }
+
+        .floating-menu.open .close-icon {
+            display: block !important;
+        }
+
+        .floating-menu-items {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-end;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-menu.open .floating-menu-items {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .floating-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            transform: translateX(20px);
+            opacity: 0;
+        }
+
+        .floating-menu.open .floating-menu-item {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(1) {
+            transition-delay: 0.05s;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(2) {
+            transition-delay: 0.1s;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(3) {
+            transition-delay: 0.15s;
+        }
+
+        .floating-menu-item:hover {
+            transform: translateX(-4px) !important;
+        }
+
+        .floating-menu-item svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .float-guide {
+            background: var(--color-primary);
+            color: white;
+            box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .float-telegram {
+            background: #0088cc;
+            color: white;
+            box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
+        }
+
+        .float-intro {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .floating-menu-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 99;
+            display: none;
+        }
+
+        .floating-menu.open+.floating-menu-backdrop {
+            display: block;
+        }
+    </style>
+
+    <!-- Floating Menu -->
+    <div class="floating-menu" id="floatingMenu">
+        <div class="floating-menu-items">
+            <button class="floating-menu-item float-guide" onclick="openGuideModal(); toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                <span>사용법</span>
+            </button>
+            <a href="https://t.me/shorts_factory" target="_blank" class="floating-menu-item float-telegram"
+                onclick="toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+                <span>공지채널</span>
+            </a>
+            <a href="https://shorts-factory-landing.web.app" target="_blank" class="floating-menu-item float-intro"
+                onclick="toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                <span>서비스 소개</span>
+            </a>
+        </div>
+        <button class="floating-menu-toggle" onclick="toggleFloatingMenu()" title="도움말">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" class="menu-icon">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" class="close-icon" style="display:none;">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        </button>
+    </div>
+    <div class="floating-menu-backdrop" onclick="toggleFloatingMenu()"></div>
+    <script>
+        function toggleFloatingMenu() {
+            document.getElementById('floatingMenu').classList.toggle('open');
+        }
+    </script>
+
+    <!-- Template Preview Modal -->
+    <div id="templatePreviewModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>🖼️ 배경 화면 미리보기</h3>
+                <button class="modal-close" onclick="closeTemplatePreviewModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="templatePreviewGrid"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                </div>
+                <p id="templateEmptyMsg"
+                    style="text-align: center; color: var(--color-gray-500); padding: 2rem; display: none;">템플릿이
+                    없습니다.
+                    template 폴더에 이미지를 추가해주세요.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Folder Preview Modal -->
+    <div id="folderPreviewModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+                <h3 style="margin: 0;">📁 영상 소스 선택</h3>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <button onclick="handleAddSourceClick()"
+                        style="background: var(--color-primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.1rem;">➕</span>
+                        <span>소스 추가하기</span>
+                    </button>
+                    <button class="modal-close" onclick="closeFolderPreviewModal()">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div id="folderPreviewGrid"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                </div>
+                <p id="folderEmptyMsg"
+                    style="text-align: center; color: var(--color-gray-500); padding: 2rem; display: none;">영상 소스
+                    폴더가
+                    없습니다. videos 폴더에 하위 폴더를 추가해주세요.</p>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="folderPickerInput" webkitdirectory directory multiple style="display: none;">
+
+    <!-- Modal for adding local folder path -->
+    <div id="addFolderPathModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>📂 로컬 폴더 연결</h3>
+                <button class="modal-close" onclick="closeAddFolderPathModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 0.75rem;">
+                    <button type="button" onclick="openFolderPickerFromModal()"
+                        style="width: 100%; padding: 0.6rem 0.8rem; border: 1px solid var(--color-gray-300); border-radius: 6px; background: var(--color-bg-secondary); color: var(--color-gray-800); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+                        <span style="font-size: 1.1rem;">📂</span>
+                        <span>파일 탐색기로 폴더 선택</span>
+                    </button>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label
+                        style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--color-gray-700);">폴더
+                        이름</label>
+                    <input type="text" id="newFolderName" placeholder="예: 요리, 게임"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.9rem;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label
+                        style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--color-gray-700);">로컬
+                        폴더 경로</label>
+                    <input type="text" id="newFolderPath" placeholder="예: /Users/name/Videos/요리"
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.9rem;">
+                    <p style="font-size: 0.8rem; color: var(--color-gray-500); margin-top: 0.5rem;">
+                        💡 비디오 파일들이 들어있는 폴더의 절대 경로를 입력하세요 (파일은 업로드되지 않고 경로만 저장됩니다)
+                    </p>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button onclick="closeAddFolderPathModal()"
+                        style="flex: 1; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; background: white; color: var(--color-gray-700); font-weight: 600; cursor: pointer;">취소</button>
+                    <button onclick="saveFolderPath()"
+                        style="flex: 1; padding: 0.75rem; border: none; border-radius: 6px; background: var(--color-primary); color: white; font-weight: 600; cursor: pointer;">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Music Preview Modal -->
+    <div id="musicPreviewModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>🎵 배경음악 선택</h3>
+                <button class="modal-close" onclick="closeMusicPreviewModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 1rem;">
+                    <select id="modalMusicFolderSelect"
+                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 6px;"
+                        onchange="loadMusicFilesForModal(this.value)">
+                        <option value="">폴더 선택...</option>
+                    </select>
+                </div>
+                <div id="musicPreviewGrid"
+                    style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto;">
+                </div>
+                <p id="musicEmptyMsg"
+                    style="text-align: center; color: var(--color-gray-500); padding: 2rem; display: none;">음악 파일이 없습니다.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outro Preview Modal -->
+    <div id="outroPreviewModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>🎬 엔딩 영상 선택</h3>
+                <button class="modal-close" onclick="closeOutroPreviewModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="outroPreviewGrid"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                </div>
+                <p id="outroEmptyMsg"
+                    style="text-align: center; color: var(--color-gray-500); padding: 2rem; display: none;">엔딩 영상이
+                    없습니다.
+                    outro 폴더에 영상 파일을 추가해주세요.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>API 설정</h2>
+                <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- API 키 발급 가이드 -->
+                <div
+                    style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--color-gray-900); margin-bottom: 0.75rem; font-size: 0.95rem;">🔑 302.AI
+                        API
+                        키 준비</h4>
+                    <p
+                        style="color: var(--color-gray-600); font-size: 0.85rem; line-height: 1.6; margin-bottom: 0.75rem;">
+                        • 하나의 키로 모든 AI 모델 사용<br>
+                        • GPT, Claude, Gemini, DALL-E, Whisper 등 지원<br>
+                        • 사용한 만큼만 결제 (종량제)
+                    </p>
+                    <p style="color: var(--color-gray-500); font-size: 0.8rem; margin: 0;">
+                        API 키는 <a href="https://dash.302.ai/apis/markets" target="_blank"
+                            style="color: var(--color-primary);">302.AI 대시보드</a>에서 발급하세요.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label for="ai302ApiKey">302.AI API Key</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="password" id="ai302ApiKey" placeholder="sk-..." style="flex: 1;">
+                        <button class="btn btn-sm" onclick="toggleKeyVisibility('ai302ApiKey')">👁️</button>
+                    </div>
+                    <small style="color: var(--color-gray-500);">모든 AI 기능(대본 생성, 이미지 생성, 자막 생성 등)에 사용됩니다.</small>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button class="btn" onclick="test302AIConnection()" id="test302AIBtn">302.AI
+                                테스트</button>
+                            <span id="ai302TestResult" style="margin-left: 0.5rem;"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 테마 설정 -->
+                <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--color-gray-200);">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <label style="font-weight: 600; color: var(--color-gray-900);">화면 테마</label>
+                            <p style="font-size: 0.8rem; color: var(--color-gray-500); margin-top: 0.25rem;">라이트/다크
+                                모드를
+                                선택하세요</p>
+                        </div>
+                        <button onclick="toggleTheme()" id="themeToggleBtn"
+                            style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; background: var(--color-bg-tertiary); border: 1px solid var(--color-gray-300); border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: var(--color-gray-700); font-weight: 500;">
+                            <span id="themeIcon">🌙 다크</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSettingsModal()">취소</button>
+                <button class="btn btn-primary" onclick="saveSettings()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 대본 생성기 예시 데이터
+        const scriptExamples = {
+            money: [
+                { title: "부자들의 아침 5시 루틴", script: { script: "부자들은 왜 새벽 5시에 일어날까요?\n그냥 부지런해서가 아니에요.\n아침에 뇌가 가장 맑을 때 중요한 결정을 내리기 위해서예요.\n워렌 버핏은 매일 아침 5시에 일어나서 신문 5개를 읽어요.\n여러분도 내일부터 30분만 일찍 일어나보세요.\n그 30분이 여러분의 인생을 바꿀 수 있어요.\n구독하고 좋아요 눌러주세요!", title: "부자들의 아침 5시 루틴", description: "부자들이 새벽에 일어나는 진짜 이유 #부자습관 #아침루틴 #재테크" } },
+                { title: "월급 200으로 1억 모으는 법", script: { script: "월급 200만원으로 1억 모으는 게 가능할까요?\n결론부터 말하면 5년이면 됩니다.\n비결은 간단해요.\n첫째, 월급의 50%를 무조건 저축하세요.\n둘째, 적금이 아니라 ETF에 넣으세요.\n셋째, 보너스는 100% 투자하세요.\n지금 바로 시작하세요!", title: "월급 200으로 1억 모으는 법", description: "현실적인 1억 모으기 방법 #재테크 #월급관리 #ETF투자" } }
+            ],
+            motivation: [
+                { title: "포기하고 싶을 때 보세요", script: { script: "지금 포기하고 싶으신가요?\n잠깐만요.\n마윈은 30번 취업에 떨어졌어요.\n스티브 잡스는 자기가 만든 회사에서 쫓겨났어요.\n그들의 공통점이 뭔지 아세요?\n포기하지 않았다는 거예요.\n실패는 끝이 아니라 시작이에요.\n오늘 힘드셨죠?\n그래도 내일 다시 도전하세요!", title: "포기하고 싶을 때 꼭 보세요", description: "성공한 사람들도 수없이 실패했습니다 #동기부여 #힘내세요" } },
+                { title: "1년 뒤 후회하지 않으려면", script: { script: "1년 전 시작했으면 지금쯤 어땠을까요?\n운동 시작했으면 몸이 바뀌어 있을 거예요.\n공부 시작했으면 자격증 땄을 거예요.\n근데 1년 전 시작 안 했잖아요.\n그럼 지금이라도 시작하세요.\n1년 뒤의 내가 고마워할 거예요!", title: "1년 뒤 후회하지 않으려면", description: "지금 시작하세요 #동기부여 #시작 #1년후" } }
+            ],
+            selfdev: [
+                { title: "하루 1%만 성장하면", script: { script: "하루에 1%만 성장하면 1년 뒤에 어떻게 될까요?\n1.01의 365승은 37.78이에요.\n1년 만에 37배 성장한다는 뜻이에요.\n매일 책 10분 읽기, 운동 10분 하기.\n이게 쌓이면 인생이 바뀌어요.\n오늘의 1%를 시작하세요!", title: "하루 1% 성장의 기적", description: "매일 조금씩 성장하면 1년 뒤 37배 #자기계발 #1퍼센트법칙" } },
+                { title: "독서가 인생을 바꾸는 이유", script: { script: "왜 성공한 사람들은 다 책을 읽을까요?\n빌 게이츠는 1년에 50권을 읽어요.\n책은 다른 사람의 수십 년 경험을 몇 시간 만에 얻을 수 있는 유일한 방법이에요.\n이번 달에 책 한 권만 읽어보세요!", title: "성공한 사람들이 책 읽는 이유", description: "독서는 가장 저렴한 자기투자 #독서 #자기계발" } }
+            ],
+            love: [
+                { title: "좋아하는 사람이 보내는 신호", script: { script: "그 사람이 나를 좋아하는지 모르겠다고요?\n확실한 신호 3가지 알려드릴게요.\n첫째, 별거 아닌 말도 기억해요.\n둘째, 연락이 늦어지면 이유를 설명해요.\n셋째, 미래 얘기에 나를 포함해요.\n세 개 중 두 개 이상이면 확률 높아요!", title: "좋아하는 사람이 보내는 신호 3가지", description: "이 신호가 보이면 고백 준비하세요 #연애 #호감신호" } },
+                { title: "이런 사람 연락하면 무시하세요", script: { script: "전 애인한테 갑자기 연락 왔나요?\n무시해야 하는 경우 알려드릴게요.\n첫째, 새벽에 연락하는 사람.\n둘째, 잘 지내냐고만 묻는 사람.\n셋째, SNS 스토리에만 반응하는 사람.\n진짜 돌아오고 싶은 사람은 행동으로 보여줘요.", title: "전 애인 연락, 무시해야 하는 경우", description: "이런 연락은 무시하세요 #연애 #전애인" } }
+            ],
+            horror: [
+                { title: "실화 기반 무서운 이야기", script: { script: "이건 실화예요.\n어느 날 밤, 자취방에서 혼자 자고 있는데 누군가 이불을 잡아당기는 느낌이 들었대요.\n눈을 뜨니까 방 구석에 뭔가 있는 거예요.\n사람인데 얼굴이 없었대요.\n그 존재가 천천히 다가오더니 귓속말로 말했대요.\n나 항상 여기 있었어.", title: "친구가 겪은 실화 괴담", description: "실제로 겪은 소름 돋는 이야기 #공포 #괴담 #실화" } },
+                { title: "절대 혼자 듣지 마세요", script: { script: "이 영상 혼자 보고 계신 분?\n뒤 돌아보지 마세요.\n어떤 사람이 밤마다 같은 꿈을 꿨대요.\n꿈에서 누군가가 계속 쫓아오는 거예요.\n근데 어느 날, 그 꿈에서 쫓아오던 존재가 말했대요.\n이건 꿈이 아니야.\n아직도 혼자 계신가요?", title: "절대 혼자 듣지 마세요", description: "혼자 있을 때 듣지 마세요 #공포 #호러" } }
+            ],
+            tips: [
+                { title: "아이폰 숨겨진 기능", script: { script: "아이폰 유저인데 이거 모르세요?\n숨겨진 기능 알려드릴게요.\n첫째, 뒤를 두 번 탭하면 스크린샷 찍을 수 있어요.\n둘째, 계산기 숫자 잘못 입력했을 때, 화면 밀면 지워져요.\n셋째, 카메라로 텍스트 번역할 수 있어요.\n몰랐던 기능 있으면 좋아요!", title: "아이폰 숨겨진 기능 3가지", description: "이거 모르면 아이폰 반만 쓰는 거예요 #아이폰 #꿀팁" } },
+                { title: "마트에서 돈 아끼는 법", script: { script: "마트 갈 때마다 10만원 넘게 쓰시나요?\n돈 아끼는 법 알려드릴게요.\n첫째, 배고플 때 가지 마세요.\n둘째, 눈높이 제품 피하세요. 비싼 걸 눈높이에 둬요.\n셋째, 마감 세일 노리세요. 저녁 8시 이후에 가면 할인해요!", title: "마트에서 돈 아끼는 방법", description: "장볼 때 3만원 아끼는 꿀팁 #꿀팁 #마트 #절약" } }
+            ],
+            facts: [
+                { title: "과학자도 못 푸는 미스터리", script: { script: "과학자들도 아직 못 푼 미스터리 알려드릴게요.\n첫째, 하품은 왜 전염될까요? 아직 아무도 몰라요.\n둘째, 고양이가 왜 가르랑거리는지 몰라요.\n셋째, 우주가 왜 존재하는지 몰라요.\n인류 최고의 과학자들도 못 푸는 문제들이에요.", title: "과학자도 못 푸는 미스터리 3가지", description: "아직 아무도 못 푼 미스터리 #과학 #미스터리 #신기한사실" } },
+                { title: "죽기 전에 알아야 할 상식", script: { script: "몰랐으면 평생 모를 뻔한 상식들이에요.\n첫째, 금은 먹을 수 있어요.\n둘째, 바나나는 베리예요. 딸기는 베리가 아니에요.\n셋째, 인간 뇌는 60%가 지방이에요.\n넷째, 돌고래는 잘 때 눈 하나만 감아요.\n몰랐던 거 있으면 좋아요!", title: "평생 몰랐던 상식 4가지", description: "알면 자랑하고 싶은 신기한 상식 #상식 #팩트" } }
+            ],
+            health: [
+                { title: "잠을 잘 못 자는 진짜 이유", script: { script: "밤에 잠이 안 오시나요?\n이유 알려드릴게요.\n첫째, 자기 전에 핸드폰 봐요. 블루라이트가 멜라토닌을 억제해요.\n둘째, 침실이 너무 밝아요.\n셋째, 자기 전에 물 많이 마셔요.\n오늘부터 자기 1시간 전에 핸드폰 끄세요!", title: "잠을 못 자는 진짜 이유", description: "이것만 바꿔도 숙면 가능 #수면 #불면증 #건강" } },
+                { title: "아침에 절대 하면 안 되는 것", script: { script: "아침에 일어나자마자 하면 안 되는 거 아세요?\n첫째, 일어나자마자 커피 마시기. 2시간 뒤에 마시세요.\n둘째, 일어나자마자 핸드폰 보기. 스트레스 호르몬이 급증해요.\n셋째, 격한 운동하기. 가벼운 스트레칭부터 하세요!", title: "아침에 절대 하면 안 되는 행동", description: "이 습관들이 하루를 망쳐요 #건강 #아침루틴" } }
+            ],
+            korea: [
+                { title: "외국인들이 놀란 한국 기술", script: { script: "외국인들이 한국 와서 충격받은 것들 알려드릴게요.\n첫째, 배달 문화. 산꼭대기까지 배달돼요.\n둘째, 인터넷 속도. 세계 1위예요.\n셋째, 의료 시스템. 당일 진료 가능해요. 미국은 3개월 기다려요.\n한국인으로 태어난 거 복이에요!", title: "외국인이 충격받은 한국 문화", description: "한국인은 모르는 한국의 장점 #국뽕 #한국 #자부심" } },
+                { title: "한국이 세계 1위인 것들", script: { script: "한국이 세계 1위인 거 아세요?\n인터넷 속도 1위, 조선 산업 1위, 반도체 메모리 1위, 화장품 수출 1위, K-pop도 빌보드 1위.\n대한민국 국민인 게 자랑스럽지 않으세요?\n구독 좋아요 부탁해요!", title: "한국이 세계 1위인 것들", description: "대한민국이 자랑스러워지는 영상 #국뽕 #한국1위 #대한민국" } },
+                { title: "외국에서 한국인 대우", script: { script: "해외 나가면 한국인 대우가 달라요.\n여권 파워 세계 3위. 190개국 무비자.\n한국 기업 진출한 나라에서는 한국인이면 대출도 잘 나와요.\nK-컬쳐 덕분에 한국인이라면 호감도도 높아요.\n한국인인 거 자랑스럽죠?", title: "해외에서 한국인 대우", description: "한국 여권이 대단한 이유 #국뽕 #한국여권 #해외" } }
+            ],
+            international: [
+                { title: "국제커플 현실", script: { script: "국제커플 현실 알려드릴게요.\n처음엔 로맨틱해요.\n근데 문화 차이가 진짜 힘들어요.\n명절에 어디로 갈지, 아이 교육은 어떻게 할지.\n근데 서로 다르니까 오히려 더 대화를 많이 해요.\n그게 비결이에요.", title: "국제커플의 현실적인 이야기", description: "국제커플이 말하는 현실 #국제커플 #국결 #연애" } },
+                { title: "외국인 남친이 놀란 한국 문화", script: { script: "외국인 남자친구가 한국 와서 놀란 것들이에요.\n첫째, 빨리빨리 문화. 뭐든 빨라요.\n둘째, 스킨십 문화. 친구끼리 팔짱 끼는 거 신기해했어요.\n셋째, 밤문화. 새벽까지 놀 수 있다는 게 충격이래요.", title: "외국인 남친이 충격받은 한국", description: "국제커플이 말하는 문화 차이 #국제커플 #문화차이" } },
+                { title: "국제결혼 장단점", script: { script: "국제결혼 5년차가 말하는 장단점이에요.\n장점은 두 가지 문화를 경험해요. 아이가 이중언어 가능해요.\n단점은 가족 행사가 힘들어요. 명절마다 비행기 타야 해요.\n근데 사랑이면 다 극복 가능해요!", title: "국제결혼 5년차의 솔직한 이야기", description: "국제결혼 현실적인 장단점 #국제결혼 #국결 #결혼" } }
+            ]
+        };
+        let currentTheme = 'money';
+        let currentScriptMode = 'manual'; // 'manual' or 'auto'
+
+        // 테마별 주제 예시 데이터
+        const topicExamples = {
+            money: [
+                { display: "부자들이 안하는 습관", full: "부자들이 절대 안 하는 습관 5가지" },
+                { display: "월급 200 1억 모으기", full: "월급 200으로 1억 모으는 현실적인 방법" },
+                { display: "20대 재테크 시작법", full: "20대가 꼭 알아야 할 재테크 시작법" },
+                { display: "부자 아침 루틴", full: "부자들의 아침 5시 루틴" },
+                { display: "돈 모으는 심리학", full: "돈이 저절로 모이는 심리학적 방법" }
+            ],
+            motivation: [
+                { display: "포기하고 싶을 때", full: "포기하고 싶을 때 보는 성공한 사람들 실패담" },
+                { display: "1년 뒤 후회하지 않으려면", full: "1년 뒤 후회하지 않으려면 지금 해야 할 것" },
+                { display: "성공한 사람 공통점", full: "성공한 사람들의 숨겨진 공통점" },
+                { display: "실패에서 배우기", full: "실패를 성공으로 바꾸는 마인드셋" },
+                { display: "매일 5분 습관", full: "인생 바꾸는 매일 5분 습관" }
+            ],
+            selfdev: [
+                { display: "하루 1% 성장법", full: "하루 1%만 성장하면 1년 뒤 37배" },
+                { display: "독서 습관 만들기", full: "독서가 인생을 바꾸는 이유" },
+                { display: "생산성 높이는 법", full: "하루 2배 더 일하는 생산성 비법" },
+                { display: "성공하는 아침 루틴", full: "성공하는 사람들의 아침 루틴" },
+                { display: "멀티태스킹 진실", full: "멀티태스킹이 뇌를 망치는 이유" }
+            ],
+            love: [
+                { display: "호감 신호 3가지", full: "좋아하는 사람이 보내는 신호 3가지" },
+                { display: "연락 무시해야 할 때", full: "전 애인 연락, 무시해야 하는 경우" },
+                { display: "첫 데이트 실수", full: "첫 데이트에서 절대 하면 안 되는 것" },
+                { display: "오래가는 연애 비결", full: "10년 연애 커플의 비결" },
+                { display: "밀당 심리학", full: "밀당이 효과있는 심리학적 이유" }
+            ],
+            horror: [
+                { display: "실화 공포 이야기", full: "실제로 겪은 소름돋는 귀신 이야기" },
+                { display: "혼자 듣지 마세요", full: "절대 혼자 듣지 마세요" },
+                { display: "폐병원 탐방기", full: "폐병원에서 있었던 소름끼치는 일" },
+                { display: "이사 후 이상한 일", full: "이사 온 집에서 일어난 이상한 일" },
+                { display: "귀신 본 사람 특징", full: "귀신 잘 보는 사람들의 공통점" }
+            ],
+            tips: [
+                { display: "아이폰 숨은 기능", full: "아이폰 유저 99%가 모르는 숨은 기능" },
+                { display: "마트 돈 아끼는 법", full: "마트에서 3만원 아끼는 방법" },
+                { display: "비행기 좌석 꿀팁", full: "비행기 좋은 좌석 고르는 방법" },
+                { display: "면접 합격 비법", full: "면접관이 뽑고 싶은 사람 특징" },
+                { display: "유튜브 알고리즘", full: "유튜브 알고리즘 뚫는 방법" }
+            ],
+            facts: [
+                { display: "과학 미스터리", full: "과학자도 못 푸는 미스터리 3가지" },
+                { display: "평생 몰랐던 상식", full: "죽기 전에 알아야 할 상식 4가지" },
+                { display: "인체의 신기한 비밀", full: "우리 몸의 놀라운 비밀들" },
+                { display: "잘못 알려진 상식", full: "우리가 잘못 알고 있는 상식" },
+                { display: "우주의 미스터리", full: "우주에서 발견된 이상한 것들" }
+            ],
+            health: [
+                { display: "잠 못 자는 이유", full: "잠을 잘 못 자는 진짜 이유" },
+                { display: "아침에 하면 안되는 것", full: "아침에 절대 하면 안 되는 행동" },
+                { display: "물 마시는 타이밍", full: "물 마시는 최적의 타이밍" },
+                { display: "살 빠지는 습관", full: "살이 저절로 빠지는 습관 5가지" },
+                { display: "피로 해소법", full: "만성 피로 해소하는 방법" }
+            ],
+            korea: [
+                { display: "외국인이 놀란 한국", full: "외국인들이 한국 와서 충격받은 것들" },
+                { display: "한국 세계 1위", full: "한국이 세계 1위인 것들" },
+                { display: "해외 한국인 대우", full: "해외에서 한국인이 받는 대우" },
+                { display: "K-컬쳐 위상", full: "전 세계가 주목하는 K-컬쳐" },
+                { display: "한국 기술력", full: "세계가 인정한 한국의 기술력" }
+            ],
+            international: [
+                { display: "일녀가 한남 좋아하는 이유", full: "일본 여자가 한국 남자에게 빠지는 이유" },
+                { display: "한녀 vs 일녀 데이트비용", full: "한국 여자 vs 일본 여자 데이트 비용 차이" },
+                { display: "외국인 여친 적응기", full: "외국인 여친이 한국 생활에서 힘든 점" },
+                { display: "국제커플 문화충돌", full: "국제커플 문화 차이로 싸우는 이유" },
+                { display: "국제결혼 현실", full: "국제결혼 5년차가 말하는 현실" }
+            ]
+        };
+
+        // 모든 테마에서 대본 예시 모으기
+        const allScriptExamples = [];
+        Object.keys(scriptExamples).forEach(theme => {
+            scriptExamples[theme].forEach(ex => {
+                allScriptExamples.push({ ...ex, theme });
+            });
+        });
+
+        // 카테고리 정보
+        const categoryInfo = {
+            money: { icon: '💰', name: '재테크' },
+            motivation: { icon: '🔥', name: '동기부여' },
+            selfdev: { icon: '📚', name: '자기계발' },
+            love: { icon: '💕', name: '연애' },
+            horror: { icon: '👻', name: '공포' },
+            tips: { icon: '💡', name: '꿀팁' },
+            facts: { icon: '🌍', name: '상식' },
+            health: { icon: '🏥', name: '건강' },
+            korea: { icon: '🇰🇷', name: '국뽕' },
+            international: { icon: '💑', name: '국제커플' }
+        };
+
+        let currentExampleCategory = 'money';
+
+        // 카테고리 탭 생성
+        function renderCategoryTabs(containerId, activeCategory) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            container.innerHTML = Object.keys(categoryInfo).map(key => {
+                const cat = categoryInfo[key];
+                const isActive = key === activeCategory;
+                return `<span class="category-tab ${isActive ? 'active' : ''}" onclick="selectExampleCategory('${key}')">${cat.icon} ${cat.name}</span>`;
+            }).join('');
+        }
+
+        // 카테고리 선택
+        function selectExampleCategory(category) {
+            currentExampleCategory = category;
+            updateTopicExamples();
+        }
+
+        // 대본 예시 업데이트 - 카테고리별 표시
+        function updateTopicExamples() {
+            // 카테고리 탭 렌더링
+            renderCategoryTabs('promptCategoryTabs', currentExampleCategory);
+            renderCategoryTabs('autoCategoryTabs', currentExampleCategory);
+
+            // 선택된 카테고리의 예시만 표시
+            const examples = scriptExamples[currentExampleCategory] || [];
+            const htmlContent = examples.map((ex, i) => {
+                const globalIndex = allScriptExamples.findIndex(e => e.title === ex.title && e.theme === currentExampleCategory);
+                return `<span class="prompt-example" onclick="applyScriptExample(${globalIndex})">${ex.title}</span>`;
+            }).join('');
+
+            // 수동 모드 예시
+            const manualContainer = document.getElementById('promptExamplesContent');
+            if (manualContainer) manualContainer.innerHTML = htmlContent;
+
+            // 자동 모드 예시
+            const autoContainer = document.getElementById('autoPromptExamplesContent');
+            if (autoContainer) autoContainer.innerHTML = htmlContent;
+        }
+
+        // 대본 예시 적용 - 단일 생성 영역에 바로 넣기
+        function applyScriptExample(index) {
+            if (allScriptExamples[index]) {
+                const ex = allScriptExamples[index];
+                const scriptData = {
+                    script: ex.script.script,
+                    title: ex.script.title,
+                    description: ex.script.description
+                };
+                document.getElementById('singleJson').value = JSON.stringify(scriptData, null, 2);
+                // 예시 닫기
+                document.getElementById('promptExamples').style.display = 'none';
+                document.getElementById('promptExamplesIcon').textContent = '▶';
+                document.getElementById('autoPromptExamples').style.display = 'none';
+                document.getElementById('autoPromptExamplesIcon').textContent = '▶';
+            }
+        }
+
+        // 스크립트 모드 전환
+        function selectScriptMode(mode) {
+            currentScriptMode = mode;
+
+            // 버튼 스타일 변경
+            document.querySelectorAll('.script-mode-btn').forEach(btn => {
+                if (btn.dataset.mode === mode) {
+                    btn.style.background = 'var(--color-primary)';
+                    btn.style.borderColor = 'var(--color-primary)';
+                    btn.style.color = 'white';
+                    btn.style.fontWeight = '600';
+                    btn.classList.add('active');
+                } else {
+                    btn.style.background = 'var(--color-bg-secondary)';
+                    btn.style.borderColor = 'var(--color-gray-300)';
+                    btn.style.color = 'var(--color-gray-700)';
+                    btn.style.fontWeight = '500';
+                    btn.classList.remove('active');
+                }
+            });
+
+            // 콘텐츠 영역 전환
+            const manualContent = document.getElementById('manualModeContent');
+            const autoContent = document.getElementById('autoModeContent');
+
+            if (mode === 'manual') {
+                manualContent.style.display = 'block';
+                autoContent.style.display = 'none';
+                updateManualPrompt();
+            } else {
+                manualContent.style.display = 'none';
+                autoContent.style.display = 'block';
+            }
+        }
+
+        // 테마별 말투 설명
+        const toneDescriptions = {
+            casual: '친근하고 편한 해요체',
+            formal: '정중한 합니다체',
+            info: '정보를 전달하는 딱딱한 문체',
+            hype: '흥분되고 과장된 문체',
+            community: '온라인 커뮤니티 스타일 중립체',
+            rough: '직설적이고 거친 말투',
+            sarcastic: '냉소적이고 비꼬는 말투',
+            cute: '귀엽고 애교있는 말투'
+        };
+
+        // 수동 모드 프롬프트 업데이트
+        function updateManualPrompt() {
+            const content = document.getElementById('manualTopic').value || '[참고할 내용을 붙여넣으세요]';
+            const toneSelect = document.getElementById('manualTone');
+            const tone = toneSelect.value;
+            const toneText = toneSelect.options[toneSelect.selectedIndex].text.replace(/^[^\s]+\s/, '');
+            const toneDesc = toneDescriptions[tone] || toneText;
+
+            const prompt = `아래 내용을 참고해서 유튜브 쇼츠 바이럴 대본을 만들어줘
+
+[참고 내용]
+${content}
+
+[말투]
+${toneDesc}
+
+[바이럴 필수 요소]
+- 첫 문장: 강렬한 훅 (충격적 사실, 궁금증 유발 질문, 반전 멘트)
+- 중간: 숫자/통계 활용, 공감 포인트, "이거 몰랐죠?" 류의 정보
+- 끝: 반전 or 핵심 한 줄 + 자연스러운 구독/좋아요 유도
+
+[조건]
+- 50초~60초 읽을 수 있는 분량 (약 350~400자)
+- 짧은 문장 위주 (한 문장 20자 이내)
+- 참고 내용의 핵심만 뽑아서 쇼츠에 맞게 재구성
+- 시청자가 끝까지 보게 만드는 구성
+
+결과를 아래 JSON 형식으로 만들어줘:
+{
+  "script": "대본 내용",
+  "title": "영상 제목 (호기심 유발, 15자 이내)",
+  "description": "영상 설명\\n줄바꿈으로 구분\\n\\n#해시태그 #태그"
+}`;
+
+            document.getElementById('manualPromptPreview').value = prompt;
+        }
+
+        // 수동 모드 프롬프트 복사
+        function copyManualPrompt(btn) {
+            const prompt = document.getElementById('manualPromptPreview').value;
+            navigator.clipboard.writeText(prompt).then(() => {
+                // const btn = event.target.closest('button');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ 복사 완료!';
+                btn.style.background = 'var(--color-gray-600)';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = 'linear-gradient(135deg, #10B981 0%, #059669 100%)';
+                }, 2000);
+            });
+        }
+
+        // 자동 모드 예시 토글
+        function toggleAutoPromptExamples() {
+            const examples = document.getElementById('autoPromptExamples');
+            const icon = document.getElementById('autoPromptExamplesIcon');
+            if (examples.style.display === 'none') {
+                examples.style.display = 'block';
+                icon.textContent = '▼';
+            } else {
+                examples.style.display = 'none';
+                icon.textContent = '▶';
+            }
+        }
+
+        // 대본 생성기 토글 (요소가 없을 때는 스크립트 중단 방지)
+        const scriptGenToggle = document.getElementById('scriptGenToggle');
+        if (scriptGenToggle) {
+            scriptGenToggle.addEventListener('click', () => {
+                const content = document.getElementById('scriptGenContent');
+                const icon = document.getElementById('scriptGenToggleIcon');
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    icon.textContent = '▲ 접기';
+                    updateExampleScripts();
+                    updateTopicExamples();
+                    updateManualPrompt();
+                } else {
+                    content.style.display = 'none';
+                    icon.textContent = '▼ 펼치기';
+                }
+            });
+        }
+
+        // 테마 선택
+        function selectTheme(theme) {
+            currentTheme = theme;
+            document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.theme-btn[data-theme="${theme}"]`).classList.add('active');
+            updateExampleScripts();
+            updateTopicExamples();
+            updateManualPrompt();
+        }
+
+        // 예시 대본 업데이트
+        function updateExampleScripts() {
+            const container = document.getElementById('exampleScripts');
+            const examples = scriptExamples[currentTheme] || [];
+            container.innerHTML = examples.map((ex, i) => `
+                <div class="example-card" onclick="applyExample(${i})">
+                    <div class="example-card-title">${ex.title}</div>
+                    <div class="example-card-preview">${ex.script.script.substring(0, 60)}...</div>
+                </div>
+            `).join('');
+        }
+
+        // 예시 적용
+        function applyExample(index) {
+            const example = scriptExamples[currentTheme][index];
+            document.getElementById('singleJson').value = JSON.stringify(example.script, null, 2);
+            alert('대본이 적용되었습니다!');
+        }
+
+        // AI로 대본 생성하기
+        let lastGeneratedTopic = '';
+
+        async function generateScriptWithAI() {
+            const topic = document.getElementById('customScriptTopic').value.trim();
+
+            if (!topic) {
+                alert('주제를 입력해주세요!');
+                document.getElementById('customScriptTopic').focus();
+                return;
+            }
+
+            lastGeneratedTopic = topic;
+
+            const btn = document.getElementById('generateScriptBtn');
+            const btnText = document.getElementById('generateScriptBtnText');
+            const loading = document.getElementById('generateScriptLoading');
+
+            // 로딩 상태
+            btn.disabled = true;
+            btnText.textContent = 'AI가 대본 만드는 중...';
+            loading.style.display = 'inline-block';
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const tone = document.getElementById('scriptTone').value;
+                const response = await authFetch('/api/script/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        theme: currentTheme,
+                        topic: topic,
+                        tone: tone
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    // 모달에 대본 표시
+                    showScriptEditModal(result.data);
+                } else {
+                    alert('대본 생성 실패: ' + (result.error || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('Script generation error:', error);
+                alert('대본 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
+            } finally {
+                // 버튼 복구
+                btn.disabled = false;
+                btnText.textContent = '✨ AI가 대본 만들어주기';
+                loading.style.display = 'none';
+            }
+        }
+
+        // 대본 편집 모달 열기
+        function showScriptEditModal(data) {
+            document.getElementById('editScript').value = data.script || '';
+            document.getElementById('editTitle').value = data.title || '';
+            document.getElementById('editDescription').value = data.description || '';
+            document.getElementById('scriptEditModal').style.display = 'flex';
+        }
+
+        // 대본 편집 모달 닫기
+        function closeScriptEditModal() {
+            document.getElementById('scriptEditModal').style.display = 'none';
+        }
+
+        // 편집된 대본 적용
+        function applyEditedScript() {
+            const script = document.getElementById('editScript').value.trim();
+            const title = document.getElementById('editTitle').value.trim();
+            const description = document.getElementById('editDescription').value.trim();
+
+            if (!script) {
+                alert('대본 내용을 입력해주세요!');
+                return;
+            }
+
+            const data = { script, title, description };
+            document.getElementById('singleJson').value = JSON.stringify(data, null, 2);
+
+            closeScriptEditModal();
+
+            // 스크롤 이동
+            document.getElementById('singleJson').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // 다시 생성
+        async function regenerateScript() {
+            if (!lastGeneratedTopic) {
+                alert('먼저 주제를 입력하고 생성해주세요!');
+                return;
+            }
+            closeScriptEditModal();
+            await generateScriptWithAI();
+        }
+
+        // 프롬프트 예시 토글
+        function togglePromptExamples() {
+            const examples = document.getElementById('promptExamples');
+            const icon = document.getElementById('promptExamplesIcon');
+            const isHidden = examples.style.display === 'none' || examples.style.display === '';
+            if (isHidden) {
+                examples.style.display = 'block';
+                icon.textContent = '▼';
+                updateTopicExamples(); // 예시 내용 업데이트
+            } else {
+                examples.style.display = 'none';
+                icon.textContent = '▶';
+            }
+        }
+
+        // 프롬프트 예시 적용 (현재 모드에 따라)
+        function setPromptExample(text) {
+            if (currentScriptMode === 'manual') {
+                document.getElementById('manualTopic').value = text;
+                updateManualPrompt();
+            } else {
+                document.getElementById('customScriptTopic').value = text;
+            }
+        }
+
+        // 단일 생성 카테고리 정보 (함수보다 먼저 선언)
+        const singleCategoryInfo = {
+            money: { icon: '💰', name: '재테크' },
+            motivation: { icon: '🔥', name: '동기부여' },
+            selfdev: { icon: '📚', name: '자기계발' },
+            love: { icon: '💕', name: '연애' },
+            horror: { icon: '👻', name: '공포' },
+            tips: { icon: '💡', name: '꿀팁' },
+            facts: { icon: '🌍', name: '상식' },
+            health: { icon: '🏥', name: '건강' },
+            korea: { icon: '🇰🇷', name: '국뽕' },
+            international: { icon: '💑', name: '국제커플' }
+        };
+
+        let currentSingleCategory = 'money';
+
+        // 단일 생성 예시 토글
+        function toggleSingleExamples() {
+            try {
+                const examples = document.getElementById('singleExamples');
+                const icon = document.getElementById('singleExampleIcon');
+                if (examples.style.display === 'none') {
+                    examples.style.display = 'block';
+                    icon.textContent = '▼';
+                    if (typeof updateSingleExamples === 'function') {
+                        updateSingleExamples(); // 카테고리 탭 렌더링
+                    } else {
+                        console.error('updateSingleExamples 함수를 찾을 수 없습니다.');
+                    }
+                } else {
+                    examples.style.display = 'none';
+                    icon.textContent = '▶';
+                }
+            } catch (e) {
+                console.error('단일 생성 예시 토글 오류:', e);
+            }
+        }
+
+        // 단일 생성 카테고리 탭 선택
+        function selectSingleCategory(category) {
+            currentSingleCategory = category;
+            updateSingleExamples();
+        }
+
+        // 단일 생성 예시 업데이트 (카테고리 탭)
+        function updateSingleExamples() {
+            // 카테고리 탭 렌더링
+            const tabsContainer = document.getElementById('singleCategoryTabs');
+            if (tabsContainer) {
+                tabsContainer.innerHTML = Object.keys(singleCategoryInfo).map(key => {
+                    const cat = singleCategoryInfo[key];
+                    const isActive = key === currentSingleCategory;
+                    return `<span class="category-tab ${isActive ? 'active' : ''}" onclick="selectSingleCategory('${key}')">${cat.icon} ${cat.name}</span>`;
+                }).join('');
+            }
+
+            // 선택된 카테고리의 예시 렌더링
+            const contentContainer = document.getElementById('singleExamplesContent');
+            if (contentContainer && scriptExamples[currentSingleCategory]) {
+                const examples = scriptExamples[currentSingleCategory];
+                contentContainer.innerHTML = examples.map((ex, i) => `
+                    <div class="example-card" onclick="applySingleExampleFromCategory('${currentSingleCategory}', ${i})">
+                        <div class="example-card-title">${ex.title}</div>
+                        <div class="example-card-preview">${ex.script.script.substring(0, 60).replace(/\\n/g, ' ')}...</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 카테고리에서 단일 생성 예시 적용
+        function applySingleExampleFromCategory(category, index) {
+            const examples = scriptExamples[category];
+            if (examples && examples[index]) {
+                const example = examples[index].script;
+                document.getElementById('singleJson').value = JSON.stringify(example, null, 2);
+                toggleSingleExamples(); // 닫기
+            }
+        }
+
+        function getDefaultTopic() {
+            const topics = { money: '부자들의 돈 관리 습관', motivation: '포기하고 싶을 때', selfdev: '성공하는 사람들의 루틴', love: '좋아하는 사람의 신호', horror: '실화 기반 무서운 이야기', tips: '몰라서 손해 보는 꿀팁', facts: '신기한 상식', health: '건강해지는 습관', korea: '외국인이 놀란 한국의 장점', international: '국제커플의 현실적인 이야기' };
+            return topics[currentTheme] || '주제를 입력하세요';
+        }
+
+        // Update prompt preview when topic changes
+        function updatePromptPreview() {
+            const topic = document.getElementById('promptTopic').value || '[주제를 입력하세요]';
+            const prompt = `유튜브 쇼츠 대본 만들어줘
+
+주제: ${topic}
+
+조건:
+- 50초~60초 읽을 수 있는 분량 (약 350~400자)
+- 재미있게 시작
+- 마지막에 "구독 좋아요" 멘트 넣기
+
+이 형식으로 만들어줘:
+{
+  "script": "대본 내용",
+  "title": "영상 제목",
+  "description": "영상 설명 #해시태그"
+}`;
+            document.getElementById('promptPreview').value = prompt;
+        }
+
+        // Copy prompt from textarea
+        function copyPromptFromTextarea() {
+            const textarea = document.getElementById('promptPreview');
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                alert('복사되었습니다! AI에 붙여넣기 하세요 😊');
+            });
+        }
+
+        // Guide Modal Functions
+        function openGuideModal() {
+            document.getElementById('guideModal').style.display = 'flex';
+        }
+
+        function closeGuideModal() {
+            document.getElementById('guideModal').style.display = 'none';
+        }
+
+        // Template Preview Modal Functions
+        let cachedTemplates = [];
+
+        async function openTemplatePreviewModal() {
+            const modal = document.getElementById('templatePreviewModal');
+            const grid = document.getElementById('templatePreviewGrid');
+            const emptyMsg = document.getElementById('templateEmptyMsg');
+
+            modal.style.display = 'flex';
+            grid.innerHTML = '<p style="text-align: center; color: var(--color-gray-500);">로딩 중...</p>';
+
+            try {
+                const response = await authFetch('/api/templates');
+                const data = await response.json();
+
+                if (data.success && data.templates && data.templates.length > 0) {
+                    cachedTemplates = data.templates;
+                    emptyMsg.style.display = 'none';
+                    grid.innerHTML = '';
+
+                    const currentSelection = document.getElementById('singleTemplate').value;
+
+                    // Add "없음" option first
+                    const noneItem = document.createElement('div');
+                    const noneSelected = !currentSelection;
+                    noneItem.style.cssText = `
+                        border: 3px solid ${noneSelected ? 'var(--color-primary)' : 'var(--color-gray-200)'};
+                        border-radius: 12px;
+                        overflow: hidden;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                        background: var(--color-bg-tertiary);
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        aspect-ratio: 9/16;
+                    `;
+                    noneItem.onmouseenter = () => { if (!noneSelected) noneItem.style.borderColor = 'var(--color-gray-400)'; };
+                    noneItem.onmouseleave = () => { if (!noneSelected) noneItem.style.borderColor = 'var(--color-gray-200)'; };
+                    noneItem.onclick = () => selectTemplate('');
+                    noneItem.innerHTML = `
+                        <span style="font-size: 2rem; opacity: 0.5;">🚫</span>
+                        <span style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--color-gray-500);">없음</span>
+                    `;
+                    grid.appendChild(noneItem);
+
+                    data.templates.forEach(template => {
+                        const isImage = /\.(png|jpg|jpeg|gif|webp)$/i.test(template);
+                        const isVideo = /\.(mp4|avi|mov|webm)$/i.test(template);
+                        const isSelected = template === currentSelection;
+
+                        const item = document.createElement('div');
+                        item.style.cssText = `
+                            border: 3px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-gray-200)'};
+                            border-radius: 12px;
+                            overflow: hidden;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            background: var(--color-bg-tertiary);
+                        `;
+                        item.onmouseenter = () => { if (!isSelected) item.style.borderColor = 'var(--color-gray-400)'; };
+                        item.onmouseleave = () => { if (!isSelected) item.style.borderColor = 'var(--color-gray-200)'; };
+                        item.onclick = () => selectTemplate(template);
+
+                        if (isImage) {
+                            item.innerHTML = `
+                                <img src="/template/${encodeURIComponent(template)}" alt="${template}"
+                                    style="width: 100%; aspect-ratio: 9/16; object-fit: cover; display: block;">
+                                <div style="padding: 0.5rem; text-align: center; font-size: 0.8rem; color: var(--color-gray-600); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    ${template}
+                                </div>
+                            `;
+                        } else if (isVideo) {
+                            item.innerHTML = `
+                                <video src="/template/${encodeURIComponent(template)}" muted
+                                    style="width: 100%; aspect-ratio: 9/16; object-fit: cover; display: block;"
+                                    onmouseenter="this.play()" onmouseleave="this.pause(); this.currentTime=0;"></video>
+                                <div style="padding: 0.5rem; text-align: center; font-size: 0.8rem; color: var(--color-gray-600); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    🎬 ${template}
+                                </div>
+                            `;
+                        }
+
+                        grid.appendChild(item);
+                    });
+                } else {
+                    // Even if no templates, show "없음" option
+                    grid.innerHTML = '';
+                    const noneItem = document.createElement('div');
+                    noneItem.style.cssText = `
+                        border: 3px solid var(--color-primary);
+                        border-radius: 12px;
+                        overflow: hidden;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                        background: var(--color-bg-tertiary);
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        aspect-ratio: 9/16;
+                    `;
+                    noneItem.onclick = () => selectTemplate('');
+                    noneItem.innerHTML = `
+                        <span style="font-size: 2rem; opacity: 0.5;">🚫</span>
+                        <span style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--color-gray-500);">없음</span>
+                    `;
+                    grid.appendChild(noneItem);
+                    emptyMsg.style.display = 'block';
+                    emptyMsg.textContent = '템플릿 폴더에 이미지나 영상을 추가하면 여기에 표시됩니다.';
+                }
+            } catch (error) {
+                console.error('Error loading templates:', error);
+                grid.innerHTML = '<p style="text-align: center; color: var(--color-error);">템플릿을 불러오는데 실패했습니다.</p>';
+            }
+        }
+
+        function closeTemplatePreviewModal() {
+            document.getElementById('templatePreviewModal').style.display = 'none';
+        }
+
+        function selectTemplate(templateName) {
+            const input = document.getElementById('singleTemplate');
+            const btnText = document.getElementById('templateSelectText');
+            input.value = templateName;
+            btnText.textContent = templateName || '없음';
+            closeTemplatePreviewModal();
+        }
+
+        function updateTemplatePreview(value) {
+            // Optional: could add inline preview here
+        }
+
+        // Close template modal on backdrop click
+        document.getElementById('templatePreviewModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'templatePreviewModal') closeTemplatePreviewModal();
+        });
+
+        // Folder Preview Modal Functions
+        let cachedFolders = [];
+
+        async function openFolderPreviewModal() {
+            const modal = document.getElementById('folderPreviewModal');
+            const grid = document.getElementById('folderPreviewGrid');
+            const emptyMsg = document.getElementById('folderEmptyMsg');
+
+            modal.style.display = 'flex';
+            grid.innerHTML = '<p style="text-align: center; color: var(--color-gray-500);">로딩 중...</p>';
+
+            try {
+                const response = await authFetch('/api/inputs/folders');
+                const data = await response.json();
+
+                if (data.success && data.folders && data.folders.length > 0) {
+                    cachedFolders = data.folders;
+                    emptyMsg.style.display = 'none';
+                    grid.innerHTML = '';
+
+                    const currentSelection = document.getElementById('singleFolder').value;
+
+                    data.folders.forEach(folder => {
+                        const isSelected = folder === currentSelection;
+
+                        const item = document.createElement('div');
+                        item.style.cssText = `
+                            border: 3px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-gray-200)'};
+                            border-radius: 12px;
+                            overflow: hidden;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            background: var(--color-bg-tertiary);
+                            padding: 1.5rem;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 120px;
+                        `;
+                        item.onmouseenter = () => { if (!isSelected) item.style.borderColor = 'var(--color-gray-400)'; };
+                        item.onmouseleave = () => { if (!isSelected) item.style.borderColor = 'var(--color-gray-200)'; };
+                        item.onclick = () => selectFolder(folder);
+
+                        const displayName = folder.charAt(0).toUpperCase() + folder.slice(1);
+                        item.innerHTML = `
+                            <span style="font-size: 2.5rem; margin-bottom: 0.5rem;">📁</span>
+                            <span style="font-size: 0.9rem; color: var(--color-gray-700); font-weight: 500; text-align: center;">${displayName}</span>
+                        `;
+
+                        grid.appendChild(item);
+                    });
+                } else {
+                    grid.innerHTML = '';
+                    emptyMsg.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading folders:', error);
+                grid.innerHTML = '<p style="text-align: center; color: var(--color-error);">폴더를 불러오는데 실패했습니다.</p>';
+            }
+        }
+
+        function closeFolderPreviewModal() {
+            document.getElementById('folderPreviewModal').style.display = 'none';
+        }
+
+        function selectFolder(folderName) {
+            const input = document.getElementById('singleFolder');
+            const btnText = document.getElementById('folderSelectText');
+            input.value = folderName;
+            btnText.textContent = folderName.charAt(0).toUpperCase() + folderName.slice(1);
+            closeFolderPreviewModal();
+        }
+
+        function setFolderFields(name, pathValue) {
+            if (name !== undefined) {
+                document.getElementById('newFolderName').value = name;
+            }
+            if (pathValue !== undefined) {
+                document.getElementById('newFolderPath').value = pathValue;
+            }
+        }
+
+        async function handleAddSourceClick() {
+            if (window.electronAPI?.selectFolder) {
+                try {
+                    const picked = await window.electronAPI.selectFolder();
+                    if (picked && picked.folderPath) {
+                        const derivedName = picked.folderName || picked.folderPath.split(/[/\\]/).pop() || '';
+                        setFolderFields(derivedName, picked.folderPath);
+                        await saveFolderPath(derivedName, picked.folderPath);
+                        return;
+                    } else if (picked) {
+                        setFolderFields(picked.folderName || '', '');
+                        openAddFolderPathModal(picked.folderName || '', '');
+                        return;
+                    }
+                } catch (err) {
+                    console.error('Native folder picker failed:', err);
+                }
+            }
+            openAddFolderPathModal();
+        }
+
+        async function openFolderPickerFromModal() {
+            console.log('openFolderPickerFromModal called');
+            console.log('window.electronAPI available:', !!window.electronAPI);
+
+            if (window.electronAPI?.selectFolder) {
+                try {
+                    console.log('Calling electronAPI.selectFolder()...');
+                    const picked = await window.electronAPI.selectFolder();
+                    console.log('Picked result:', picked);
+
+                    if (picked && picked.folderPath) {
+                        const derivedName = picked.folderName || picked.folderPath.split(/[/\\]/).pop() || '';
+                        console.log('Setting folder fields with name:', derivedName, 'path:', picked.folderPath);
+                        setFolderFields(derivedName, picked.folderPath);
+                        await saveFolderPath(derivedName, picked.folderPath);
+                        return;
+                    } else if (picked) {
+                        console.log('Picked but no folderPath:', picked);
+                        setFolderFields(picked.folderName || '', '');
+                        return;
+                    }
+                    console.log('User canceled folder selection');
+                } catch (err) {
+                    console.error('Native folder picker failed:', err);
+                }
+            } else {
+                console.log('electronAPI not available, using web fallback');
+            }
+
+            const fileInput = document.getElementById('folderPickerInput');
+            if (fileInput) {
+                fileInput.value = '';
+                fileInput.onchange = () => {
+                    const files = fileInput.files;
+                    if (!files || !files.length) return;
+                    const rel = files[0].webkitRelativePath || '';
+                    const folderName = rel ? rel.split('/')[0] : '';
+                    // 웹 브라우저에서는 보안상 전체 경로를 얻을 수 없으므로
+                    // 폴더 이름만 설정하고 사용자가 직접 경로를 입력하도록 안내
+                    setFolderFields(folderName || '', '');
+                    document.getElementById('newFolderPath').focus();
+                    if (folderName) {
+                        alert('폴더 이름이 설정되었습니다.\n보안상 브라우저에서는 전체 경로를 자동으로 가져올 수 없습니다.\n아래 경로 필드에 직접 입력해주세요.');
+                    }
+                };
+                fileInput.click();
+            }
+        }
+
+        // Add Folder Path Modal Functions
+        function openAddFolderPathModal(prefillName = '', prefillPath = '') {
+            document.getElementById('addFolderPathModal').style.display = 'flex';
+            document.getElementById('newFolderName').value = prefillName;
+            document.getElementById('newFolderPath').value = prefillPath;
+            const focusTarget = prefillPath ? 'newFolderPath' : 'newFolderName';
+            document.getElementById(focusTarget).focus();
+        }
+
+        function closeAddFolderPathModal() {
+            document.getElementById('addFolderPathModal').style.display = 'none';
+        }
+
+        async function saveFolderPath(folderNameParam, folderPathParam) {
+            const folderName = (folderNameParam ?? document.getElementById('newFolderName').value).trim();
+            const folderPath = (folderPathParam ?? document.getElementById('newFolderPath').value).trim();
+
+            if (!folderName) {
+                alert('폴더 이름을 입력하세요.');
+                return;
+            }
+
+            if (!folderPath) {
+                alert('폴더 경로를 입력하세요.');
+                return;
+            }
+
+            try {
+                const response = await authFetch('/api/inputs/add-path', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        folderName: folderName,
+                        folderPath: folderPath
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(`✅ "${folderName}" 폴더가 연결되었습니다.`);
+                    closeAddFolderPathModal();
+                    // Reload folder list
+                    await openFolderPreviewModal();
+                } else {
+                    alert('❌ 폴더 연결 실패: ' + (data.message || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('Error saving folder path:', error);
+                alert('❌ 폴더 연결 중 오류가 발생했습니다: ' + error.message);
+            }
+        }
+
+        // Close add folder modal on backdrop click
+        document.getElementById('addFolderPathModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'addFolderPathModal') closeAddFolderPathModal();
+        });
+
+        // Close folder modal on backdrop click
+        document.getElementById('folderPreviewModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'folderPreviewModal') closeFolderPreviewModal();
+        });
+
+        // Music Preview Modal Functions
+        let cachedMusic = [];
+        let currentAudioPreview = null;
+
+        async function openMusicPreviewModal() {
+            const modal = document.getElementById('musicPreviewModal');
+            const folderSelect = document.getElementById('modalMusicFolderSelect');
+
+            modal.style.display = 'flex';
+
+            // Load folders
+            try {
+                const response = await authFetch('/api/music/folders');
+                const data = await response.json();
+
+                if (data.success) {
+                    folderSelect.innerHTML = '<option value="">폴더 선택...</option>';
+                    data.folders.forEach(folder => {
+                        const option = document.createElement('option');
+                        option.value = folder;
+                        option.textContent = folder;
+                        folderSelect.appendChild(option);
+                    });
+
+                    // Select first folder by default if available
+                    if (data.folders.length > 0) {
+                        folderSelect.value = data.folders[0];
+                        loadMusicFilesForModal(data.folders[0]);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading music folders:', error);
+            }
+        }
+
+        async function loadMusicFilesForModal(folderName) {
+            const grid = document.getElementById('musicPreviewGrid');
+            const emptyMsg = document.getElementById('musicEmptyMsg');
+
+            grid.innerHTML = '<p style="text-align: center; color: var(--color-gray-500);">로딩 중...</p>';
+            emptyMsg.style.display = 'none';
+
+            if (!folderName) {
+                grid.innerHTML = '';
+                return;
+            }
+
+            try {
+                const response = await authFetch(`/api/music/files?folder=${encodeURIComponent(folderName)}`);
+                const data = await response.json();
+
+                if (data.success && data.files && data.files.length > 0) {
+                    cachedMusic = data.files;
+                    grid.innerHTML = '';
+
+                    const currentSelection = document.getElementById('singleMusic').value;
+
+                    // Add "Random" option
+                    const randomItem = document.createElement('div');
+                    randomItem.style.cssText = `
+                        border: 2px solid var(--color-primary);
+                        border-radius: 8px;
+                        padding: 0.75rem 1rem;
+                        cursor: pointer;
+                        background: var(--color-bg-tertiary);
+                        display: flex;
+                        align-items: center;
+                        gap: 0.75rem;
+                        margin-bottom: 0.5rem;
+                    `;
+                    randomItem.onclick = () => selectMusic('random', folderName);
+                    randomItem.innerHTML = `
+                        <span style="font-size: 1.25rem;">🎲</span>
+                        <span style="color: var(--color-gray-700); font-weight: 600;">랜덤 선택 (이 폴더에서)</span>
+                    `;
+                    grid.appendChild(randomItem);
+
+                    data.files.forEach(file => {
+                        const isSelected = file === currentSelection;
+
+                        const item = document.createElement('div');
+                        item.style.cssText = `
+                            border: 2px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-gray-200)'};
+                            border-radius: 8px;
+                            padding: 0.75rem 1rem;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            background: var(--color-bg-tertiary);
+                            display: flex;
+                            align-items: center;
+                            justify-content: space-between;
+                        `;
+                        item.onmouseenter = () => { if (!isSelected) item.style.borderColor = 'var(--color-gray-400)'; };
+                        item.onmouseleave = () => { if (!isSelected) item.style.borderColor = 'var(--color-gray-200)'; };
+
+                        const displayName = file.replace(/\.[^/.]+$/, '');
+                        item.innerHTML = `
+                            <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;" onclick="selectMusic('${file}', '${folderName}')">
+                                <span style="font-size: 1.25rem;">🎵</span>
+                                <span style="color: var(--color-gray-700);">${displayName}</span>
+                            </div>
+                            <button onclick="event.stopPropagation(); toggleMusicPreview('${file}', '${folderName}', this)" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; padding: 0.25rem;">
+                                ▶️
+                            </button>
+                        `;
+
+                        grid.appendChild(item);
+                    });
+                } else {
+                    grid.innerHTML = '';
+                    emptyMsg.style.display = 'block';
+                    emptyMsg.textContent = '이 폴더에 음악 파일이 없습니다.';
+                }
+            } catch (error) {
+                console.error('Error loading music files:', error);
+                grid.innerHTML = '<p style="text-align: center; color: var(--color-error);">음악을 불러오는데 실패했습니다.</p>';
+            }
+        }
+
+
+        function closeMusicPreviewModal() {
+            if (currentAudioPreview) {
+                currentAudioPreview.pause();
+                currentAudioPreview = null;
+            }
+            document.getElementById('musicPreviewModal').style.display = 'none';
+        }
+
+        function selectMusic(musicName, folderName) {
+            const input = document.getElementById('singleMusic');
+            const btnText = document.getElementById('musicSelectText');
+
+            // Store as "folder/file" or just "file" check logic
+            // The singleGenerateBtn logic expects `backgroundMusic` field.
+            // If we send "folder/file", does backend handle it?
+            // ai-shorts.js handles it. But index.html uses `routes/shorts.js` or `routes/video.js`.
+            // We need to check if backend supports folder info.
+            // If not, we might need to update backend too.
+            // But for now, let's just pass the filename, but we lose folder info for the random selection.
+            // Wait, if we use "random", we need to know WHICH folder.
+            // So we should pass "folder/file" or use a new input for folder.
+
+            // NOTE: Batch items now have a separate folder select. 
+            // Single item has a single button that opens this modal.
+            // We should ideally update `singleMusic` to hold just the file, AND add `singleMusicFolder` input.
+            // But `singleMusic` logic in `main.js` might need updates.
+
+            // Let's assume we update `main.js` to handle `singleMusicFolder` as well.
+            // But since we are inside `index.html`, let's inject a hidden input if it doesn't exist?
+            // No, purely from modal:
+
+            if (musicName === 'random') {
+                input.value = "random";
+                // We need to persist the folder selection too!
+                // Let's create a hidden input for folder if not exists
+                let folderInput = document.getElementById('singleMusicFolder');
+                if (!folderInput) {
+                    folderInput = document.createElement('input');
+                    folderInput.type = 'hidden';
+                    folderInput.id = 'singleMusicFolder';
+                    document.getElementById('singleMusic').parentNode.appendChild(folderInput);
+                }
+                folderInput.value = folderName;
+                btnText.textContent = `🎲 랜덤 (${folderName})`;
+            } else if (musicName === '') {
+                input.value = '';
+                btnText.textContent = '없음';
+            } else {
+                input.value = musicName;
+                // Also save folder
+                let folderInput = document.getElementById('singleMusicFolder');
+                if (!folderInput) {
+                    folderInput = document.createElement('input');
+                    folderInput.type = 'hidden';
+                    folderInput.id = 'singleMusicFolder';
+                    document.getElementById('singleMusic').parentNode.appendChild(folderInput);
+                }
+                folderInput.value = folderName;
+
+                const displayName = musicName.replace(/\.[^/.]+$/, '');
+                btnText.textContent = displayName;
+            }
+            closeMusicPreviewModal();
+        }
+
+        function toggleMusicPreview(filename, folderName, btn) {
+            if (currentAudioPreview) {
+                currentAudioPreview.pause();
+                // Reset all buttons
+                document.querySelectorAll('#musicPreviewGrid button').forEach(b => b.textContent = '▶️');
+                if (currentAudioPreview.src.includes(encodeURIComponent(filename))) {
+                    currentAudioPreview = null;
+                    return;
+                }
+            }
+            // Use new file endpoint for serving? Or static?
+            // We have static route `/background-music`
+            const src = `/background-music/${encodeURIComponent(folderName)}/${encodeURIComponent(filename)}`;
+            currentAudioPreview = new Audio(src);
+            currentAudioPreview.play();
+            btn.textContent = '⏸️';
+            currentAudioPreview.onended = () => {
+                btn.textContent = '▶️';
+                currentAudioPreview = null;
+            };
+        }
+
+        // Close music modal on backdrop click
+        document.getElementById('musicPreviewModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'musicPreviewModal') closeMusicPreviewModal();
+        });
+
+        // Outro Preview Modal Functions
+        let cachedOutros = [];
+
+        async function openOutroPreviewModal() {
+            const modal = document.getElementById('outroPreviewModal');
+            const grid = document.getElementById('outroPreviewGrid');
+            const emptyMsg = document.getElementById('outroEmptyMsg');
+
+            modal.style.display = 'flex';
+            grid.innerHTML = '<p style="text-align: center; color: var(--color-gray-500);">로딩 중...</p>';
+
+            try {
+                const response = await authFetch('/api/outros');
+                const data = await response.json();
+
+                if (data.success && data.outros && data.outros.length > 0) {
+                    cachedOutros = data.outros;
+                    emptyMsg.style.display = 'none';
+                    grid.innerHTML = '';
+
+                    const currentSelection = document.getElementById('singleOutro').value;
+
+                    // Add "없음" option first
+                    const noneItem = document.createElement('div');
+                    const noneSelected = !currentSelection;
+                    noneItem.style.cssText = `
+                        border: 3px solid ${noneSelected ? 'var(--color-primary)' : 'var(--color-gray-200)'};
+                        border-radius: 12px;
+                        overflow: hidden;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                        background: var(--color-bg-tertiary);
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        aspect-ratio: 9/16;
+                    `;
+                    noneItem.onmouseenter = () => { if (!noneSelected) noneItem.style.borderColor = 'var(--color-gray-400)'; };
+                    noneItem.onmouseleave = () => { if (!noneSelected) noneItem.style.borderColor = 'var(--color-gray-200)'; };
+                    noneItem.onclick = () => selectOutro('');
+                    noneItem.innerHTML = `
+                        <span style="font-size: 2rem; opacity: 0.5;">🚫</span>
+                        <span style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--color-gray-500);">없음</span>
+                    `;
+                    grid.appendChild(noneItem);
+
+                    data.outros.forEach(outro => {
+                        const isSelected = outro === currentSelection;
+
+                        const item = document.createElement('div');
+                        item.style.cssText = `
+                            border: 3px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-gray-200)'};
+                            border-radius: 12px;
+                            overflow: hidden;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            background: var(--color-bg-tertiary);
+                        `;
+                        item.onmouseenter = () => { if (!isSelected) item.style.borderColor = 'var(--color-gray-400)'; };
+                        item.onmouseleave = () => { if (!isSelected) item.style.borderColor = 'var(--color-gray-200)'; };
+                        item.onclick = () => selectOutro(outro);
+
+                        const displayName = outro.replace(/\.[^/.]+$/, '');
+                        item.innerHTML = `
+                            <video src="/outro/${encodeURIComponent(outro)}" muted
+                                style="width: 100%; aspect-ratio: 9/16; object-fit: cover; display: block;"
+                                onmouseenter="this.play()" onmouseleave="this.pause(); this.currentTime=0;"></video>
+                            <div style="padding: 0.5rem; text-align: center; font-size: 0.8rem; color: var(--color-gray-600); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                🎬 ${displayName}
+                            </div>
+                        `;
+
+                        grid.appendChild(item);
+                    });
+                } else {
+                    grid.innerHTML = '';
+                    // Show "없음" even if no outros
+                    const noneItem = document.createElement('div');
+                    noneItem.style.cssText = `
+                        border: 3px solid var(--color-primary);
+                        border-radius: 12px;
+                        overflow: hidden;
+                        cursor: pointer;
+                        background: var(--color-bg-tertiary);
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        aspect-ratio: 9/16;
+                    `;
+                    noneItem.onclick = () => selectOutro('');
+                    noneItem.innerHTML = `
+                        <span style="font-size: 2rem; opacity: 0.5;">🚫</span>
+                        <span style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--color-gray-500);">없음</span>
+                    `;
+                    grid.appendChild(noneItem);
+                    emptyMsg.style.display = 'block';
+                    emptyMsg.textContent = 'outro 폴더에 영상 파일을 추가하면 여기에 표시됩니다.';
+                }
+            } catch (error) {
+                console.error('Error loading outros:', error);
+                grid.innerHTML = '<p style="text-align: center; color: var(--color-error);">엔딩 영상을 불러오는데 실패했습니다.</p>';
+            }
+        }
+
+        function closeOutroPreviewModal() {
+            document.getElementById('outroPreviewModal').style.display = 'none';
+        }
+
+        function selectOutro(outroName) {
+            const input = document.getElementById('singleOutro');
+            const btnText = document.getElementById('outroSelectText');
+            input.value = outroName;
+            btnText.textContent = outroName ? outroName.replace(/\.[^/.]+$/, '') : '없음';
+            closeOutroPreviewModal();
+        }
+
+        // Close outro modal on backdrop click
+        document.getElementById('outroPreviewModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'outroPreviewModal') closeOutroPreviewModal();
+        });
+
+        // Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                icon.textContent = theme === 'dark' ? '☀️ 라이트' : '🌙 다크';
+            }
+        }
+
+        // Initialize theme
+        (function () {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                updateThemeIcon(savedTheme);
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                updateThemeIcon('dark');
+            }
+        })();
+
+        // Settings Modal Functions
+        async function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            document.getElementById('ai302TestResult').textContent = '';
+
+            // Load current masked keys
+            try {
+                const response = await authFetch('/api/settings/keys');
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('ai302ApiKey').placeholder = data.keys.AI_302_API_KEY || 'sk-...';
+                }
+            } catch (e) {
+                console.error('Failed to load keys:', e);
+            }
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+            document.getElementById('ai302ApiKey').value = '';
+        }
+
+        function toggleKeyVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        async function test302AIConnection() {
+            const btn = document.getElementById('test302AIBtn');
+            const result = document.getElementById('ai302TestResult');
+            const apiKey = document.getElementById('ai302ApiKey').value;
+
+            if (!apiKey) {
+                result.textContent = '❌ API 키를 입력하세요';
+                result.style.color = 'var(--color-error)';
+                return;
+            }
+
+            btn.disabled = true;
+            result.textContent = '테스트 중...';
+            result.style.color = 'var(--color-gray-500)';
+
+            try {
+                const response = await authFetch('/api/settings/test-302ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiKey: apiKey || undefined })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    result.textContent = '✅ ' + data.message;
+                    result.style.color = 'var(--color-success)';
+                } else {
+                    result.textContent = '❌ ' + (data.error || '연결 실패');
+                    result.style.color = 'var(--color-error)';
+                }
+            } catch (e) {
+                result.textContent = '❌ 테스트 실패: ' + e.message;
+                result.style.color = 'var(--color-error)';
+            }
+
+            btn.disabled = false;
+        }
+
+        async function saveSettings() {
+            const ai302Key = document.getElementById('ai302ApiKey').value.trim();
+
+            // 빈 값이면 기존 값 유지 (undefined로 전송)
+            const body = {};
+            if (ai302Key) body.AI_302_API_KEY = ai302Key;
+
+            // 아무것도 입력하지 않았으면 아무것도 변경하지 않음
+            if (Object.keys(body).length === 0) {
+                alert('변경할 API 키를 입력해주세요.');
+                return;
+            }
+
+            try {
+                const response = await authFetch('/api/settings/keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('API 키가 저장되었습니다.');
+                    closeSettingsModal();
+                    // Reload to update status
+                    location.reload();
+                } else {
+                    alert('저장 실패: ' + data.error);
+                }
+            } catch (e) {
+                alert('저장 실패: ' + e.message);
+            }
+        }
+
+        // 여러개 생성 토글 함수
+        function toggleBatchSection() {
+            const content = document.getElementById('batchContent');
+            const icon = document.getElementById('batchToggleIcon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▲ 접기';
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼ 펼치기';
+            }
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeSettingsModal();
+                closeGuideModal();
+                closeTemplatePreviewModal();
+                closeFolderPreviewModal();
+                closeMusicPreviewModal();
+                closeOutroPreviewModal();
+            }
+        });
+
+        // Close modal on backdrop click
+        document.getElementById('settingsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'settingsModal') {
+                closeSettingsModal();
+            }
+        });
+
+        document.getElementById('guideModal').addEventListener('click', (e) => {
+            if (e.target.id === 'guideModal') {
+                closeGuideModal();
+            }
+        });
+
+        // 페이지 로드 시 초기화
+        updateTopicExamples();
+        updateManualPrompt();
+        if (typeof updateSingleExamples === 'function') {
+            updateSingleExamples();
+        }
+    </script>
+
+    <!-- Firebase Auth -->
+    <script src="/js/firebase-config.js"></script>
+    <script src="/js/firebase-auth.js"></script>
+    <script>
+        // Check authentication
+        requireAuth().then(authState => {
+            if (authState) {
+                document.body.style.visibility = 'visible';
+                startTokenRefresh();
+
+                // Update header auth UI
+                setHeaderAuthState(authState);
+
+                // Add admin link if user is admin
+                if (authState.isAdmin) {
+                    const nav = document.querySelector('.header-nav');
+                    if (nav && !nav.querySelector('[href="/admin"]')) {
+                        const adminLink = document.createElement('a');
+                        adminLink.href = '/admin';
+                        adminLink.innerHTML = '<span>관리자</span>';
+                        nav.appendChild(adminLink);
+                    }
+                }
+            }
+        });
+    </script>
+
+    <script type="module" src="/js/main.js"></script>
+    <!-- Ported Script Generator Logic -->
+    <script>
+        // ==========================================
+        //  Scripts from ai-video.html (Ported)
+        // ==========================================
+
+        // === 스크립트 스타일 정의 ===
+        const scriptStyles = {
+            review: { korean: "리뷰형", english: "Review", description: "개인적인 방문 경험을 바탕으로 한 진솔한 리뷰 스타일" },
+            promotional: { korean: "홍보형", english: "Promotional", description: "매장의 장점을 강조하는 직접적인 홍보 스타일" },
+            storytelling: { korean: "스토리텔링형", english: "Storytelling", description: "가게의 스토리나 사장님의 이야기를 담은 감성 스타일" },
+            tips: { korean: "팁/추천형", english: "Tips", description: "꿀팁이나 추천 메뉴를 소개하는 정보 제공 스타일" },
+            urgency: { korean: "긴급/FOMO형", english: "Urgency", description: "지금 가야 하는 이유를 강조하는 긴박감 있는 스타일" },
+            comparison: { korean: "비교형", english: "Comparison", description: "다른 곳과 비교하며 차별점을 부각하는 스타일" },
+            question: { korean: "질문형", english: "Question", description: "시청자에게 질문을 던지며 호기심을 유발하는 스타일" }
+        };
+
+        const introStyles = {
+            shocking: { korean: "충격적 사실형", prompt: "Start with a shocking, surprising fact that makes viewers stop scrolling" },
+            question: { korean: "질문 던지기형", prompt: "Begin with an engaging question that makes viewers curious" },
+            surprise: { korean: "놀람 후크형", prompt: "Start with an exclamation of amazement or surprise" },
+            local: { korean: "지역 인증형", prompt: "Establish credibility by mentioning local recognition or popularity" },
+            direct: { korean: "직설적 소개형", prompt: "Get straight to the point with a direct introduction" },
+            visit: { korean: "방문 인증형", prompt: "Start by verifying your visit to the location" }
+        };
+
+        const outroStyles = {
+            question_mark: { korean: "물음표 마무리형", prompt: "End with a teaser question that makes viewers curious about the location" },
+            benefits: { korean: "장점 강조 물음형", prompt: "Summarize key benefits and end with 'Where is this place?'" },
+            playful: { korean: "물음표 장난형", prompt: "End with a witty, playful question" },
+            recommend: { korean: "추천형", prompt: "End with a strong, direct recommendation to visit" },
+            cta: { korean: "행동 유도형", prompt: "End with a clear call-to-action encouraging viewers to visit" },
+            confident: { korean: "반전 확신형", prompt: "End with confident confirmation that this is a genuine hidden gem" }
+        };
+
+        // === 엔터테인먼트 스타일 정의 ===
+        const entertainmentScriptStyles = {
+            humor: { korean: "유머/개그", english: "Humor/Gag", description: "재미있고 웃긴 요소가 강조된 스타일" },
+            info: { korean: "정보전달", english: "Information", description: "유용한 정보나 사실을 전달하는 스타일" },
+            honeytips: { korean: "꿀팁", english: "Honey Tips", description: "유용한 꿀팁을 핵심만 쏙쏙 뽑아 알려주는 스타일" },
+            ranking: { korean: "순위/랭킹", english: "Ranking/Top 5", description: "Top 5 등 순위를 매겨 소개하는 스타일" },
+            vlog: { korean: "브이로그", english: "Vlog", description: "일상적인 이야기를 자연스럽게 풀어내는 스타일" },
+            reaction: { korean: "리액션/후기", english: "Reaction", description: "찐 반응과 리얼한 후기를 담은 스타일" },
+            story: { korean: "썰/스토리", english: "Story/Rumor", description: "흥미진진한 이야기를 들려주는 스타일" }
+        };
+
+        const entertainmentIntroStyles = {
+            hook: { korean: "시선강탈형", english: "Hook/Attention", description: "초반 3초 안에 시선을 확 끄는 비주얼이나 멘트" },
+            curiosity: { korean: "질문유발형", english: "Question/Curiosity", description: "궁금증을 자아내는 질문으로 시작" },
+            conclusion: { korean: "결론제시형", english: "Conclusion First", description: "결과물이나 결론을 먼저 보여주고 시작" },
+            skit: { korean: "상황극형", english: "Situation/Skit", description: "짧은 상황극으로 재미있게 시작" }
+        };
+
+        const entertainmentOutroStyles = {
+            subscribe: { korean: "구독/좋아요 유도", english: "Subscribe/Like", description: "구독과 좋아요를 자연스럽게 요청" },
+            next: { korean: "다음화 예고", english: "Next Episode", description: "다음 내용을 예고하며 기대감 조성" },
+            comment: { korean: "댓글참여 유도", english: "Comment Question", description: "시청자의 의견을 묻는 질문으로 댓글 유도" },
+            summary: { korean: "요약정리", english: "Summary", description: "핵심 내용을 짧게 요약하며 마무리" }
+        };
+
+        // === 대본 생성기 토글 ===
+        function toggleScriptSection() {
+            const content = document.getElementById('scriptSectionContent');
+            const icon = document.getElementById('scriptSectionIcon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▲';
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼';
+            }
+        }
+
+        function toggleStyleChip(element) {
+            element.classList.toggle('selected');
+        }
+
+        async function generateScripts() {
+            const storeName = document.getElementById('storeName').value;
+            const storeDescription = document.getElementById('storeDescription').value;
+            const includeName = document.getElementById('includeName') ? document.getElementById('includeName').checked : false;
+            const storeLocation = document.getElementById('storeLocation') ? document.getElementById('storeLocation').value : '';
+            const locationIn = document.querySelector('input[name="locationIn"]:checked') ? document.querySelector('input[name="locationIn"]:checked').value : 'intro';
+
+            const language = document.getElementById('scriptLanguage').value;
+            const introStyle = document.getElementById('introStyle').value;
+            const outroStyle = document.getElementById('outroStyle').value;
+
+            // Get selected styles
+            const selectedStyles = Array.from(document.querySelectorAll('#scriptStyleGrid .style-option-chip.selected'))
+                .map(el => el.dataset.style);
+
+            const mode = document.querySelector('input[name="scriptMode"]:checked') ? document.querySelector('input[name="scriptMode"]:checked').value : 'business';
+
+            if (!storeName) {
+                alert('가게 이름(또는 주제)을 입력해주세요.');
+                return;
+            }
+
+            if (selectedStyles.length === 0) {
+                alert('최소 하나의 대본 스타일을 선택해주세요.');
+                return;
+            }
+
+            const btn = document.getElementById('generateScriptsBtn');
+            const originalText = btn.innerText;
+            btn.innerText = '⏳ 대본 생성 중...';
+            btn.disabled = true;
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                const response = await authFetch('/api/ai-video/generate-scripts', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        mode,
+                        restaurantName: storeName,
+                        description: storeDescription,
+                        includeRestaurantName: includeName,
+                        location: storeLocation,
+                        locationIn: locationIn,
+                        styles: selectedStyles,
+                        language: language,
+                        introStyle: introStyle,
+                        outroStyle: outroStyle,
+                        count: parseInt(document.getElementById('scriptCount').value) || 1
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayScriptResults(data.results);
+
+                    // Auto-add to batch if checked
+                    if (document.getElementById('autoAddToBatch')?.checked && window.populateBatchFromScripts) {
+                        try {
+                            const parsedScripts = parseGeneratedScripts(data.results);
+                            window.populateBatchFromScripts(parsedScripts);
+
+                            // Show toast or highlight
+                            const batchMsg = document.createElement('div');
+                            batchMsg.textContent = `✨ 배치 생성기에 ${parsedScripts.length}개 스크립트가 추가되었습니다!`;
+                            batchMsg.style.cssText = "position: fixed; bottom: 20px; right: 20px; background: #22c55e; color: white; padding: 1rem; border-radius: 8px; z-index: 9999; animation: fadeOut 3s forwards; box-shadow: 0 4px 6px rgba(0,0,0,0.1);";
+                            document.body.appendChild(batchMsg);
+                            setTimeout(() => batchMsg.remove(), 3000);
+
+                        } catch (e) {
+                            console.error("Auto-add to batch failed:", e);
+                        }
+                    }
+                } else {
+                    alert('대본 생성 실패: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Script generation failed:', error);
+                alert('대본 생성 중 오류가 발생했습니다.');
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // Helper to parse scripts for batch generator
+        function parseGeneratedScripts(results) {
+            const list = [];
+            Object.entries(results).forEach(([key, text]) => {
+                let title = "Generated Script";
+                let script = text;
+                let description = `${key} Style Script`;
+
+                const titleMatch = text.match(/^(?:제목|Title):\s*(.*)$/m);
+                const scriptMatch = text.match(/^(?:대본|Script):\s*([\s\S]*)$/m);
+
+                if (titleMatch) title = titleMatch[1].trim();
+                if (scriptMatch) script = scriptMatch[1].trim();
+
+                // If scriptMatch failed (format issue), try to heuristically separate if possible, or just use full text
+                if (!scriptMatch && text.includes('대본:')) {
+                    // Fallback split
+                    const parts = text.split('대본:');
+                    if (parts.length > 1) script = parts[1].trim();
+                }
+
+                list.push({ title, script, description });
+            });
+            return list;
+        }
+
+        function displayScriptResults(results) {
+            const container = document.getElementById('generatedScriptsList');
+            const resultsArea = document.getElementById('scriptResultsArea');
+            container.innerHTML = '';
+            resultsArea.style.display = 'block';
+
+            Object.entries(results).forEach(([style, script]) => {
+                const id = `script_${Math.random().toString(36).substr(2, 9)}`;
+                const div = document.createElement('div');
+                div.className = 'script-result-card';
+                div.innerHTML = `
+                    <div class="script-result-header">
+                        <span>📌 ${style}</span>
+                        <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('${id}')">📋 복사</button>
+                    </div>
+                    <textarea id="${id}" style="width: 100%; min-height: 150px; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 4px; font-size: 0.9rem; margin-bottom: 0.5rem;">${script}</textarea>
+                    
+                    <div class="audio-player-container">
+                        <button class="btn btn-sm btn-primary" onclick="generateAudio('${id}', this)">🔊 오디오 생성 (TTS)</button>
+                        <audio controls style="width: 100%; display: none; height: 35px; margin-left:10px;"></audio>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            // Scroll to results
+            resultsArea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function generateAudio(textAreaId, btnElement) {
+            let text = document.getElementById(textAreaId).value;
+            const ttsProvider = document.getElementById('ttsProvider').value;
+            const language = document.getElementById('scriptLanguage').value;
+
+            // Clean text
+            text = text.replace(/^(제목|Title):.*$/gm, '');
+            text = text.replace(/^(대본|Script):\s*/gm, '');
+            text = text.trim();
+
+            if (!text) {
+                alert('재생할 텍스트가 없습니다.');
+                return;
+            }
+
+            const originalText = btnElement.innerText;
+            btnElement.innerText = '⏳ 생성 중...';
+            btnElement.disabled = true;
+
+            try {
+                // 가게 이름 가져오기
+                const storeNameInput = document.getElementById('storeName');
+                const storeName = storeNameInput ? storeNameInput.value.trim() : '';
+
+                // 텍스트에서 의미 있는 첫 단어들을 제목으로 추출 (최대 20자) - 가게 이름이 없을 경우 대비
+                const meaningfulText = text.replace(/[^\w\s가-힣]/g, ' ').trim();
+                const fallbackTitle = meaningfulText.slice(0, 20).trim() || '대본';
+
+                const response = await authFetch('/api/ai-video/generate-tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        provider: ttsProvider,
+                        language: language,
+                        storeName: storeName,
+                        title: fallbackTitle
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const audio = btnElement.nextElementSibling; // The <audio> element
+                    audio.src = data.audioPath;
+                    audio.style.display = 'block';
+                    audio.play();
+                    // Hide button as requested
+                    btnElement.style.display = 'none';
+                } else {
+                    alert('TTS 생성 실패: ' + data.error);
+                }
+            } catch (error) {
+                console.error('TTS failed:', error);
+                alert('TTS 생성 중 오류가 발생했습니다.');
+            } finally {
+                // Only reset if button is still visible (failed or not success branch)
+                if (btnElement.style.display !== 'none') {
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                }
+            }
+        }
+
+        function copyToClipboard(elementId) {
+            const copyText = document.getElementById(elementId);
+            copyText.select();
+            document.execCommand("copy");
+        }
+
+        function toggleScriptMode() {
+            const mode = document.querySelector('input[name="scriptMode"]:checked').value;
+            const labelName = document.getElementById('labelName');
+            const labelDesc = document.getElementById('labelDescription');
+            const storeNameInput = document.getElementById('storeName');
+            const storeDescInput = document.getElementById('storeDescription');
+            const locGroup = document.getElementById('locationGroup');
+            const labelDetail = document.getElementById('labelDetailInclude');
+
+            if (mode === 'entertainment') {
+                labelName.textContent = '🎬 주제 / 제목';
+                storeNameInput.placeholder = '예: 웃긴 고양이 모음, 여행 브이로그';
+
+                labelDesc.textContent = '📝 영상 내용 설명';
+                storeDescInput.placeholder = '예: 고양이가 점프하다가 넘어지는 장면, 잠자는 모습 등 귀여운 순간들 모음입니다.';
+
+                if (labelDetail) labelDetail.textContent = '제목';
+                if (locGroup) locGroup.style.display = 'none'; // Hide location
+
+                // Update Styles for Entertainment
+                updateStyleOptions(entertainmentScriptStyles, entertainmentIntroStyles, entertainmentOutroStyles);
+            } else {
+                labelName.textContent = '🏪 가게 이름';
+                storeNameInput.placeholder = '예: 고양시 맛집 할매순대국';
+
+                labelDesc.textContent = '✏️ 가게 설명 / 특징';
+                storeDescInput.placeholder = '예: 40년 전통의 순대국 전문점입니다. 국물이 진하고 고기가 많아요. 24시간 영업합니다.';
+
+                if (labelDetail) labelDetail.textContent = '이름';
+                if (locGroup) locGroup.style.display = 'block'; // Show location
+
+                // Update Styles for Business
+                updateStyleOptions(scriptStyles, introStyles, outroStyles);
+            }
+        }
+
+        function updateStyleOptions(sStyles, iStyles, oStyles) {
+            // 1. Script Styles (Chips)
+            const styleGrid = document.getElementById('scriptStyleGrid');
+            if (!styleGrid) return;
+            styleGrid.innerHTML = '';
+            Object.values(sStyles).forEach(style => {
+                const div = document.createElement('div');
+                div.className = 'style-option-chip';
+                div.textContent = style.korean;
+                div.dataset.style = style.english; // Use English key for backend
+                div.onclick = function () {
+                    toggleStyleChip(this);
+                    saveScriptInputs(); // Save on click
+                };
+                styleGrid.appendChild(div);
+            });
+
+            // 2. Intro Styles (Select)
+            const introSelect = document.getElementById('introStyle');
+            if (introSelect) {
+                const currentIntro = introSelect.value;
+                introSelect.innerHTML = '';
+                Object.values(iStyles).forEach(style => {
+                    const opt = document.createElement('option');
+                    opt.value = style.korean;
+                    opt.textContent = style.korean;
+                    introSelect.appendChild(opt);
+                });
+                // Restore logic is better handled in loadScriptInputs or logic below
+                // For now, reset to first or keep previous if valid
+                if (Object.values(iStyles).some(s => s.korean === currentIntro)) {
+                    introSelect.value = currentIntro;
+                } else {
+                    introSelect.selectedIndex = 0;
+                }
+            }
+
+            // 3. Outro Styles (Select)
+            const outroSelect = document.getElementById('outroStyle');
+            if (outroSelect) {
+                const currentOutro = outroSelect.value;
+                outroSelect.innerHTML = '';
+                Object.values(oStyles).forEach(style => {
+                    const opt = document.createElement('option');
+                    opt.value = style.korean;
+                    opt.textContent = style.korean;
+                    outroSelect.appendChild(opt);
+                });
+                if (Object.values(oStyles).some(s => s.korean === currentOutro)) {
+                    outroSelect.value = currentOutro;
+                } else {
+                    outroSelect.selectedIndex = 0;
+                }
+            }
+        }
+
+        // === Input Persistence ===
+        function saveScriptInputs() {
+            const inputs = {
+                scriptMode: document.querySelector('input[name="scriptMode"]:checked')?.value,
+                storeName: document.getElementById('storeName').value,
+                includeName: document.getElementById('includeName').checked,
+                storeLocation: document.getElementById('storeLocation').value,
+                locationIn: document.querySelector('input[name="locationIn"]:checked')?.value,
+                storeDescription: document.getElementById('storeDescription').value,
+                scriptLanguage: document.getElementById('scriptLanguage').value,
+                introStyle: document.getElementById('introStyle').value,
+                outroStyle: document.getElementById('outroStyle').value,
+                ttsProvider: document.getElementById('ttsProvider').value,
+                selectedStyles: Array.from(document.querySelectorAll('#scriptStyleGrid .style-option-chip.selected'))
+                    .map(el => el.dataset.style)
+            };
+            localStorage.setItem('scriptGenInputs', JSON.stringify(inputs));
+        }
+
+        function loadScriptInputs() {
+            const saved = localStorage.getItem('scriptGenInputs');
+            if (!saved) return;
+
+            try {
+                const inputs = JSON.parse(saved);
+
+                // Mode
+                if (inputs.scriptMode) {
+                    const modeRadio = document.querySelector(`input[name="scriptMode"][value="${inputs.scriptMode}"]`);
+                    if (modeRadio) {
+                        modeRadio.checked = true;
+                        toggleScriptMode(); // This refreshes fields and options
+                    }
+                }
+
+                // Text fields
+                if (inputs.storeName) document.getElementById('storeName').value = inputs.storeName;
+                if (inputs.storeDescription) document.getElementById('storeDescription').value = inputs.storeDescription;
+                if (inputs.storeLocation) document.getElementById('storeLocation').value = inputs.storeLocation;
+
+                // Checks
+                if (inputs.includeName !== undefined) document.getElementById('includeName').checked = inputs.includeName;
+                if (inputs.locationIn) {
+                    const locRadio = document.querySelector(`input[name="locationIn"][value="${inputs.locationIn}"]`);
+                    if (locRadio) locRadio.checked = true;
+                }
+
+                // Selects
+                if (inputs.scriptLanguage) document.getElementById('scriptLanguage').value = inputs.scriptLanguage;
+                if (inputs.ttsProvider) document.getElementById('ttsProvider').value = inputs.ttsProvider;
+
+                // Intro/Outro styles might need to be set after updateStyleOptions ensures they exist
+                if (inputs.introStyle) {
+                    const el = document.getElementById('introStyle');
+                    if (el && Array.from(el.options).some(o => o.value === inputs.introStyle)) el.value = inputs.introStyle;
+                }
+                if (inputs.outroStyle) {
+                    const el = document.getElementById('outroStyle');
+                    if (el && Array.from(el.options).some(o => o.value === inputs.outroStyle)) el.value = inputs.outroStyle;
+                }
+
+                // Style Chips
+                if (inputs.selectedStyles && Array.isArray(inputs.selectedStyles)) {
+                    const chips = document.querySelectorAll('#scriptStyleGrid .style-option-chip');
+                    chips.forEach(chip => {
+                        if (inputs.selectedStyles.includes(chip.dataset.style)) {
+                            chip.classList.add('selected');
+                        } else {
+                            chip.classList.remove('selected');
+                        }
+                    });
+                }
+
+            } catch (e) {
+                console.error("Failed to load script inputs", e);
+            }
+        }
+
+        // Initialize script mode on load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Only if the elements exist (they should now)
+            if (document.querySelector('input[name="scriptMode"]')) {
+                // First load stored mode to set correct fields
+                const saved = localStorage.getItem('scriptGenInputs');
+                if (saved) {
+                    loadScriptInputs();
+                } else {
+                    toggleScriptMode();
+                }
+
+                // Add event listeners for auto-save
+                const inputs = [
+                    'storeName', 'storeDescription', 'storeLocation',
+                    'includeName', 'scriptLanguage', 'introStyle', 'outroStyle', 'ttsProvider'
+                ];
+                inputs.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.addEventListener('change', saveScriptInputs);
+                    if (el) el.addEventListener('input', saveScriptInputs);
+                });
+
+                document.querySelectorAll('input[name="scriptMode"], input[name="locationIn"]').forEach(el => {
+                    el.addEventListener('change', saveScriptInputs);
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

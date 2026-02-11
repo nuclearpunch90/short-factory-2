@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shorts Maker - TTS & 자막 생성기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            padding: 20px;
+            color: #ffffff;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #111111;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            overflow: hidden;
+            border: 1px solid #333333;
+        }
+        
+        .header {
+            background: #222222;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+            background: #111111;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 1.1em;
+        }
+        
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #333333;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s;
+            background: #222222;
+            color: #ffffff;
+        }
+        
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #666666;
+            background: #333333;
+        }
+        
+        input[type="text"]::placeholder,
+        textarea::placeholder {
+            color: #888888;
+        }
+        
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-generate {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-generate:hover {
+            background: linear-gradient(135deg, #7c8cef 0%, #8a5bb5 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            background: linear-gradient(135deg, #555555 0%, #444444 100%);
+        }
+
+        .individual-generate {
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .btn-post-social {
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            background: linear-gradient(135deg, #1877f2 0%, #0d5dbf 100%) !important;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(24, 119, 242, 0.3);
+        }
+
+        .btn-post-social:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2d87ff 0%, #1a6dd9 100%) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(24, 119, 242, 0.4);
+        }
+
+        .btn-post-social:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: linear-gradient(135deg, #555555 0%, #444444 100%) !important;
+        }
+        
+        .status {
+            margin-top: 30px;
+            padding: 20px;
+            background: #222222;
+            border-radius: 10px;
+            display: none;
+            border: 1px solid #333333;
+        }
+        
+        .status.show {
+            display: block;
+        }
+        
+        .status h3 {
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+        
+        .status-message {
+            padding: 10px;
+            border-left: 4px solid #666666;
+            background: #333333;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            color: #ffffff;
+        }
+        
+        .status-message.error {
+            border-left-color: #ff4444;
+            background: #333333;
+            color: #ff7777;
+        }
+        
+        .status-message.success {
+            border-left-color: #44ff44;
+            background: #333333;
+            color: #77ff77;
+        }
+        
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .result-item {
+            padding: 20px;
+            background: #222222;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #333333;
+        }
+        
+        .result-item h4 {
+            margin-bottom: 10px;
+            color: #ffffff;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #444444;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-right: 10px;
+            transition: all 0.3s;
+            border: 1px solid #666666;
+        }
+        
+        .download-btn:hover {
+            background: #555555;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+        
+        audio {
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .srt-preview {
+            background: #222222;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            white-space: pre-wrap;
+            color: #cccccc;
+            border: 1px solid #333333;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 배치 그리드 스타일 */
+        .batch-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .grid-item {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #333333;
+            transition: all 0.3s;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .grid-item:hover {
+            border-color: #555555;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            transform: translateY(-2px);
+        }
+
+        .grid-item h4 {
+            margin-bottom: 15px;
+            color: #ffffff;
+            font-size: 1.3em;
+            text-align: center;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .batch-json {
+            width: 100%;
+            height: 150px;
+            padding: 12px 14px;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            font-size: 0.9em;
+            resize: vertical;
+            margin-bottom: 12px;
+            background: #1a1a1a;
+            color: #ffffff;
+            transition: all 0.3s;
+            font-family: 'Consolas', 'Monaco', monospace;
+            line-height: 1.5;
+        }
+
+        .batch-json:focus {
+            border-color: #667eea;
+            background: #222222;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .batch-json::placeholder {
+            color: #666666;
+        }
+
+        .status-indicator {
+            background: linear-gradient(135deg, #555555 0%, #444444 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            text-align: center;
+            font-weight: 700;
+            border: 2px solid #666666;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-indicator.processing {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            border-color: #f59e0b;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 2px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        .status-indicator.completed {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-color: #10b981;
+            box-shadow: 0 2px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .status-indicator.error {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border-color: #ef4444;
+            box-shadow: 0 2px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* 배치 컨트롤 */
+        .batch-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn-download-all {
+            background: #444444;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid #666666;
+        }
+
+        .btn-download-all:hover {
+            background: #555555;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        /* 배치 결과 */
+        .batch-results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .batch-results.show {
+            display: block;
+        }
+
+        .batch-results h3 {
+            color: #ffffff;
+            margin-bottom: 15px;
+        }
+
+        .batch-results-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .batch-result-item {
+            background: #222222;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #333333;
+        }
+
+        .batch-result-item h5 {
+            margin-bottom: 10px;
+            color: #ffffff;
+            font-size: 0.9em;
+        }
+
+        .batch-result-item audio {
+            width: 100%;
+            height: 35px;
+            margin-bottom: 8px;
+        }
+
+        .batch-download-btn {
+            display: inline-block;
+            padding: 5px 10px;
+            background: #444444;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 0.8em;
+            margin: 2px;
+            transition: all 0.3s;
+            border: 1px solid #666666;
+        }
+
+        .batch-download-btn:hover {
+            background: #555555;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+        }
+
+        /* 백그라운드 음악 스타일 */
+        .music-selection {
+            margin-bottom: 12px;
+        }
+
+        .music-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #ffffff;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .music-select:focus {
+            border-color: #667eea;
+            background: #222222;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .music-select:hover {
+            border-color: #444444;
+        }
+
+        .music-select option {
+            background: #222222;
+            color: #ffffff;
+            padding: 8px;
+        }
+
+        /* outro 선택 스타일 */
+        .outro-selection {
+            margin-top: 12px;
+        }
+
+        .outro-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #ffffff;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .outro-select:focus {
+            border-color: #667eea;
+            background: #222222;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .outro-select:hover {
+            border-color: #444444;
+        }
+
+        .outro-select option {
+            background: #222222;
+            color: #ffffff;
+            padding: 8px;
+        }
+
+        /* emotion-select 스타일 */
+        .emotion-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #ffffff;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .emotion-select:focus {
+            border-color: #667eea;
+            background: #222222;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .emotion-select:hover {
+            border-color: #444444;
+        }
+
+        .emotion-select option {
+            background: #222222;
+            color: #ffffff;
+            padding: 8px;
+        }
+
+        /* folder-select 스타일 */
+        .folder-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #ffffff;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .folder-select:focus {
+            border-color: #667eea;
+            background: #222222;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .folder-select:hover {
+            border-color: #444444;
+        }
+
+        .folder-select option {
+            background: #222222;
+            color: #ffffff;
+            padding: 8px;
+        }
+
+        .folder-selection {
+            margin-bottom: 12px;
+        }
+
+        /* template-select 스타일 */
+        .template-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #ffffff;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .template-select:focus {
+            border-color: #667eea;
+            background: #222222;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .template-select:hover {
+            border-color: #444444;
+        }
+
+        .template-select option {
+            background: #222222;
+            color: #ffffff;
+            padding: 8px;
+        }
+
+        /* global-select 스타일 (전역 설정용) */
+        .global-select {
+            padding: 10px 12px;
+            border: 2px solid #444444;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            color: #ffffff;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: all 0.3s;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .global-select:hover {
+            border-color: #5a5a5a;
+            background: linear-gradient(135deg, #333333 0%, #222222 100%);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        .global-select:focus {
+            border-color: #007bff;
+            background: linear-gradient(135deg, #333333 0%, #222222 100%);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.25);
+        }
+
+        .global-select option {
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 8px;
+        }
+
+        /* btn-apply 스타일 (일괄 적용 버튼) */
+        .btn-apply {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .btn-apply:hover {
+            background: linear-gradient(135deg, #34ce57 0%, #28a745 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        .btn-apply:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .btn-apply:disabled {
+            background: linear-gradient(135deg, #666666 0%, #555555 100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* 폴더 비디오 아이템 스타일 */
+        .folder-video-item {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 2px solid #333333;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .folder-video-item:hover {
+            background: #333333;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .folder-video-item:active {
+            transform: translateY(0);
+        }
+
+        .folder-video-item.posting {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .folder-video-item.posted {
+            border-color: #28a745;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a3a1a 100%);
+        }
+
+        .folder-video-posting-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .folder-video-posting-modal.active {
+            display: flex;
+        }
+
+        .folder-video-posting-content {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #667eea;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 플랫폼 선택 호버 효과 */
+        #platformSelection label:hover {
+            background: #444444 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        #platformSelection label input:checked + span {
+            font-weight: 600;
+        }
+
+        #platformSelection label:has(input:checked) {
+            background: linear-gradient(135deg, #1877f2 0%, #0d5dbf 100%) !important;
+            box-shadow: 0 4px 12px rgba(24, 119, 242, 0.4);
+        }
+
+        .btn-post-social:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2d87ff 0%, #1a6dd9 100%) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(24, 119, 242, 0.4);
+        }
+
+        /* 작업 카드 내부 섹션 구분 */
+        .card-section {
+            margin-bottom: 12px;
+        }
+
+        .card-section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, #444444 50%, transparent 100%);
+            margin: 15px 0;
+        }
+
+        /* 카드 내 플랫폼 선택 호버 효과 */
+        .card-platform-selection label:hover {
+            background: #353535 !important;
+            transform: scale(1.02);
+        }
+
+        .card-platform-selection label:has(input:checked) {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .card-profile-select:focus,
+        .card-profile-select:hover {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        /* 폴더 포스팅 섹션 플랫폼 선택 */
+        #folderPlatformSelection label:hover {
+            background: #353535 !important;
+            transform: scale(1.02);
+        }
+
+        #folderPlatformSelection label:has(input:checked) {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .folder-video-item {
+            padding: 12px;
+            background: #222222;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #333333;
+            transition: all 0.3s;
+        }
+
+        .folder-video-item:hover {
+            border-color: #667eea;
+            background: #2a2a2a;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .batch-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .batch-grid,
+            .batch-results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .batch-controls {
+                flex-direction: column;
+            }
+
+            #platformSelection {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            #platformSelection label {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .grid-item {
+                padding: 20px;
+            }
+
+            .grid-item h4 {
+                font-size: 1.1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Shorts Maker</h1>
+            <p>MiniMax TTS와 Whisper를 활용한 YouTube Shorts 제작 도구</p>
+            <div style="margin-top: 15px;">
+                <a href="/transition-editor" style="display: inline-block; padding: 10px 20px; background: #444444; color: white; text-decoration: none; border-radius: 8px; transition: all 0.3s; border: 1px solid #666666;">
+                    🎥 비디오 트랜지션 편집기 →
+                </a>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- 배치 작업 폼 -->
+            <div id="batchMode" class="mode-content active">
+                <div class="batch-grid">
+                    <div class="grid-item" data-index="0">
+                        <h4>작업 1</h4>
+                        <textarea class="batch-json" placeholder='{"script": "안녕하세요...", "title": "제목", "description": "설명"}' required></textarea>
+                        <div class="emotion-selection" style="margin-bottom: 8px;">
+                            <select class="emotion-select">
+                                <option value="surprised">놀람</option>
+                                <option value="sad">슬픈</option>
+                                <option value="happy">행복한</option>
+                                <option value="angry">화난</option>
+                                <option value="fearful">두려운</option>
+                                <option value="disgusted">역겨운</option>
+                                <option value="neutral">중성</option>
+                            </select>
+                        </div>
+                        <div class="folder-selection" style="margin-bottom: 8px;">
+                            <select class="folder-select">
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="music-selection">
+                            <select class="music-select batch-music">
+                                <option value="">배경음악 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="template-selection" style="margin-top: 8px;">
+                            <select class="template-select">
+                                <option value="">템플릿 선택...</option>
+                            </select>
+                        </div>
+                        <div class="outro-selection" style="margin-top: 8px;">
+                            <select class="outro-select batch-outro">
+                                <option value="">Outro 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="ads-selection" style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; font-size: 0.85em; color: #ffffff; cursor: pointer;">
+                                <input type="checkbox" class="include-ads-checkbox" style="margin-right: 6px;">
+                                광고 추가
+                            </label>
+                        </div>
+                        <div class="video-count-selection" style="margin-top: 8px;">
+                            <label style="display: block; font-size: 0.8em; color: #ffffff; margin-bottom: 4px;">생성할 영상 개수:</label>
+                            <input type="number" class="video-count-input" min="1" max="10" value="1" style="width: 100%; padding: 6px 8px; border: 1px solid #333333; border-radius: 4px; background: #222222; color: #ffffff; font-size: 0.8em;">
+                        </div>
+                        <div class="card-section-divider"></div>
+
+                        <!-- 작업별 소셜 미디어 설정 -->
+                        <div class="card-social-settings" style="margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333333;">
+                            <h5 style="color: #ffffff; font-size: 0.9em; margin-bottom: 12px; text-align: center;">📱 소셜 미디어 설정</h5>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 6px; color: #cccccc; font-size: 0.85em; font-weight: 600;">프로필 선택</label>
+                                <select class="card-profile-select" style="width: 100%; padding: 8px 10px; border: 2px solid #333333; border-radius: 6px; background: #222222; color: #ffffff; font-size: 0.85em; transition: all 0.3s; cursor: pointer;">
+                                    <option value="">프로필 로드 중...</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 8px; color: #cccccc; font-size: 0.85em; font-weight: 600;">포스팅할 플랫폼</label>
+                                <div class="card-platform-selection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="youtube" style="margin-right: 4px;">
+                                        <span>📺 YouTube</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="tiktok" style="margin-right: 4px;">
+                                        <span>🎵 TikTok</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="instagram" style="margin-right: 4px;">
+                                        <span>📸 Instagram</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="facebook" style="margin-right: 4px;">
+                                        <span>👥 Facebook</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="twitter" style="margin-right: 4px;">
+                                        <span>🐦 Twitter</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="linkedin" style="margin-right: 4px;">
+                                        <span>💼 LinkedIn</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="threads" style="margin-right: 4px;">
+                                        <span>🧵 Threads</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="pinterest" style="margin-right: 4px;">
+                                        <span>📌 Pinterest</span>
+                                    </label>
+                                </div>
+                                <label style="display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer; margin-top: 8px; font-size: 0.85em;">
+                                    <input type="checkbox" class="card-select-all-platforms" style="margin-right: 6px;">
+                                    <span style="font-weight: 600;">모든 플랫폼</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card-section-divider"></div>
+
+                        <div style="margin-bottom: 8px; margin-top: 12px;">
+                            <button class="btn-generate individual-generate" style="width: 100%; padding: 12px; font-size: 0.95em;">
+                                <span class="individual-btn-text">🎬 생성</span>
+                                <span class="loading individual-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <button class="btn-post-social" style="width: 100%; padding: 12px; font-size: 0.95em; display: none;" disabled>
+                                <span class="post-btn-text">📱 소셜 미디어에 포스팅</span>
+                                <span class="loading post-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div class="status-indicator">대기</div>
+                    </div>
+                    <div class="grid-item" data-index="1">
+                        <h4>작업 2</h4>
+                        <textarea class="batch-json" placeholder='{"script": "안녕하세요...", "title": "제목", "description": "설명"}' required></textarea>
+                        <div class="emotion-selection" style="margin-bottom: 8px;">
+                            <select class="emotion-select">
+                                <option value="surprised">놀람</option>
+                                <option value="sad">슬픈</option>
+                                <option value="happy">행복한</option>
+                                <option value="angry">화난</option>
+                                <option value="fearful">두려운</option>
+                                <option value="disgusted">역겨운</option>
+                                <option value="neutral">중성</option>
+                            </select>
+                        </div>
+                        <div class="folder-selection" style="margin-bottom: 8px;">
+                            <select class="folder-select">
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="music-selection">
+                            <select class="music-select batch-music">
+                                <option value="">배경음악 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="template-selection" style="margin-top: 8px;">
+                            <select class="template-select">
+                                <option value="">템플릿 선택...</option>
+                            </select>
+                        </div>
+                        <div class="outro-selection" style="margin-top: 8px;">
+                            <select class="outro-select batch-outro">
+                                <option value="">Outro 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="ads-selection" style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; font-size: 0.85em; color: #ffffff; cursor: pointer;">
+                                <input type="checkbox" class="include-ads-checkbox" style="margin-right: 6px;">
+                                광고 추가
+                            </label>
+                        </div>
+                        <div class="video-count-selection" style="margin-top: 8px;">
+                            <label style="display: block; font-size: 0.8em; color: #ffffff; margin-bottom: 4px;">생성할 영상 개수:</label>
+                            <input type="number" class="video-count-input" min="1" max="10" value="1" style="width: 100%; padding: 6px 8px; border: 1px solid #333333; border-radius: 4px; background: #222222; color: #ffffff; font-size: 0.8em;">
+                        </div>
+                        <div class="card-section-divider"></div>
+
+                        <!-- 작업별 소셜 미디어 설정 -->
+                        <div class="card-social-settings" style="margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333333;">
+                            <h5 style="color: #ffffff; font-size: 0.9em; margin-bottom: 12px; text-align: center;">📱 소셜 미디어 설정</h5>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 6px; color: #cccccc; font-size: 0.85em; font-weight: 600;">프로필 선택</label>
+                                <select class="card-profile-select" style="width: 100%; padding: 8px 10px; border: 2px solid #333333; border-radius: 6px; background: #222222; color: #ffffff; font-size: 0.85em; transition: all 0.3s; cursor: pointer;">
+                                    <option value="">프로필 로드 중...</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 8px; color: #cccccc; font-size: 0.85em; font-weight: 600;">포스팅할 플랫폼</label>
+                                <div class="card-platform-selection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="youtube" style="margin-right: 4px;">
+                                        <span>📺 YouTube</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="tiktok" style="margin-right: 4px;">
+                                        <span>🎵 TikTok</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="instagram" style="margin-right: 4px;">
+                                        <span>📸 Instagram</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="facebook" style="margin-right: 4px;">
+                                        <span>👥 Facebook</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="twitter" style="margin-right: 4px;">
+                                        <span>🐦 Twitter</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="linkedin" style="margin-right: 4px;">
+                                        <span>💼 LinkedIn</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="threads" style="margin-right: 4px;">
+                                        <span>🧵 Threads</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="pinterest" style="margin-right: 4px;">
+                                        <span>📌 Pinterest</span>
+                                    </label>
+                                </div>
+                                <label style="display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer; margin-top: 8px; font-size: 0.85em;">
+                                    <input type="checkbox" class="card-select-all-platforms" style="margin-right: 6px;">
+                                    <span style="font-weight: 600;">모든 플랫폼</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card-section-divider"></div>
+
+                        <div style="margin-bottom: 8px; margin-top: 12px;">
+                            <button class="btn-generate individual-generate" style="width: 100%; padding: 12px; font-size: 0.95em;">
+                                <span class="individual-btn-text">🎬 생성</span>
+                                <span class="loading individual-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <button class="btn-post-social" style="width: 100%; padding: 12px; font-size: 0.95em; display: none;" disabled>
+                                <span class="post-btn-text">📱 소셜 미디어에 포스팅</span>
+                                <span class="loading post-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div class="status-indicator">대기</div>
+                    </div>
+                    <div class="grid-item" data-index="2">
+                        <h4>작업 3</h4>
+                        <textarea class="batch-json" placeholder='{"script": "안녕하세요...", "title": "제목", "description": "설명"}' required></textarea>
+                        <div class="emotion-selection" style="margin-bottom: 8px;">
+                            <select class="emotion-select">
+                                <option value="surprised">놀람</option>
+                                <option value="sad">슬픈</option>
+                                <option value="happy">행복한</option>
+                                <option value="angry">화난</option>
+                                <option value="fearful">두려운</option>
+                                <option value="disgusted">역겨운</option>
+                                <option value="neutral">중성</option>
+                            </select>
+                        </div>
+                        <div class="folder-selection" style="margin-bottom: 8px;">
+                            <select class="folder-select">
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="music-selection">
+                            <select class="music-select batch-music">
+                                <option value="">배경음악 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="template-selection" style="margin-top: 8px;">
+                            <select class="template-select">
+                                <option value="">템플릿 선택...</option>
+                            </select>
+                        </div>
+                        <div class="outro-selection" style="margin-top: 8px;">
+                            <select class="outro-select batch-outro">
+                                <option value="">Outro 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="ads-selection" style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; font-size: 0.85em; color: #ffffff; cursor: pointer;">
+                                <input type="checkbox" class="include-ads-checkbox" style="margin-right: 6px;">
+                                광고 추가
+                            </label>
+                        </div>
+                        <div class="video-count-selection" style="margin-top: 8px;">
+                            <label style="display: block; font-size: 0.8em; color: #ffffff; margin-bottom: 4px;">생성할 영상 개수:</label>
+                            <input type="number" class="video-count-input" min="1" max="10" value="1" style="width: 100%; padding: 6px 8px; border: 1px solid #333333; border-radius: 4px; background: #222222; color: #ffffff; font-size: 0.8em;">
+                        </div>
+                        <div class="card-section-divider"></div>
+
+                        <!-- 작업별 소셜 미디어 설정 -->
+                        <div class="card-social-settings" style="margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333333;">
+                            <h5 style="color: #ffffff; font-size: 0.9em; margin-bottom: 12px; text-align: center;">📱 소셜 미디어 설정</h5>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 6px; color: #cccccc; font-size: 0.85em; font-weight: 600;">프로필 선택</label>
+                                <select class="card-profile-select" style="width: 100%; padding: 8px 10px; border: 2px solid #333333; border-radius: 6px; background: #222222; color: #ffffff; font-size: 0.85em; transition: all 0.3s; cursor: pointer;">
+                                    <option value="">프로필 로드 중...</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 8px; color: #cccccc; font-size: 0.85em; font-weight: 600;">포스팅할 플랫폼</label>
+                                <div class="card-platform-selection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="youtube" style="margin-right: 4px;">
+                                        <span>📺 YouTube</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="tiktok" style="margin-right: 4px;">
+                                        <span>🎵 TikTok</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="instagram" style="margin-right: 4px;">
+                                        <span>📸 Instagram</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="facebook" style="margin-right: 4px;">
+                                        <span>👥 Facebook</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="twitter" style="margin-right: 4px;">
+                                        <span>🐦 Twitter</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="linkedin" style="margin-right: 4px;">
+                                        <span>💼 LinkedIn</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="threads" style="margin-right: 4px;">
+                                        <span>🧵 Threads</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="pinterest" style="margin-right: 4px;">
+                                        <span>📌 Pinterest</span>
+                                    </label>
+                                </div>
+                                <label style="display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer; margin-top: 8px; font-size: 0.85em;">
+                                    <input type="checkbox" class="card-select-all-platforms" style="margin-right: 6px;">
+                                    <span style="font-weight: 600;">모든 플랫폼</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card-section-divider"></div>
+
+                        <div style="margin-bottom: 8px; margin-top: 12px;">
+                            <button class="btn-generate individual-generate" style="width: 100%; padding: 12px; font-size: 0.95em;">
+                                <span class="individual-btn-text">🎬 생성</span>
+                                <span class="loading individual-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <button class="btn-post-social" style="width: 100%; padding: 12px; font-size: 0.95em; display: none;" disabled>
+                                <span class="post-btn-text">📱 소셜 미디어에 포스팅</span>
+                                <span class="loading post-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div class="status-indicator">대기</div>
+                    </div>
+                    <div class="grid-item" data-index="3">
+                        <h4>작업 4</h4>
+                        <textarea class="batch-json" placeholder='{"script": "안녕하세요...", "title": "제목", "description": "설명"}' required></textarea>
+                        <div class="emotion-selection" style="margin-bottom: 8px;">
+                            <select class="emotion-select">
+                                <option value="surprised">놀람</option>
+                                <option value="sad">슬픈</option>
+                                <option value="happy">행복한</option>
+                                <option value="angry">화난</option>
+                                <option value="fearful">두려운</option>
+                                <option value="disgusted">역겨운</option>
+                                <option value="neutral">중성</option>
+                            </select>
+                        </div>
+                        <div class="folder-selection" style="margin-bottom: 8px;">
+                            <select class="folder-select">
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="music-selection">
+                            <select class="music-select batch-music">
+                                <option value="">배경음악 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="template-selection" style="margin-top: 8px;">
+                            <select class="template-select">
+                                <option value="">템플릿 선택...</option>
+                            </select>
+                        </div>
+                        <div class="outro-selection" style="margin-top: 8px;">
+                            <select class="outro-select batch-outro">
+                                <option value="">Outro 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="ads-selection" style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; font-size: 0.85em; color: #ffffff; cursor: pointer;">
+                                <input type="checkbox" class="include-ads-checkbox" style="margin-right: 6px;">
+                                광고 추가
+                            </label>
+                        </div>
+                        <div class="video-count-selection" style="margin-top: 8px;">
+                            <label style="display: block; font-size: 0.8em; color: #ffffff; margin-bottom: 4px;">생성할 영상 개수:</label>
+                            <input type="number" class="video-count-input" min="1" max="10" value="1" style="width: 100%; padding: 6px 8px; border: 1px solid #333333; border-radius: 4px; background: #222222; color: #ffffff; font-size: 0.8em;">
+                        </div>
+                        <div class="card-section-divider"></div>
+
+                        <!-- 작업별 소셜 미디어 설정 -->
+                        <div class="card-social-settings" style="margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333333;">
+                            <h5 style="color: #ffffff; font-size: 0.9em; margin-bottom: 12px; text-align: center;">📱 소셜 미디어 설정</h5>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 6px; color: #cccccc; font-size: 0.85em; font-weight: 600;">프로필 선택</label>
+                                <select class="card-profile-select" style="width: 100%; padding: 8px 10px; border: 2px solid #333333; border-radius: 6px; background: #222222; color: #ffffff; font-size: 0.85em; transition: all 0.3s; cursor: pointer;">
+                                    <option value="">프로필 로드 중...</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 8px; color: #cccccc; font-size: 0.85em; font-weight: 600;">포스팅할 플랫폼</label>
+                                <div class="card-platform-selection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="youtube" style="margin-right: 4px;">
+                                        <span>📺 YouTube</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="tiktok" style="margin-right: 4px;">
+                                        <span>🎵 TikTok</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="instagram" style="margin-right: 4px;">
+                                        <span>📸 Instagram</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="facebook" style="margin-right: 4px;">
+                                        <span>👥 Facebook</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="twitter" style="margin-right: 4px;">
+                                        <span>🐦 Twitter</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="linkedin" style="margin-right: 4px;">
+                                        <span>💼 LinkedIn</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="threads" style="margin-right: 4px;">
+                                        <span>🧵 Threads</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="pinterest" style="margin-right: 4px;">
+                                        <span>📌 Pinterest</span>
+                                    </label>
+                                </div>
+                                <label style="display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer; margin-top: 8px; font-size: 0.85em;">
+                                    <input type="checkbox" class="card-select-all-platforms" style="margin-right: 6px;">
+                                    <span style="font-weight: 600;">모든 플랫폼</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card-section-divider"></div>
+
+                        <div style="margin-bottom: 8px; margin-top: 12px;">
+                            <button class="btn-generate individual-generate" style="width: 100%; padding: 12px; font-size: 0.95em;">
+                                <span class="individual-btn-text">🎬 생성</span>
+                                <span class="loading individual-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <button class="btn-post-social" style="width: 100%; padding: 12px; font-size: 0.95em; display: none;" disabled>
+                                <span class="post-btn-text">📱 소셜 미디어에 포스팅</span>
+                                <span class="loading post-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div class="status-indicator">대기</div>
+                    </div>
+                    <div class="grid-item" data-index="4">
+                        <h4>작업 5</h4>
+                        <textarea class="batch-json" placeholder='{"script": "안녕하세요...", "title": "제목", "description": "설명"}' required></textarea>
+                        <div class="emotion-selection" style="margin-bottom: 8px;">
+                            <select class="emotion-select">
+                                <option value="surprised">놀람</option>
+                                <option value="sad">슬픈</option>
+                                <option value="happy">행복한</option>
+                                <option value="angry">화난</option>
+                                <option value="fearful">두려운</option>
+                                <option value="disgusted">역겨운</option>
+                                <option value="neutral">중성</option>
+                            </select>
+                        </div>
+                        <div class="folder-selection" style="margin-bottom: 8px;">
+                            <select class="folder-select">
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="music-selection">
+                            <select class="music-select batch-music">
+                                <option value="">배경음악 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="template-selection" style="margin-top: 8px;">
+                            <select class="template-select">
+                                <option value="">템플릿 선택...</option>
+                            </select>
+                        </div>
+                        <div class="outro-selection" style="margin-top: 8px;">
+                            <select class="outro-select batch-outro">
+                                <option value="">Outro 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="ads-selection" style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; font-size: 0.85em; color: #ffffff; cursor: pointer;">
+                                <input type="checkbox" class="include-ads-checkbox" style="margin-right: 6px;">
+                                광고 추가
+                            </label>
+                        </div>
+                        <div class="video-count-selection" style="margin-top: 8px;">
+                            <label style="display: block; font-size: 0.8em; color: #ffffff; margin-bottom: 4px;">생성할 영상 개수:</label>
+                            <input type="number" class="video-count-input" min="1" max="10" value="1" style="width: 100%; padding: 6px 8px; border: 1px solid #333333; border-radius: 4px; background: #222222; color: #ffffff; font-size: 0.8em;">
+                        </div>
+                        <div class="card-section-divider"></div>
+
+                        <!-- 작업별 소셜 미디어 설정 -->
+                        <div class="card-social-settings" style="margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333333;">
+                            <h5 style="color: #ffffff; font-size: 0.9em; margin-bottom: 12px; text-align: center;">📱 소셜 미디어 설정</h5>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 6px; color: #cccccc; font-size: 0.85em; font-weight: 600;">프로필 선택</label>
+                                <select class="card-profile-select" style="width: 100%; padding: 8px 10px; border: 2px solid #333333; border-radius: 6px; background: #222222; color: #ffffff; font-size: 0.85em; transition: all 0.3s; cursor: pointer;">
+                                    <option value="">프로필 로드 중...</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 8px; color: #cccccc; font-size: 0.85em; font-weight: 600;">포스팅할 플랫폼</label>
+                                <div class="card-platform-selection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="youtube" style="margin-right: 4px;">
+                                        <span>📺 YouTube</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="tiktok" style="margin-right: 4px;">
+                                        <span>🎵 TikTok</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="instagram" style="margin-right: 4px;">
+                                        <span>📸 Instagram</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="facebook" style="margin-right: 4px;">
+                                        <span>👥 Facebook</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="twitter" style="margin-right: 4px;">
+                                        <span>🐦 Twitter</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="linkedin" style="margin-right: 4px;">
+                                        <span>💼 LinkedIn</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="threads" style="margin-right: 4px;">
+                                        <span>🧵 Threads</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="pinterest" style="margin-right: 4px;">
+                                        <span>📌 Pinterest</span>
+                                    </label>
+                                </div>
+                                <label style="display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer; margin-top: 8px; font-size: 0.85em;">
+                                    <input type="checkbox" class="card-select-all-platforms" style="margin-right: 6px;">
+                                    <span style="font-weight: 600;">모든 플랫폼</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card-section-divider"></div>
+
+                        <div style="margin-bottom: 8px; margin-top: 12px;">
+                            <button class="btn-generate individual-generate" style="width: 100%; padding: 12px; font-size: 0.95em;">
+                                <span class="individual-btn-text">🎬 생성</span>
+                                <span class="loading individual-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <button class="btn-post-social" style="width: 100%; padding: 12px; font-size: 0.95em; display: none;" disabled>
+                                <span class="post-btn-text">📱 소셜 미디어에 포스팅</span>
+                                <span class="loading post-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div class="status-indicator">대기</div>
+                    </div>
+                    <div class="grid-item" data-index="5">
+                        <h4>작업 6</h4>
+                        <textarea class="batch-json" placeholder='{"script": "안녕하세요...", "title": "제목", "description": "설명"}' required></textarea>
+                        <div class="emotion-selection" style="margin-bottom: 8px;">
+                            <select class="emotion-select">
+                                <option value="surprised">놀람</option>
+                                <option value="sad">슬픈</option>
+                                <option value="happy">행복한</option>
+                                <option value="angry">화난</option>
+                                <option value="fearful">두려운</option>
+                                <option value="disgusted">역겨운</option>
+                                <option value="neutral">중성</option>
+                            </select>
+                        </div>
+                        <div class="folder-selection" style="margin-bottom: 8px;">
+                            <select class="folder-select">
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="music-selection">
+                            <select class="music-select batch-music">
+                                <option value="">배경음악 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="template-selection" style="margin-top: 8px;">
+                            <select class="template-select">
+                                <option value="">템플릿 선택...</option>
+                            </select>
+                        </div>
+                        <div class="outro-selection" style="margin-top: 8px;">
+                            <select class="outro-select batch-outro">
+                                <option value="">Outro 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="ads-selection" style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; font-size: 0.85em; color: #ffffff; cursor: pointer;">
+                                <input type="checkbox" class="include-ads-checkbox" style="margin-right: 6px;">
+                                광고 추가
+                            </label>
+                        </div>
+                        <div class="video-count-selection" style="margin-top: 8px;">
+                            <label style="display: block; font-size: 0.8em; color: #ffffff; margin-bottom: 4px;">생성할 영상 개수:</label>
+                            <input type="number" class="video-count-input" min="1" max="10" value="1" style="width: 100%; padding: 6px 8px; border: 1px solid #333333; border-radius: 4px; background: #222222; color: #ffffff; font-size: 0.8em;">
+                        </div>
+                        <div class="card-section-divider"></div>
+
+                        <!-- 작업별 소셜 미디어 설정 -->
+                        <div class="card-social-settings" style="margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333333;">
+                            <h5 style="color: #ffffff; font-size: 0.9em; margin-bottom: 12px; text-align: center;">📱 소셜 미디어 설정</h5>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 6px; color: #cccccc; font-size: 0.85em; font-weight: 600;">프로필 선택</label>
+                                <select class="card-profile-select" style="width: 100%; padding: 8px 10px; border: 2px solid #333333; border-radius: 6px; background: #222222; color: #ffffff; font-size: 0.85em; transition: all 0.3s; cursor: pointer;">
+                                    <option value="">프로필 로드 중...</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 8px; color: #cccccc; font-size: 0.85em; font-weight: 600;">포스팅할 플랫폼</label>
+                                <div class="card-platform-selection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="youtube" style="margin-right: 4px;">
+                                        <span>📺 YouTube</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="tiktok" style="margin-right: 4px;">
+                                        <span>🎵 TikTok</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="instagram" style="margin-right: 4px;">
+                                        <span>📸 Instagram</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="facebook" style="margin-right: 4px;">
+                                        <span>👥 Facebook</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="twitter" style="margin-right: 4px;">
+                                        <span>🐦 Twitter</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="linkedin" style="margin-right: 4px;">
+                                        <span>💼 LinkedIn</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="threads" style="margin-right: 4px;">
+                                        <span>🧵 Threads</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="pinterest" style="margin-right: 4px;">
+                                        <span>📌 Pinterest</span>
+                                    </label>
+                                </div>
+                                <label style="display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer; margin-top: 8px; font-size: 0.85em;">
+                                    <input type="checkbox" class="card-select-all-platforms" style="margin-right: 6px;">
+                                    <span style="font-weight: 600;">모든 플랫폼</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card-section-divider"></div>
+
+                        <div style="margin-bottom: 8px; margin-top: 12px;">
+                            <button class="btn-generate individual-generate" style="width: 100%; padding: 12px; font-size: 0.95em;">
+                                <span class="individual-btn-text">🎬 생성</span>
+                                <span class="loading individual-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <button class="btn-post-social" style="width: 100%; padding: 12px; font-size: 0.95em; display: none;" disabled>
+                                <span class="post-btn-text">📱 소셜 미디어에 포스팅</span>
+                                <span class="loading post-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div class="status-indicator">대기</div>
+                    </div>
+                    <div class="grid-item" data-index="6">
+                        <h4>작업 7</h4>
+                        <textarea class="batch-json" placeholder='{"script": "안녕하세요...", "title": "제목", "description": "설명"}' required></textarea>
+                        <div class="emotion-selection" style="margin-bottom: 8px;">
+                            <select class="emotion-select">
+                                <option value="surprised">놀람</option>
+                                <option value="sad">슬픈</option>
+                                <option value="happy">행복한</option>
+                                <option value="angry">화난</option>
+                                <option value="fearful">두려운</option>
+                                <option value="disgusted">역겨운</option>
+                                <option value="neutral">중성</option>
+                            </select>
+                        </div>
+                        <div class="folder-selection" style="margin-bottom: 8px;">
+                            <select class="folder-select">
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="music-selection">
+                            <select class="music-select batch-music">
+                                <option value="">배경음악 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="template-selection" style="margin-top: 8px;">
+                            <select class="template-select">
+                                <option value="">템플릿 선택...</option>
+                            </select>
+                        </div>
+                        <div class="outro-selection" style="margin-top: 8px;">
+                            <select class="outro-select batch-outro">
+                                <option value="">Outro 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="ads-selection" style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; font-size: 0.85em; color: #ffffff; cursor: pointer;">
+                                <input type="checkbox" class="include-ads-checkbox" style="margin-right: 6px;">
+                                광고 추가
+                            </label>
+                        </div>
+                        <div class="video-count-selection" style="margin-top: 8px;">
+                            <label style="display: block; font-size: 0.8em; color: #ffffff; margin-bottom: 4px;">생성할 영상 개수:</label>
+                            <input type="number" class="video-count-input" min="1" max="10" value="1" style="width: 100%; padding: 6px 8px; border: 1px solid #333333; border-radius: 4px; background: #222222; color: #ffffff; font-size: 0.8em;">
+                        </div>
+                        <div class="card-section-divider"></div>
+
+                        <!-- 작업별 소셜 미디어 설정 -->
+                        <div class="card-social-settings" style="margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333333;">
+                            <h5 style="color: #ffffff; font-size: 0.9em; margin-bottom: 12px; text-align: center;">📱 소셜 미디어 설정</h5>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 6px; color: #cccccc; font-size: 0.85em; font-weight: 600;">프로필 선택</label>
+                                <select class="card-profile-select" style="width: 100%; padding: 8px 10px; border: 2px solid #333333; border-radius: 6px; background: #222222; color: #ffffff; font-size: 0.85em; transition: all 0.3s; cursor: pointer;">
+                                    <option value="">프로필 로드 중...</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 8px; color: #cccccc; font-size: 0.85em; font-weight: 600;">포스팅할 플랫폼</label>
+                                <div class="card-platform-selection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="youtube" style="margin-right: 4px;">
+                                        <span>📺 YouTube</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="tiktok" style="margin-right: 4px;">
+                                        <span>🎵 TikTok</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="instagram" style="margin-right: 4px;">
+                                        <span>📸 Instagram</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="facebook" style="margin-right: 4px;">
+                                        <span>👥 Facebook</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="twitter" style="margin-right: 4px;">
+                                        <span>🐦 Twitter</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="linkedin" style="margin-right: 4px;">
+                                        <span>💼 LinkedIn</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="threads" style="margin-right: 4px;">
+                                        <span>🧵 Threads</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="pinterest" style="margin-right: 4px;">
+                                        <span>📌 Pinterest</span>
+                                    </label>
+                                </div>
+                                <label style="display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer; margin-top: 8px; font-size: 0.85em;">
+                                    <input type="checkbox" class="card-select-all-platforms" style="margin-right: 6px;">
+                                    <span style="font-weight: 600;">모든 플랫폼</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card-section-divider"></div>
+
+                        <div style="margin-bottom: 8px; margin-top: 12px;">
+                            <button class="btn-generate individual-generate" style="width: 100%; padding: 12px; font-size: 0.95em;">
+                                <span class="individual-btn-text">🎬 생성</span>
+                                <span class="loading individual-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <button class="btn-post-social" style="width: 100%; padding: 12px; font-size: 0.95em; display: none;" disabled>
+                                <span class="post-btn-text">📱 소셜 미디어에 포스팅</span>
+                                <span class="loading post-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div class="status-indicator">대기</div>
+                    </div>
+                    <div class="grid-item" data-index="7">
+                        <h4>작업 8</h4>
+                        <textarea class="batch-json" placeholder='{"script": "안녕하세요...", "title": "제목", "description": "설명"}' required></textarea>
+                        <div class="emotion-selection" style="margin-bottom: 8px;">
+                            <select class="emotion-select">
+                                <option value="surprised">놀람</option>
+                                <option value="sad">슬픈</option>
+                                <option value="happy">행복한</option>
+                                <option value="angry">화난</option>
+                                <option value="fearful">두려운</option>
+                                <option value="disgusted">역겨운</option>
+                                <option value="neutral">중성</option>
+                            </select>
+                        </div>
+                        <div class="folder-selection" style="margin-bottom: 8px;">
+                            <select class="folder-select">
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="music-selection">
+                            <select class="music-select batch-music">
+                                <option value="">배경음악 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="template-selection" style="margin-top: 8px;">
+                            <select class="template-select">
+                                <option value="">템플릿 선택...</option>
+                            </select>
+                        </div>
+                        <div class="outro-selection" style="margin-top: 8px;">
+                            <select class="outro-select batch-outro">
+                                <option value="">Outro 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="ads-selection" style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; font-size: 0.85em; color: #ffffff; cursor: pointer;">
+                                <input type="checkbox" class="include-ads-checkbox" style="margin-right: 6px;">
+                                광고 추가
+                            </label>
+                        </div>
+                        <div class="video-count-selection" style="margin-top: 8px;">
+                            <label style="display: block; font-size: 0.8em; color: #ffffff; margin-bottom: 4px;">생성할 영상 개수:</label>
+                            <input type="number" class="video-count-input" min="1" max="10" value="1" style="width: 100%; padding: 6px 8px; border: 1px solid #333333; border-radius: 4px; background: #222222; color: #ffffff; font-size: 0.8em;">
+                        </div>
+                        <div class="card-section-divider"></div>
+
+                        <!-- 작업별 소셜 미디어 설정 -->
+                        <div class="card-social-settings" style="margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333333;">
+                            <h5 style="color: #ffffff; font-size: 0.9em; margin-bottom: 12px; text-align: center;">📱 소셜 미디어 설정</h5>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 6px; color: #cccccc; font-size: 0.85em; font-weight: 600;">프로필 선택</label>
+                                <select class="card-profile-select" style="width: 100%; padding: 8px 10px; border: 2px solid #333333; border-radius: 6px; background: #222222; color: #ffffff; font-size: 0.85em; transition: all 0.3s; cursor: pointer;">
+                                    <option value="">프로필 로드 중...</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 8px; color: #cccccc; font-size: 0.85em; font-weight: 600;">포스팅할 플랫폼</label>
+                                <div class="card-platform-selection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="youtube" style="margin-right: 4px;">
+                                        <span>📺 YouTube</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="tiktok" style="margin-right: 4px;">
+                                        <span>🎵 TikTok</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="instagram" style="margin-right: 4px;">
+                                        <span>📸 Instagram</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="facebook" style="margin-right: 4px;">
+                                        <span>👥 Facebook</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="twitter" style="margin-right: 4px;">
+                                        <span>🐦 Twitter</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="linkedin" style="margin-right: 4px;">
+                                        <span>💼 LinkedIn</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="threads" style="margin-right: 4px;">
+                                        <span>🧵 Threads</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="pinterest" style="margin-right: 4px;">
+                                        <span>📌 Pinterest</span>
+                                    </label>
+                                </div>
+                                <label style="display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer; margin-top: 8px; font-size: 0.85em;">
+                                    <input type="checkbox" class="card-select-all-platforms" style="margin-right: 6px;">
+                                    <span style="font-weight: 600;">모든 플랫폼</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card-section-divider"></div>
+
+                        <div style="margin-bottom: 8px; margin-top: 12px;">
+                            <button class="btn-generate individual-generate" style="width: 100%; padding: 12px; font-size: 0.95em;">
+                                <span class="individual-btn-text">🎬 생성</span>
+                                <span class="loading individual-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <button class="btn-post-social" style="width: 100%; padding: 12px; font-size: 0.95em; display: none;" disabled>
+                                <span class="post-btn-text">📱 소셜 미디어에 포스팅</span>
+                                <span class="loading post-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div class="status-indicator">대기</div>
+                    </div>
+                    <div class="grid-item" data-index="8">
+                        <h4>작업 9</h4>
+                        <textarea class="batch-json" placeholder='{"script": "안녕하세요...", "title": "제목", "description": "설명"}' required></textarea>
+                        <div class="emotion-selection" style="margin-bottom: 8px;">
+                            <select class="emotion-select">
+                                <option value="surprised">놀람</option>
+                                <option value="sad">슬픈</option>
+                                <option value="happy">행복한</option>
+                                <option value="angry">화난</option>
+                                <option value="fearful">두려운</option>
+                                <option value="disgusted">역겨운</option>
+                                <option value="neutral">중성</option>
+                            </select>
+                        </div>
+                        <div class="folder-selection" style="margin-bottom: 8px;">
+                            <select class="folder-select">
+                                <!-- Options will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="music-selection">
+                            <select class="music-select batch-music">
+                                <option value="">배경음악 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="template-selection" style="margin-top: 8px;">
+                            <select class="template-select">
+                                <option value="">템플릿 선택...</option>
+                            </select>
+                        </div>
+                        <div class="outro-selection" style="margin-top: 8px;">
+                            <select class="outro-select batch-outro">
+                                <option value="">Outro 선택 (선택사항)</option>
+                            </select>
+                        </div>
+                        <div class="ads-selection" style="margin-top: 8px;">
+                            <label style="display: flex; align-items: center; font-size: 0.85em; color: #ffffff; cursor: pointer;">
+                                <input type="checkbox" class="include-ads-checkbox" style="margin-right: 6px;">
+                                광고 추가
+                            </label>
+                        </div>
+                        <div class="video-count-selection" style="margin-top: 8px;">
+                            <label style="display: block; font-size: 0.8em; color: #ffffff; margin-bottom: 4px;">생성할 영상 개수:</label>
+                            <input type="number" class="video-count-input" min="1" max="10" value="1" style="width: 100%; padding: 6px 8px; border: 1px solid #333333; border-radius: 4px; background: #222222; color: #ffffff; font-size: 0.8em;">
+                        </div>
+                        <div class="card-section-divider"></div>
+
+                        <!-- 작업별 소셜 미디어 설정 -->
+                        <div class="card-social-settings" style="margin-top: 15px; padding: 15px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333333;">
+                            <h5 style="color: #ffffff; font-size: 0.9em; margin-bottom: 12px; text-align: center;">📱 소셜 미디어 설정</h5>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 6px; color: #cccccc; font-size: 0.85em; font-weight: 600;">프로필 선택</label>
+                                <select class="card-profile-select" style="width: 100%; padding: 8px 10px; border: 2px solid #333333; border-radius: 6px; background: #222222; color: #ffffff; font-size: 0.85em; transition: all 0.3s; cursor: pointer;">
+                                    <option value="">프로필 로드 중...</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 12px;">
+                                <label style="display: block; margin-bottom: 8px; color: #cccccc; font-size: 0.85em; font-weight: 600;">포스팅할 플랫폼</label>
+                                <div class="card-platform-selection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="youtube" style="margin-right: 4px;">
+                                        <span>📺 YouTube</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="tiktok" style="margin-right: 4px;">
+                                        <span>🎵 TikTok</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="instagram" style="margin-right: 4px;">
+                                        <span>📸 Instagram</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="facebook" style="margin-right: 4px;">
+                                        <span>👥 Facebook</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="twitter" style="margin-right: 4px;">
+                                        <span>🐦 Twitter</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="linkedin" style="margin-right: 4px;">
+                                        <span>💼 LinkedIn</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="threads" style="margin-right: 4px;">
+                                        <span>🧵 Threads</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 6px 8px; background: #2a2a2a; border-radius: 5px; font-size: 0.8em; transition: all 0.3s;">
+                                        <input type="checkbox" class="card-platform-checkbox" value="pinterest" style="margin-right: 4px;">
+                                        <span>📌 Pinterest</span>
+                                    </label>
+                                </div>
+                                <label style="display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer; margin-top: 8px; font-size: 0.85em;">
+                                    <input type="checkbox" class="card-select-all-platforms" style="margin-right: 6px;">
+                                    <span style="font-weight: 600;">모든 플랫폼</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="card-section-divider"></div>
+
+                        <div style="margin-bottom: 8px; margin-top: 12px;">
+                            <button class="btn-generate individual-generate" style="width: 100%; padding: 12px; font-size: 0.95em;">
+                                <span class="individual-btn-text">🎬 생성</span>
+                                <span class="loading individual-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <button class="btn-post-social" style="width: 100%; padding: 12px; font-size: 0.95em; display: none;" disabled>
+                                <span class="post-btn-text">📱 소셜 미디어에 포스팅</span>
+                                <span class="loading post-loading" style="display: none;"></span>
+                            </button>
+                        </div>
+                        <div class="status-indicator">대기</div>
+                    </div>
+                </div>
+                
+                <!-- 입력 폴더 선택 -->
+                <div class="batch-global-settings" style="margin-bottom: 20px; text-align: center;">
+                    <label for="inputFolderSelect" style="display: block; margin-bottom: 8px; color: #ffffff; font-weight: 600;">전체 비디오 소스 폴더 일괄 적용</label>
+                    <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+                        <select id="inputFolderSelect" class="global-select" style="width: 300px;">
+                            <!-- Options will be loaded dynamically -->
+                        </select>
+                        <button id="applyGlobalFolderBtn" class="btn-apply" style="padding: 8px 16px; font-size: 0.9em;">일괄 적용</button>
+                    </div>
+                </div>
+                
+                <!-- 전체 배경음악 선택 -->
+                <div class="batch-global-music" style="margin-bottom: 20px; text-align: center;">
+                    <label for="globalMusicSelect" style="display: block; margin-bottom: 8px; color: #ffffff; font-weight: 600;">전체 배경음악 일괄 적용 (선택사항)</label>
+                    <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+                        <select id="globalMusicSelect" class="global-select" style="width: 300px;">
+                            <option value="1.mp3">1.mp3</option>
+                            <option value="">배경음악 선택 (선택사항)</option>
+                        </select>
+                        <button id="applyGlobalMusicBtn" class="btn-apply" style="padding: 8px 16px; font-size: 0.9em;">일괄 적용</button>
+                    </div>
+                </div>
+                
+                <!-- 템플릿 선택 -->
+                <div class="batch-global-template" style="margin-bottom: 20px; text-align: center;">
+                    <label for="globalTemplateSelect" style="display: block; margin-bottom: 8px; color: #ffffff; font-weight: 600;">전체 템플릿 일괄 적용</label>
+                    <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+                        <select id="globalTemplateSelect" class="global-select" style="width: 300px;">
+                            <option value="">템플릿 선택...</option>
+                        </select>
+                        <button id="applyGlobalTemplateBtn" class="btn-apply" style="padding: 8px 16px; font-size: 0.9em;">일괄 적용</button>
+                    </div>
+                </div>
+                
+                <!-- Outro 선택 -->
+                <div class="batch-global-outro" style="margin-bottom: 20px; text-align: center;">
+                    <label for="globalOutroSelect" style="display: block; margin-bottom: 8px; color: #ffffff; font-weight: 600;">전체 Outro 일괄 적용 (선택사항)</label>
+                    <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+                        <select id="globalOutroSelect" class="global-select" style="width: 300px;">
+                            <option value="">Outro 선택 (선택사항)</option>
+                        </select>
+                        <button id="applyGlobalOutroBtn" class="btn-apply" style="padding: 8px 16px; font-size: 0.9em;">일괄 적용</button>
+                    </div>
+                </div>
+                
+                <!-- 광고 추가 선택 -->
+                <div class="batch-global-ads" style="margin-bottom: 20px; text-align: center;">
+                    <label style="display: flex; align-items: center; justify-content: center; font-size: 1em; color: #ffffff; cursor: pointer; margin-bottom: 10px;">
+                        <input type="checkbox" id="globalIncludeAds" style="margin-right: 8px; width: 18px; height: 18px;">
+                        <span style="font-weight: 600;">전체 광고 추가 설정</span>
+                    </label>
+                    <button id="applyGlobalAdsBtn" class="btn-apply" style="padding: 8px 16px; font-size: 0.9em;">개별 항목에 일괄 적용</button>
+                </div>
+
+                <!-- 폴더 기반 일괄 포스팅 -->
+                <div class="folder-posting-section" style="margin-bottom: 30px; padding: 25px; background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%); border-radius: 15px; border: 2px solid #444444;">
+                    <h3 style="color: #ffffff; margin-bottom: 20px; text-align: center; font-size: 1.5em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">📁 폴더에서 영상 선택 포스팅</h3>
+
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px;">
+                        <!-- 폴더 선택 -->
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; color: #ffffff; font-weight: 600; font-size: 1.05em;">📂 출력 폴더 선택</label>
+                            <select id="outputFolderSelect" class="global-select" style="width: 100%;">
+                                <option value="">폴더 로드 중...</option>
+                            </select>
+                            <button id="refreshFoldersBtn" class="btn-apply" style="width: 100%; margin-top: 10px; padding: 10px;">🔄 폴더 새로고침</button>
+                        </div>
+
+                    </div>
+
+                    <!-- 폴더 내 비디오 목록 -->
+                    <div id="folderVideosSection" style="display: none; margin-top: 20px;">
+                        <h4 style="color: #ffffff; margin-bottom: 12px; font-size: 1.1em;">📹 폴더 내 비디오 목록 (클릭하여 포스팅)</h4>
+                        <div id="folderVideosList" style="max-height: 500px; overflow-y: auto; background: #1a1a1a; border-radius: 8px; padding: 15px; border: 1px solid #333333;">
+                            <!-- 비디오 목록이 여기에 표시됩니다 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 폴더 비디오 포스팅 모달 -->
+                <div class="folder-video-posting-modal" id="folderVideoPostingModal">
+                    <div class="folder-video-posting-content">
+                        <h3 style="color: #ffffff; margin-bottom: 20px; text-align: center;">📱 소셜 미디어에 포스팅</h3>
+
+                        <div style="margin-bottom: 20px; padding: 15px; background: #1a1a1a; border-radius: 8px;">
+                            <div id="modalVideoInfo"></div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; color: #ffffff; font-weight: 600;">프로필 선택</label>
+                            <select id="modalProfileSelect" class="global-select" style="width: 100%;">
+                                <option value="">프로필을 선택하세요...</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; color: #ffffff; font-weight: 600;">포스팅할 플랫폼</label>
+                            <div id="modalPlatformSelection" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px;">
+                                <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 8px 10px; background: #2a2a2a; border-radius: 6px; font-size: 0.9em;">
+                                    <input type="checkbox" class="modal-platform-checkbox" value="youtube" style="margin-right: 6px;">
+                                    <span>📺 YouTube</span>
+                                </label>
+                                <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 8px 10px; background: #2a2a2a; border-radius: 6px; font-size: 0.9em;">
+                                    <input type="checkbox" class="modal-platform-checkbox" value="tiktok" style="margin-right: 6px;">
+                                    <span>🎵 TikTok</span>
+                                </label>
+                                <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 8px 10px; background: #2a2a2a; border-radius: 6px; font-size: 0.9em;">
+                                    <input type="checkbox" class="modal-platform-checkbox" value="instagram" style="margin-right: 6px;">
+                                    <span>📸 Instagram</span>
+                                </label>
+                                <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 8px 10px; background: #2a2a2a; border-radius: 6px; font-size: 0.9em;">
+                                    <input type="checkbox" class="modal-platform-checkbox" value="facebook" style="margin-right: 6px;">
+                                    <span>👥 Facebook</span>
+                                </label>
+                                <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 8px 10px; background: #2a2a2a; border-radius: 6px; font-size: 0.9em;">
+                                    <input type="checkbox" class="modal-platform-checkbox" value="twitter" style="margin-right: 6px;">
+                                    <span>🐦 Twitter</span>
+                                </label>
+                                <label style="display: flex; align-items: center; color: #ffffff; cursor: pointer; padding: 8px 10px; background: #2a2a2a; border-radius: 6px; font-size: 0.9em;">
+                                    <input type="checkbox" class="modal-platform-checkbox" value="linkedin" style="margin-right: 6px;">
+                                    <span>💼 LinkedIn</span>
+                                </label>
+                            </div>
+                            <label style="display: flex; align-items: center; justify-content: center; color: #ffffff; cursor: pointer;">
+                                <input type="checkbox" id="modalSelectAllPlatforms" style="margin-right: 6px;">
+                                <span style="font-weight: 600;">모든 플랫폼</span>
+                            </label>
+                        </div>
+
+                        <div style="display: flex; gap: 10px;">
+                            <button id="modalCancelBtn" class="btn-apply" style="flex: 1; background: linear-gradient(135deg, #666666 0%, #555555 100%);">
+                                취소
+                            </button>
+                            <button id="modalPostBtn" class="btn-generate" style="flex: 1;">
+                                <span id="modalPostBtnText">📤 포스팅</span>
+                                <span class="loading" id="modalPostLoading" style="display: none;"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="batch-controls">
+                    <button class="btn-generate" id="batchGenerateBtn">
+                        <span id="batchBtnText">전체 생성하기</span>
+                        <span class="loading" id="batchLoading" style="display: none;"></span>
+                    </button>
+                    <button class="btn-download-all" id="downloadAllBtn" style="display: none;">모두 다운로드</button>
+                </div>
+            </div>
+            
+            <div class="status" id="status">
+                <h3>진행 상태</h3>
+                <div id="statusMessages"></div>
+            </div>
+            
+            <!-- 배치 작업 결과 -->
+            <div class="batch-results" id="batchResults">
+                <h3>배치 생성 결과</h3>
+                <div class="batch-results-grid" id="batchResultsGrid">
+                    <!-- 동적으로 생성될 결과들 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{
+  "voice_settings": {
+    "language": "ko",
+    "voice": "Korean_SweetGirl",
+    "speed": 1.0,
+    "profile": "default"
+  },
+  "minimax_settings": {
+    "model": "speech-01-turbo",
+    "api_key": "",
+    "base_url": "https://api.302.ai/v1"
+  },
+  "ai_settings": {
+    "enabled": true,
+    "provider": "302ai",
+    "model": "gemini-2.5-flash",
+    "timeout": 300,
+    "api_key": "",
+    "base_url": "https://api.302.ai/v1",
+    "generation_config": {
+      "temperature": 0.6,
+      "top_p": 0.9
+    }
+  },
+  "audio_settings": {
+    "ducking_volume": 0.15,
+    "codec": "libx264",
+    "audio_codec": "aac",
+    "voice_volume": 3.5,
+    "sound_effect_volume": 0.5,
+    "background_music_volume": 0.5,
+    "enable_background_music": true
+  },
+  "video_settings": {
+    "color_factor": 1.3,
+    "speed_factor": 1,
+    "bitrate": "8000k",
+    "preset": "medium"
+  },
+  "paths": {
+    "input_dir": "Input",
+    "output_dir": "Output",
+    "temp_dir": "Temp"
+  }
+}

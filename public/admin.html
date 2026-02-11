@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 - 쇼츠공장</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <link rel="stylesheet" href="/css/toss-style.css">
+    <style>
+        body {
+            visibility: hidden;
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--color-gray-200);
+        }
+
+        .admin-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-gray-900);
+        }
+
+        .admin-header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .admin-header-title img {
+            width: 36px;
+            height: 36px;
+        }
+
+        .admin-header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .user-email {
+            color: var(--color-gray-600);
+            font-size: 0.875rem;
+        }
+
+        .admin-section {
+            background: var(--color-bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--color-gray-900);
+            margin-bottom: 1rem;
+        }
+
+        .add-user-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 150px auto;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        @media (max-width: 768px) {
+            .add-user-form {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--color-gray-700);
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 8px;
+            font-size: 0.9375rem;
+            background: var(--color-bg-tertiary);
+            color: var(--color-gray-900);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .user-table th,
+        .user-table td {
+            padding: 0.875rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--color-gray-200);
+        }
+
+        .user-table th {
+            font-weight: 600;
+            color: var(--color-gray-600);
+            font-size: 0.8125rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: var(--color-bg-tertiary);
+        }
+
+        .user-table tr:hover td {
+            background: var(--color-bg-tertiary);
+        }
+
+        .user-table td {
+            font-size: 0.9375rem;
+            color: var(--color-gray-900);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.625rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+        }
+
+        .status-inactive {
+            background: rgba(107, 114, 128, 0.1);
+            color: #6b7280;
+        }
+
+        .status-admin {
+            background: rgba(59, 130, 246, 0.1);
+            color: #2563eb;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--color-gray-300);
+            color: var(--color-gray-700);
+        }
+
+        .btn-outline:hover {
+            background: var(--color-gray-100);
+        }
+
+        .btn-danger-outline {
+            background: transparent;
+            border: 1px solid var(--color-error);
+            color: var(--color-error);
+        }
+
+        .btn-danger-outline:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .btn-success-outline {
+            background: transparent;
+            border: 1px solid var(--color-success);
+            color: var(--color-success);
+        }
+
+        .btn-success-outline:hover {
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .loading-row td {
+            text-align: center;
+            padding: 2rem;
+            color: var(--color-gray-500);
+        }
+
+        .empty-row td {
+            text-align: center;
+            padding: 2rem;
+            color: var(--color-gray-500);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-links a {
+            color: var(--color-primary);
+            text-decoration: none;
+            font-size: 0.9375rem;
+        }
+
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            background: var(--color-success);
+        }
+
+        .toast.error {
+            background: var(--color-error);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <div class="admin-header-title">
+                <img src="/logo.svg" alt="쇼츠공장">
+                <h1>관리자 페이지</h1>
+            </div>
+            <div class="admin-header-actions">
+                <span class="user-email" id="currentUserEmail"></span>
+                <button class="btn btn-secondary" id="logoutBtn">로그아웃</button>
+            </div>
+        </div>
+
+        <nav class="nav-links">
+            <a href="/">TTS 쇼츠</a>
+            <a href="/ai-shorts">AI 쇼츠</a>
+            <a href="/ai-longform">AI 롱폼</a>
+        </nav>
+
+        <!-- Add User Section -->
+        <div class="admin-section">
+            <h2 class="section-title">새 사용자 추가</h2>
+            <form id="addUserForm" class="add-user-form">
+                <div class="form-group">
+                    <label for="newEmail">이메일</label>
+                    <input type="email" id="newEmail" required placeholder="user@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">비밀번호</label>
+                    <input type="password" id="newPassword" required placeholder="최소 6자리" minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="newIsAdmin">권한</label>
+                    <select id="newIsAdmin">
+                        <option value="false">일반 사용자</option>
+                        <option value="true">관리자</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">사용자 추가</button>
+            </form>
+        </div>
+
+        <!-- User List Section -->
+        <div class="admin-section">
+            <h2 class="section-title">사용자 목록</h2>
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>이메일</th>
+                        <th>가입일</th>
+                        <th>권한</th>
+                        <th>승인</th>
+                        <th>세션</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody id="userList">
+                    <tr class="loading-row">
+                        <td colspan="6">로딩 중...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="/js/firebase-config.js"></script>
+    <script src="/js/firebase-auth.js"></script>
+    <script>
+        let currentUser = null;
+
+        // Check admin access
+        requireAdmin().then(authState => {
+            if (authState) {
+                currentUser = authState;
+                document.getElementById('currentUserEmail').textContent = authState.email;
+                document.body.style.visibility = 'visible';
+                loadUsers();
+            }
+        });
+
+        // Logout handler
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        // Load all users
+        async function loadUsers() {
+            const userList = document.getElementById('userList');
+            userList.innerHTML = '<tr class="loading-row"><td colspan="6">로딩 중...</td></tr>';
+
+            try {
+                const response = await authFetch('/api/auth/users');
+                const data = await response.json();
+
+                if (data.success) {
+                    userList.innerHTML = '';
+
+                    if (data.users.length === 0) {
+                        userList.innerHTML = '<tr class="empty-row"><td colspan="6">등록된 사용자가 없습니다.</td></tr>';
+                        return;
+                    }
+
+                    data.users.forEach(user => {
+                        const row = createUserRow(user);
+                        userList.appendChild(row);
+                    });
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                userList.innerHTML = '<tr class="empty-row"><td colspan="6">사용자 목록을 불러올 수 없습니다.</td></tr>';
+            }
+        }
+
+        function createUserRow(user) {
+            const tr = document.createElement('tr');
+            const createdAt = user.createdAt ? new Date(user.createdAt).toLocaleDateString('ko-KR') : '-';
+
+            tr.innerHTML = `
+                <td>${user.email}</td>
+                <td>${createdAt}</td>
+                <td>
+                    <span class="status-badge ${user.isAdmin ? 'status-admin' : 'status-inactive'}">
+                        ${user.isAdmin ? '관리자' : '일반'}
+                    </span>
+                </td>
+                <td>
+                    <span class="status-badge ${user.isApproved ? 'status-active' : 'status-inactive'}">
+                        ${user.isApproved ? '승인됨' : '미승인'}
+                    </span>
+                </td>
+                <td>
+                    <span class="status-badge ${user.hasActiveSession ? 'status-active' : 'status-inactive'}">
+                        ${user.hasActiveSession ? '활성' : '비활성'}
+                    </span>
+                </td>
+                <td class="action-buttons">
+                    <button class="btn-sm ${user.isAdmin ? 'btn-outline' : 'btn-success-outline'}"
+                            onclick="toggleAdmin('${user.uid}', ${!user.isAdmin})">
+                        ${user.isAdmin ? '관리자 해제' : '관리자 설정'}
+                    </button>
+                    <button class="btn-sm ${user.isApproved ? 'btn-outline' : 'btn-success-outline'}"
+                            onclick="toggleApproval('${user.uid}', ${!user.isApproved})">
+                        ${user.isApproved ? '승인 취소' : '승인'}
+                    </button>
+                    ${user.hasActiveSession ? `
+                        <button class="btn-sm btn-danger-outline" onclick="forceLogout('${user.uid}')">
+                            강제 로그아웃
+                        </button>
+                    ` : ''}
+                    <button class="btn-sm btn-danger-outline" onclick="deleteUser('${user.uid}', '${user.email}')">
+                        삭제
+                    </button>
+                </td>
+            `;
+            return tr;
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Add new user
+        document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('newEmail').value.trim();
+            const password = document.getElementById('newPassword').value;
+            const isAdmin = document.getElementById('newIsAdmin').value === 'true';
+
+            try {
+                const response = await authFetch('/api/auth/create-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, isAdmin })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showToast('사용자가 추가되었습니다.');
+                    document.getElementById('addUserForm').reset();
+                    loadUsers();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                showToast(error.message || '사용자 추가에 실패했습니다.', 'error');
+            }
+        });
+
+        // Toggle admin status
+        async function toggleAdmin(uid, newValue) {
+            try {
+                const response = await authFetch('/api/auth/update-user', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid, isAdmin: newValue })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showToast('권한이 변경되었습니다.');
+                    loadUsers();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                showToast(error.message || '권한 변경에 실패했습니다.', 'error');
+            }
+        }
+
+        // Toggle approval status
+        async function toggleApproval(uid, newValue) {
+            try {
+                const response = await authFetch('/api/auth/update-user', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid, isApproved: newValue })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showToast('승인 상태가 변경되었습니다.');
+                    loadUsers();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                showToast(error.message || '승인 상태 변경에 실패했습니다.', 'error');
+            }
+        }
+
+        // Force logout user
+        async function forceLogout(uid) {
+            if (!confirm('이 사용자를 강제 로그아웃 시키겠습니까?')) return;
+
+            try {
+                const response = await authFetch('/api/auth/force-logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showToast('강제 로그아웃 되었습니다.');
+                    loadUsers();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                showToast(error.message || '강제 로그아웃에 실패했습니다.', 'error');
+            }
+        }
+
+        // Delete user
+        async function deleteUser(uid, email) {
+            if (!confirm(`정말로 "${email}" 사용자를 삭제하시겠습니까?\n이 작업은 취소할 수 없습니다.`)) return;
+
+            try {
+                const response = await authFetch('/api/auth/delete-user', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showToast('사용자가 삭제되었습니다.');
+                    loadUsers();
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                showToast(error.message || '사용자 삭제에 실패했습니다.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

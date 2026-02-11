@@ -1,0 +1,17 @@
+Hello from test_simple.js
+Error importing googleapis Error: Unknown system error -70: Unknown system error -70, read
+    at Object.readFileSync (node:fs:441:20)
+    at defaultLoadImpl (node:internal/modules/cjs/loader:1105:17)
+    at loadSource (node:internal/modules/cjs/loader:1733:20)
+    at Object..js (node:internal/modules/cjs/loader:1832:44)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Module.require (node:internal/modules/cjs/loader:1463:12)
+    at require (node:internal/modules/helpers:147:16) {
+  errno: -70,
+  code: 'Unknown system error -70',
+  syscall: 'read'
+}
+Done

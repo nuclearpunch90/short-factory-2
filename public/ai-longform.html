@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쇼츠공장 - AI 이미지 롱폼</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <link rel="stylesheet" href="/css/toss-style.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        /* JSON 입력 */
+        .json-editor {
+            width: 100%;
+            min-height: 500px;
+            padding: 1rem;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            line-height: 1.5;
+            resize: vertical;
+            background: var(--color-bg-tertiary);
+            color: var(--color-gray-900);
+        }
+
+        .json-editor:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(77, 158, 255, 0.15);
+        }
+
+        /* 설정 */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .setting-item label {
+            font-size: 0.8rem;
+            color: var(--color-gray-600);
+            font-weight: 500;
+        }
+
+        .setting-item input,
+        .setting-item select {
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            background: var(--color-bg-tertiary);
+            color: var(--color-gray-900);
+        }
+
+        /* 버튼 */
+        .actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-secondary {
+            background: var(--color-gray-100);
+            color: var(--color-gray-700);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-gray-200);
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 도움말 */
+        .help-box {
+            background: var(--color-gray-50);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .help-box h4 {
+            font-size: 0.85rem;
+            color: var(--color-gray-800);
+            margin-bottom: 0.5rem;
+        }
+
+        .help-box pre {
+            background: var(--color-bg-tertiary);
+            padding: 1rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            overflow-x: auto;
+            color: var(--color-gray-300);
+        }
+
+        .help-box p {
+            font-size: 0.8rem;
+            color: var(--color-gray-600);
+            margin-top: 0.5rem;
+        }
+
+        /* 진행 상태 */
+        .progress-section {
+            display: none;
+        }
+
+        .progress-section.active {
+            display: block;
+        }
+
+        .progress-bar-container {
+            background: var(--color-gray-200);
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            background: var(--color-primary);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-status {
+            font-size: 0.85rem;
+            color: var(--color-gray-600);
+            text-align: center;
+        }
+
+        .progress-log {
+            background: var(--color-bg-tertiary);
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.75rem;
+            color: var(--color-gray-500);
+            margin-top: 1rem;
+        }
+
+        .progress-log .log-item {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid var(--color-gray-200);
+        }
+
+        .progress-log .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .progress-log .success {
+            color: var(--color-success);
+        }
+
+        .progress-log .error {
+            color: var(--color-error);
+        }
+
+        /* 결과 */
+        .result-section {
+            display: none;
+        }
+
+        .result-section.active {
+            display: block;
+        }
+
+        .result-video {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            display: block;
+            border-radius: 12px;
+            background: #000;
+        }
+
+        .result-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--color-gray-50);
+            border-radius: 8px;
+        }
+
+        .result-info p {
+            font-size: 0.85rem;
+            color: var(--color-gray-600);
+            margin: 0.25rem 0;
+        }
+
+        .result-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        /* 로딩 */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 템플릿 버튼 */
+        .template-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .template-btn {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--color-gray-300);
+            background: var(--color-bg-elevated);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: var(--color-gray-600);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .template-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .info-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: rgba(77, 158, 255, 0.15);
+            color: var(--color-primary);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+
+        /* Mini Player Styles */
+        .mini-player {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--color-bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--color-gray-200);
+        }
+
+        .mini-player-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--color-gray-300);
+            background: var(--color-bg-secondary);
+            color: var(--color-gray-500);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            padding: 0;
+        }
+
+        .mini-player-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            transform: scale(1.08);
+        }
+
+        .mini-player-btn:active {
+            transform: scale(0.95);
+        }
+
+        .mini-player-btn.playing {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+            }
+        }
+
+        .mini-player-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .mini-player-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .mini-player-progress {
+            height: 4px;
+            background: var(--color-gray-200);
+            border-radius: 2px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .mini-player-progress-bar {
+            height: 100%;
+            background: var(--color-primary);
+            width: 0%;
+            transition: width 0.1s linear;
+            border-radius: 2px;
+        }
+
+        .mini-player-time {
+            font-size: 0.7rem;
+            color: var(--color-gray-500);
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        /* 테마 버튼 스타일 */
+        .theme-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--color-gray-300);
+            background: var(--color-bg-tertiary);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--color-gray-600);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .theme-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .theme-btn.active {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-primary);
+        }
+
+        .example-card {
+            padding: 0.75rem;
+            border: 1px solid var(--color-gray-200);
+            border-radius: 8px;
+            background: var(--color-bg-tertiary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .example-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+        }
+
+        .example-card-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-gray-800);
+            margin-bottom: 0.25rem;
+        }
+
+        .example-card-preview {
+            font-size: 0.75rem;
+            color: var(--color-gray-500);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .example-card-duration {
+            font-size: 0.7rem;
+            color: var(--color-primary);
+            margin-top: 0.25rem;
+        }
+
+        .example-card-duration {
+            font-size: 0.7rem;
+            color: var(--color-primary);
+            margin-top: 0.25rem;
+        }
+
+        /* 2단 레이아웃 */
+        .main-row {
+            display: flex;
+            gap: 1.5rem;
+            width: 100%;
+            align-items: flex-start;
+        }
+
+        .left-column {
+            flex: 1;
+            min-width: 0;
+            position: sticky;
+            top: 2rem;
+            max-height: calc(100vh - 4rem);
+            overflow-y: auto;
+        }
+
+        .right-column {
+            flex: 1;
+            min-width: 0;
+        }
+
+        @media (max-width: 900px) {
+            .main-row {
+                flex-direction: column;
+            }
+
+            .left-column {
+                position: static;
+                width: 100%;
+                max-height: none;
+            }
+
+            .right-column {
+                width: 100%;
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+
+<body style="visibility: hidden;">
+    <!-- Header (injected by header.js) -->
+    <div id="header-placeholder"></div>
+    <script src="/js/header.js"></script>
+
+    <!-- 사용법 모달 -->
+    <div id="guideModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>📖 사용법</h3>
+                <button class="modal-close" onclick="closeGuideModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- API 키 안내 -->
+                <div
+                    style="background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #ffc107;">
+                    <p style="color: #856404; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">⚠️ 먼저 302.AI
+                        API 키가 필요해요!</p>
+                    <p style="color: #856404; font-size: 0.85rem; line-height: 1.6;">
+                        하나의 <strong>302.AI 키</strong>로 이미지 생성(DALL-E), 음성 등 모든 기능을 사용할 수 있어요.<br>
+                        오른쪽 위 설정 버튼을 눌러서 API 키를 먼저 등록해주세요!
+                    </p>
+                </div>
+
+                <div
+                    style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;">
+                    <p style="color: var(--color-gray-700); font-size: 0.9rem; line-height: 1.8;">
+                        <strong style="color: var(--color-primary);">AI 롱폼</strong>은 여러 장면을 연결해서 5분 이상의 긴 유튜브 영상을
+                        만들어줍니다!<br>
+                        다큐멘터리, 강의, 리뷰 영상 등 다양한 형식으로 만들 수 있어요.
+                    </p>
+                    <div
+                        style="margin-top: 1rem; padding: 1rem; background: var(--color-bg-secondary); border-radius: 8px; border-left: 3px solid var(--color-primary);">
+                        <p
+                            style="color: var(--color-gray-800); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">
+                            3단계로 끝!</p>
+                        <p style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8;">
+                            1️⃣ 아래 버튼 눌러서 ChatGPT로 씬 구성 만들기<br>
+                            2️⃣ 만들어진 씬 복사해서 붙여넣기<br>
+                            3️⃣ "롱폼 생성" 버튼 클릭!
+                        </p>
+                    </div>
+                </div>
+                <div style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1.25rem;">
+                    <h4 style="color: var(--color-gray-900); margin-bottom: 0.75rem; font-size: 0.95rem;">💬 AI한테 긴 영상 씬
+                        만들어달라고 하기</h4>
+                    <p style="color: var(--color-gray-500); font-size: 0.8rem; margin-bottom: 0.75rem;">ChatGPT, Claude,
+                        Gemini 등 아무 AI나 사용 가능!</p>
+
+                    <div style="display: grid; gap: 0.75rem; margin-bottom: 1rem;">
+                        <div>
+                            <label
+                                style="font-size: 0.8rem; color: var(--color-gray-600); margin-bottom: 0.25rem; display: block;">주제</label>
+                            <input type="text" id="promptTopic" placeholder="예: 우주의 신비, 다이어트 꿀팁"
+                                oninput="updatePromptPreview()"
+                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.85rem;">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div>
+                                <label
+                                    style="font-size: 0.8rem; color: var(--color-gray-600); margin-bottom: 0.25rem; display: block;">영상
+                                    종류</label>
+                                <select id="promptType" onchange="updatePromptPreview()"
+                                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.85rem;">
+                                    <option value="다큐멘터리">다큐멘터리</option>
+                                    <option value="강의/튜토리얼">강의/튜토리얼</option>
+                                    <option value="리뷰">리뷰</option>
+                                    <option value="스토리텔링">스토리텔링</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label
+                                    style="font-size: 0.8rem; color: var(--color-gray-600); margin-bottom: 0.25rem; display: block;">영상
+                                    길이</label>
+                                <select id="promptLength" onchange="updatePromptPreview()"
+                                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.85rem;">
+                                    <option value="5분">5분</option>
+                                    <option value="10분">10분</option>
+                                    <option value="15분">15분</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <textarea id="promptPreview" readonly
+                        style="width: 100%; min-height: 280px; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.8rem; font-family: inherit; line-height: 1.6; background: var(--color-bg-secondary); color: var(--color-gray-700); resize: vertical; margin-bottom: 0.75rem;">긴 유튜브 영상 대본 만들어줘
+
+주제: [주제를 입력하세요]
+영상 종류: 다큐멘터리
+영상 길이: 5분
+
+조건:
+- 처음에 관심 끄는 도입부
+- 중간에 핵심 내용
+- 마지막에 구독 유도
+- 그림 설명은 영어로
+
+이 형식으로 만들어줘:
+[
+  {
+    "text": "도입부 대사 (2~3문장)",
+    "imagePrompt": "intro scene, cinematic",
+    "duration": 15
+  },
+  {
+    "text": "본론 대사 (3~5문장)",
+    "imagePrompt": "main content scene",
+    "duration": 30
+  },
+  {
+    "text": "마무리 대사",
+    "imagePrompt": "closing scene",
+    "duration": 15
+  }
+]</textarea>
+
+                    <button onclick="copyPromptFromTextarea()"
+                        style="width: 100%; background: var(--color-primary); color: white; border: none; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600;">📋
+                        프롬프트 복사하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 페이지 타이틀 -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1
+                style="font-size: 2rem; font-weight: 800; color: var(--color-gray-900); margin-bottom: 0.5rem; letter-spacing: -0.02em;">
+                🎥 AI 이미지 롱폼 생성기
+            </h1>
+            <p style="color: var(--color-gray-600); font-size: 1rem;">
+                여러 씬 구성 → AI 이미지 생성 → AI 음성 합성 → 5분+ 긴 영상 완성
+            </p>
+        </div>
+
+        <!-- 메인 레이아웃 (좌우 배치) -->
+        <div class="main-row">
+            <!-- 왼쪽: 대본 생성기 -->
+            <div class="left-column">
+                <!-- 대본 생성기 -->
+                <div class="section">
+                    <h2 class="section-title">📝 대본 생성기</h2>
+                    <div id="scriptGenContent">
+                        <div style="margin-bottom: 1rem;">
+                            <label
+                                style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.5rem; display: block;">테마
+                                선택</label>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;" id="themeButtons">
+                                <button type="button" class="theme-btn active" data-theme="documentary"
+                                    onclick="selectTheme('documentary')">📹 다큐멘터리</button>
+                                <button type="button" class="theme-btn" data-theme="tutorial"
+                                    onclick="selectTheme('tutorial')">📚 강의/튜토리얼</button>
+                                <button type="button" class="theme-btn" data-theme="story"
+                                    onclick="selectTheme('story')">📖
+                                    스토리텔링</button>
+                                <button type="button" class="theme-btn" data-theme="review"
+                                    onclick="selectTheme('review')">⭐
+                                    리뷰</button>
+                                <button type="button" class="theme-btn" data-theme="science"
+                                    onclick="selectTheme('science')">🔬
+                                    과학/역사</button>
+                                <button type="button" class="theme-btn" data-theme="korea"
+                                    onclick="selectTheme('korea')">🇰🇷
+                                    국뽕</button>
+                                <button type="button" class="theme-btn" data-theme="international"
+                                    onclick="selectTheme('international')">💑 국결</button>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label
+                                style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.5rem; display: block;">예시
+                                대본 (클릭하여 적용)</label>
+                            <div id="exampleScripts" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+                        </div>
+                        <div style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1rem;">
+                            <label
+                                style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.5rem; display: block;">AI에게
+                                대본 요청하기</label>
+                            <input type="text" id="customScriptTopic" placeholder="주제 입력 (예: 우주의 신비, 다이어트 꿀팁)"
+                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.85rem; margin-bottom: 0.5rem;"
+                                oninput="updateScriptPrompt()">
+                            <textarea id="scriptPromptPreview" readonly
+                                style="width: 100%; min-height: 220px; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.8rem; font-family: inherit; background: var(--color-bg-secondary); color: var(--color-gray-600); resize: vertical;"></textarea>
+                            <button type="button" onclick="copyScriptPrompt()"
+                                style="margin-top: 0.5rem; width: 100%; padding: 0.6rem; background: var(--color-primary); color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500;">📋
+                                프롬프트 복사하기</button>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- left-column 끝 -->
+
+            <!-- 오른쪽: 설정 및 생성 -->
+            <div class="right-column">
+
+
+
+                <!-- 입력 섹션 -->
+                <div class="section" id="inputSection">
+                    <div class="section-title">
+                        🎬 롱폼 영상 장면 구성
+                        <span class="info-badge">5분+ 긴 영상</span>
+                    </div>
+
+                    <div class="settings-grid"
+                        style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--color-gray-200);">
+                        <div class="setting-item">
+                            <label>제목</label>
+                            <input type="text" id="videoTitle" value="AI_Longform" placeholder="영상 제목">
+                        </div>
+                        <div class="setting-item">
+                            <label>이미지 스타일</label>
+                            <select id="imageStyle">
+                                <option value="realistic">실사 (Realistic)</option>
+                                <option value="anime">애니메이션 (Anime)</option>
+                                <option value="cartoon">카툰 (Cartoon)</option>
+                                <option value="comic">미국 만화 (Comic)</option>
+                                <option value="watercolor">수채화 (Watercolor)</option>
+                                <option value="oil">유화 (Oil Painting)</option>
+                                <option value="3d">3D 렌더링</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label>배경음악</label>
+                            <select id="bgMusic" onchange="onMusicChange()">
+                                <option value="">없음</option>
+                            </select>
+                            <!-- Mini Player -->
+                            <div id="miniPlayer" class="mini-player" style="display: none;">
+                                <button type="button" class="mini-player-btn" onclick="toggleMiniPlayer()"
+                                    id="miniPlayerBtn">
+                                    <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                    <svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                                    </svg>
+                                </button>
+                                <div class="mini-player-info">
+                                    <div class="mini-player-progress">
+                                        <div class="mini-player-progress-bar" id="miniPlayerProgress"></div>
+                                    </div>
+                                    <span class="mini-player-time" id="miniPlayerTime">0:00 / 0:00</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label>해상도</label>
+                            <select id="resolution">
+                                <option value="1080p">1080p (Full HD)</option>
+                                <option value="720p">720p (HD)</option>
+                                <option value="4k">4K (Ultra HD)</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label>화면 비율</label>
+                            <select id="aspectRatio">
+                                <option value="16:9">16:9 (유튜브)</option>
+                                <option value="9:16">9:16 (쇼츠/릴스)</option>
+                                <option value="1:1">1:1 (정사각형)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <input type="hidden" id="voiceEmotion" value="neutral">
+
+                    <div class="template-buttons">
+                        <button class="template-btn" onclick="loadTemplate('documentary')">📹 다큐멘터리</button>
+                        <button class="template-btn" onclick="loadTemplate('tutorial')">📚 튜토리얼</button>
+                        <button class="template-btn" onclick="loadTemplate('story')">📖 스토리텔링</button>
+                        <button class="template-btn" onclick="loadTemplate('review')">⭐ 리뷰</button>
+                    </div>
+
+                    <textarea id="jsonEditor" class="json-editor" placeholder='[
+  {
+    "text": "첫 번째 장면 나레이션 텍스트 (길게 작성 가능)",
+    "imagePrompt": "이미지 생성 프롬프트 (영어 권장)",
+    "duration": 10
+  },
+  {
+    "text": "두 번째 장면...",
+    "imagePrompt": "second scene description",
+    "duration": 15
+  }
+]'></textarea>
+
+                    <div class="actions">
+                        <button class="btn btn-secondary" onclick="validateJson()">구성 내용 확인</button>
+                        <button class="btn btn-primary" id="generateBtn" onclick="generateLongform()">
+                            <span id="generateBtnText">🎬 롱폼 생성</span>
+                            <span class="loading" id="generateLoading" style="display: none;"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 진행 상태 -->
+                <div class="section progress-section" id="progressSection">
+                    <div class="section-title">⏳ 롱폼 생성 진행 중...</div>
+
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="progress-status" id="progressStatus">준비 중...</div>
+
+                    <div class="progress-log" id="progressLog"></div>
+                </div>
+
+                <!-- 결과 -->
+                <div class="section result-section" id="resultSection">
+                    <div class="section-title">✅ 롱폼 생성 완료!</div>
+
+                    <video id="resultVideo" class="result-video" controls></video>
+
+                    <div class="result-info" id="resultInfo"></div>
+
+                    <div class="result-actions">
+                        <button class="btn btn-secondary" onclick="resetForm()">새로 만들기</button>
+                        <a id="downloadLink" class="btn btn-primary" download>📥 다운로드</a>
+                    </div>
+                </div>
+            </div> <!-- right-column 끝 -->
+        </div> <!-- main-row 끝 -->
+    </div>
+
+    <script>
+        // 대본 생성기 예시 데이터 (롱폼용 - duration 포함)
+        const scriptExamples = {
+            documentary: [
+                {
+                    title: "인류 문명의 기원", totalDuration: "약 5분", script: [
+                        { text: "오늘 우리는 인류 역사의 시작점으로 여행을 떠나봅니다. 과연 우리의 조상들은 어떻게 문명을 일구어 냈을까요?", imagePrompt: "Ancient human civilization beginnings, cave paintings, early humans, documentary style, cinematic", duration: 12 },
+                        { text: "약 1만 년 전, 인류는 수렵과 채집 생활에서 정착 생활로 전환하기 시작했습니다. 이것이 바로 신석기 혁명입니다.", imagePrompt: "Neolithic revolution, early farming communities, ancient settlements, educational documentary", duration: 15 },
+                        { text: "메소포타미아, 이집트, 인더스, 황하 문명. 이 네 개의 고대 문명은 인류 역사의 기반이 되었습니다.", imagePrompt: "Four ancient civilizations collage, Mesopotamia Egypt Indus China, world map, documentary infographic", duration: 18 },
+                        { text: "그들이 남긴 유산은 오늘날까지 우리 삶에 영향을 미치고 있습니다. 문자, 법률, 건축, 그리고 철학까지.", imagePrompt: "Legacy of ancient civilizations, writing systems, architecture, philosophy concepts, educational", duration: 15 },
+                        { text: "다음 영상에서는 각 문명에 대해 더 자세히 알아보겠습니다. 구독과 좋아요 부탁드립니다.", imagePrompt: "Subscribe call to action, ancient history theme, documentary ending screen", duration: 10 }
+                    ]
+                },
+                {
+                    title: "지구의 숨겨진 비밀", totalDuration: "약 6분", script: [
+                        { text: "우리가 매일 밟고 있는 이 지구. 하지만 지구의 진정한 모습은 우리가 알고 있는 것과 많이 다릅니다.", imagePrompt: "Earth from space, mysterious glowing atmosphere, cinematic documentary, awe-inspiring", duration: 12 },
+                        { text: "지구 내부에는 6,000도가 넘는 뜨거운 핵이 있습니다. 태양 표면과 비슷한 온도예요.", imagePrompt: "Earth cross-section showing hot inner core, geological layers, scientific illustration, dramatic", duration: 15 },
+                        { text: "이 뜨거운 핵 덕분에 지구는 자기장을 만들어내고, 이 자기장이 우리를 우주 방사선으로부터 보호해줍니다.", imagePrompt: "Earth magnetic field visualization, protecting from solar wind, scientific documentary style", duration: 18 },
+                        { text: "또한 지구의 대기는 지구 역사에서 여러 번 완전히 바뀌었습니다. 처음에는 산소가 거의 없었어요.", imagePrompt: "Earth atmosphere evolution timeline, ancient Earth vs modern, scientific visualization", duration: 15 },
+                        { text: "이처럼 지구는 계속 변화하고 있습니다. 우리가 지구를 이해할수록 더 잘 보호할 수 있겠죠.", imagePrompt: "Beautiful Earth nature montage, forests oceans mountains, conservation message, hopeful", duration: 12 }
+                    ]
+                }
+            ],
+            tutorial: [
+                {
+                    title: "초보자를 위한 투자 입문", totalDuration: "약 5분", script: [
+                        { text: "안녕하세요, 오늘은 투자를 처음 시작하는 분들을 위한 기본 가이드를 준비했습니다.", imagePrompt: "Investment beginners guide, clean modern infographic, money growth concept, educational", duration: 10 },
+                        { text: "투자의 첫 번째 원칙은 분산투자입니다. 계란을 한 바구니에 담지 마라는 말 들어보셨죠?", imagePrompt: "Diversification concept visualization, eggs in multiple baskets, financial education graphic", duration: 15 },
+                        { text: "주식, 채권, 부동산, 금. 이렇게 여러 자산에 나눠서 투자하면 리스크를 줄일 수 있습니다.", imagePrompt: "Asset classes pie chart, stocks bonds real estate gold, modern financial infographic", duration: 18 },
+                        { text: "두 번째 원칙은 장기투자입니다. 시간이 지날수록 복리의 효과가 엄청나게 커지거든요.", imagePrompt: "Compound interest growth chart over time, exponential curve, financial education", duration: 15 },
+                        { text: "마지막으로, 절대 빚을 내서 투자하지 마세요. 이것만 지켜도 큰 실패를 피할 수 있습니다.", imagePrompt: "Warning about debt investing, red flags financial advice, cautionary educational", duration: 12 }
+                    ]
+                },
+                {
+                    title: "생산성 10배 높이는 법", totalDuration: "약 4분", script: [
+                        { text: "하루가 24시간인 건 모두에게 똑같습니다. 하지만 어떤 사람은 24시간 안에 놀라운 성과를 만들어내죠.", imagePrompt: "Productivity concept, time management visualization, successful person working efficiently", duration: 10 },
+                        { text: "첫 번째 비밀은 가장 중요한 일을 아침에 하는 것입니다. 우리 뇌는 아침에 가장 맑거든요.", imagePrompt: "Morning productivity routine, person working early, sunrise, fresh start concept", duration: 15 },
+                        { text: "두 번째는 멀티태스킹을 버리는 것입니다. 한 번에 하나의 일에만 집중하세요.", imagePrompt: "Single tasking vs multitasking comparison, focus concept, productivity infographic", duration: 15 },
+                        { text: "세 번째, 포모도로 기법을 활용하세요. 25분 집중, 5분 휴식. 이 리듬이 놀라운 효과를 가져옵니다.", imagePrompt: "Pomodoro technique timer, 25 min work 5 min break cycle, productivity method", duration: 15 },
+                        { text: "오늘부터 바로 시작해보세요. 여러분의 생산성이 완전히 달라질 거예요!", imagePrompt: "Motivated person achieving goals, success celebration, call to action ending", duration: 10 }
+                    ]
+                }
+            ],
+            story: [
+                {
+                    title: "실패한 사업가의 재기", totalDuration: "약 5분", script: [
+                        { text: "그는 모든 것을 잃었습니다. 사업 실패로 빚만 10억. 가족도 떠났고, 친구도 없었습니다.", imagePrompt: "Businessman at rock bottom, losing everything, dark emotional scene, cinematic storytelling", duration: 12 },
+                        { text: "하지만 그는 포기하지 않았습니다. 매일 아침 5시에 일어나 새로운 사업 아이디어를 연구했습니다.", imagePrompt: "Man working hard early morning, determination, studying business, comeback story", duration: 15 },
+                        { text: "3년 후, 그는 작은 온라인 쇼핑몰을 시작했습니다. 처음엔 하루 매출이 1만 원도 안 됐어요.", imagePrompt: "Small online business beginning, humble start, laptop showing small sales, realistic", duration: 15 },
+                        { text: "하지만 5년이 지난 지금, 그의 회사는 연매출 500억 원을 기록하고 있습니다.", imagePrompt: "Successful businessman, company growth, from small to big business, success story climax", duration: 12 },
+                        { text: "그가 말합니다. 실패는 끝이 아니라 시작입니다. 포기하지 않으면 기회는 반드시 옵니다.", imagePrompt: "Inspirational quote scene, successful man looking at horizon, motivational ending", duration: 12 }
+                    ]
+                }
+            ],
+            review: [
+                {
+                    title: "아이폰 vs 갤럭시 솔직 비교", totalDuration: "약 6분", script: [
+                        { text: "안녕하세요, 오늘은 많은 분들이 궁금해하시는 아이폰과 갤럭시 비교 리뷰를 준비했습니다.", imagePrompt: "iPhone vs Galaxy comparison, professional product review setup, tech review style", duration: 10 },
+                        { text: "먼저 디자인부터 비교해볼게요. 두 제품 모두 프리미엄 느낌이지만 확실히 다른 개성을 가지고 있습니다.", imagePrompt: "Side by side phone design comparison, premium smartphones, detail shots, review style", duration: 15 },
+                        { text: "카메라 성능은 어떨까요? 낮에는 비슷하지만, 야간 촬영에서 흥미로운 차이가 나타납니다.", imagePrompt: "Camera comparison test photos, day and night shots, smartphone photography review", duration: 18 },
+                        { text: "배터리 테스트 결과입니다. 동영상 재생 기준으로 갤럭시가 2시간 더 오래 갔어요.", imagePrompt: "Battery life test comparison chart, smartphone endurance test, tech review infographic", duration: 15 },
+                        { text: "소프트웨어 경험은 개인 취향입니다. iOS는 단순함, 안드로이드는 자유로움이 강점이죠.", imagePrompt: "iOS vs Android user interface comparison, software experience, tech review style", duration: 15 },
+                        { text: "결론적으로, 정답은 없습니다. 여러분의 사용 패턴에 맞는 폰을 선택하세요.", imagePrompt: "Final verdict comparison summary, balanced review conclusion, tech recommendation", duration: 10 }
+                    ]
+                }
+            ],
+            science: [
+                {
+                    title: "블랙홀의 비밀", totalDuration: "약 5분", script: [
+                        { text: "블랙홀. 빛조차 탈출할 수 없는 우주의 괴물. 오늘 그 비밀을 파헤쳐 보겠습니다.", imagePrompt: "Massive black hole in space, event horizon glowing, scientific visualization, dramatic cosmos", duration: 12 },
+                        { text: "블랙홀은 질량이 매우 큰 별이 죽을 때 만들어집니다. 중력이 너무 강해서 모든 것을 빨아들이죠.", imagePrompt: "Star collapsing into black hole formation, supernova to black hole, scientific animation style", duration: 15 },
+                        { text: "블랙홀 근처에서는 시간이 느리게 흐릅니다. 영화 인터스텔라에서 본 것처럼요.", imagePrompt: "Time dilation near black hole visualization, relativity effect, Interstellar movie reference", duration: 15 },
+                        { text: "2019년 인류는 처음으로 블랙홀의 사진을 찍는 데 성공했습니다. 역사적인 순간이었죠.", imagePrompt: "First black hole photograph M87, Event Horizon Telescope achievement, historic scientific moment", duration: 15 },
+                        { text: "블랙홀은 여전히 많은 비밀을 간직하고 있습니다. 우주 탐험은 계속됩니다.", imagePrompt: "Future space exploration concept, mysteries of universe, hopeful scientific ending", duration: 12 }
+                    ]
+                },
+                {
+                    title: "공룡 멸종의 진실", totalDuration: "약 5분", script: [
+                        { text: "6600만 년 전, 지구를 지배하던 공룡이 갑자기 사라졌습니다. 대체 무슨 일이 있었던 걸까요?", imagePrompt: "Dinosaurs roaming ancient Earth, before extinction, prehistoric landscape, documentary style", duration: 12 },
+                        { text: "과학자들은 거대한 소행성이 지구와 충돌했다고 믿고 있습니다. 멕시코 유카탄 반도에 그 증거가 있어요.", imagePrompt: "Asteroid impact on Earth, Chicxulub crater formation, extinction event, dramatic scientific", duration: 15 },
+                        { text: "충돌로 인한 먼지와 재가 하늘을 뒤덮었습니다. 몇 년 동안 햇빛이 차단되었죠.", imagePrompt: "Dark sky after asteroid impact, dust clouds blocking sun, apocalyptic Earth scene", duration: 15 },
+                        { text: "식물이 죽고, 초식 공룡이 죽고, 육식 공룡도 먹이가 없어 죽었습니다. 연쇄 멸종이었어요.", imagePrompt: "Food chain collapse, dinosaurs dying, ecological disaster, extinction documentary", duration: 15 },
+                        { text: "하지만 공룡의 후손은 살아남았습니다. 바로 새입니다. 하늘을 나는 공룡이 지금도 우리 곁에 있어요.", imagePrompt: "Birds as dinosaur descendants, evolution connection, modern birds and dinosaur comparison", duration: 12 }
+                    ]
+                }
+            ],
+            korea: [
+                {
+                    title: "한국이 세계를 놀라게 한 순간들", totalDuration: "약 6분", script: [
+                        { text: "대한민국. 작은 나라가 어떻게 세계를 놀라게 했을까요? 오늘 그 이야기를 해드릴게요.", imagePrompt: "South Korea on world map, glowing and prominent, Korean flag waving, dramatic documentary opening", duration: 12 },
+                        { text: "1950년, 한국전쟁 직후 한국은 세계에서 가장 가난한 나라 중 하나였습니다.", imagePrompt: "Post-war Korea 1950s, destroyed buildings, poverty, black and white documentary style", duration: 15 },
+                        { text: "하지만 불과 70년 만에 세계 10위 경제 대국이 되었어요. 한강의 기적이라고 불립니다.", imagePrompt: "Modern Seoul skyline, Han River, dramatic transformation, before and after comparison", duration: 18 },
+                        { text: "삼성, 현대, LG. 한국 기업들이 세계 시장을 장악하기 시작했습니다.", imagePrompt: "Korean conglomerates logos, Samsung Hyundai LG, global business empire, corporate documentary", duration: 15 },
+                        { text: "K-pop, K-드라마, K-뷰티. 이제는 문화까지 세계를 사로잡고 있어요.", imagePrompt: "K-pop concert, Korean drama scene, K-beauty products, cultural wave, Korean Wave documentary", duration: 15 },
+                        { text: "대한민국 국민으로 태어난 것, 정말 자랑스럽지 않으세요?", imagePrompt: "Proud Korean citizens, Korean flag sunset, patriotic moment, emotional documentary ending", duration: 12 }
+                    ]
+                },
+                {
+                    title: "외국인들이 한국에서 충격받은 것들", totalDuration: "약 5분", script: [
+                        { text: "외국인들이 한국에 오면 충격받는 것들이 있대요. 뭔지 궁금하시죠?", imagePrompt: "Foreigners amazed in Seoul, surprised tourists, Korean street scene, documentary intro", duration: 10 },
+                        { text: "첫째, 배달 문화. 산꼭대기에도 치킨이 배달돼요. 30분 만에요.", imagePrompt: "Korean food delivery to mountain top, delivery scooter, amazing Korean service culture", duration: 15 },
+                        { text: "둘째, 인터넷 속도. 한국은 세계 1위예요. 지하철에서도 끊김이 없어요.", imagePrompt: "Superfast internet speed test, 5G network, Seoul subway with everyone on phones", duration: 15 },
+                        { text: "셋째, 의료 시스템. 당일 진료가 가능해요. 미국은 3개월 기다려야 해요.", imagePrompt: "Korean hospital efficiency, same-day medical care, healthcare system comparison", duration: 15 },
+                        { text: "넷째, 치안. 새벽에 혼자 다녀도 안전해요. 세계에서 가장 안전한 나라 중 하나예요.", imagePrompt: "Safe Korean streets at night, peaceful night walking, security cameras, safe society", duration: 15 },
+                        { text: "한국인으로 태어난 거, 진짜 복이에요!", imagePrompt: "Proud to be Korean, beautiful Korea montage, flag waving, patriotic ending", duration: 10 }
+                    ]
+                }
+            ],
+            international: [
+                {
+                    title: "국제커플의 현실적인 이야기", totalDuration: "약 6분", script: [
+                        { text: "국제커플, 로맨틱해 보이죠? 하지만 현실은 좀 다릅니다. 오늘 솔직하게 말씀드릴게요.", imagePrompt: "International couple, Korean with foreign partner, realistic documentary style, honest story", duration: 12 },
+                        { text: "언어 장벽이 가장 먼저 찾아와요. 미묘한 감정을 전달하기가 어려워요.", imagePrompt: "Couple trying to communicate, language barrier visualization, translation app, struggling but trying", duration: 15 },
+                        { text: "문화 차이도 만만치 않아요. 명절에 어디로 갈지, 아이 교육은 어떻게 할지.", imagePrompt: "Cultural differences discussion, holiday plans, family traditions, educational choices", duration: 18 },
+                        { text: "하지만 장점도 많아요. 두 문화를 경험할 수 있고, 아이가 이중언어를 할 수 있어요.", imagePrompt: "Benefits of international marriage, bilingual children, cultural exchange, positive aspects", duration: 15 },
+                        { text: "무엇보다 서로 다르기 때문에 더 대화를 많이 하게 돼요. 그게 비결이에요.", imagePrompt: "Couple having deep conversation, communication is key, understanding each other, love story", duration: 15 },
+                        { text: "사랑에 국경은 없습니다. 중요한 건 서로를 이해하려는 마음이에요.", imagePrompt: "International couple holding hands, love without borders, world map heart shape, romantic ending", duration: 12 }
+                    ]
+                },
+                {
+                    title: "외국인 배우자가 말하는 한국 생활", totalDuration: "약 5분", script: [
+                        { text: "외국인 배우자가 한국에 살면서 느낀 점을 공유해드릴게요.", imagePrompt: "Foreign spouse living in Korea, daily life, Korean apartment, documentary interview style", duration: 10 },
+                        { text: "처음엔 모든 게 낯설었대요. 언어도, 음식도, 문화도.", imagePrompt: "Foreigner adjusting to Korean life, new experiences, learning Korean, trying Korean food", duration: 15 },
+                        { text: "하지만 시간이 지나니까 한국의 좋은 점이 보이기 시작했대요.", imagePrompt: "Discovering good things about Korea, convenience stores, public transport, kind people", duration: 15 },
+                        { text: "특히 안전함과 편리함. 새벽에 편의점 가도 무섭지 않대요.", imagePrompt: "Safe Korean neighborhood at night, 24-hour convenience store, peaceful living", duration: 15 },
+                        { text: "지금은 한국이 제2의 고향이 됐대요. 한국 사는 게 행복하대요.", imagePrompt: "Happy life in Korea, feeling at home, Korean family life, heartwarming ending", duration: 12 }
+                    ]
+                }
+            ]
+        };
+        let currentScriptTheme = 'documentary';
+
+        // 대본 생성기 토글 (항상 펼침)
+        /*
+        document.getElementById('scriptGenToggle').addEventListener('click', () => {
+            const content = document.getElementById('scriptGenContent');
+            const icon = document.getElementById('scriptGenToggleIcon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▲ 접기';
+                updateExampleScripts();
+                updateScriptPrompt();
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼ 펼치기';
+            }
+        });
+        */
+
+        function selectTheme(theme) {
+            currentScriptTheme = theme;
+            document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.theme-btn[data-theme="${theme}"]`).classList.add('active');
+            updateExampleScripts();
+            updateScriptPrompt();
+        }
+
+        function updateExampleScripts() {
+            const container = document.getElementById('exampleScripts');
+            const examples = scriptExamples[currentScriptTheme] || [];
+            container.innerHTML = examples.map((ex, i) => `
+                <div class="example-card" onclick="applyScriptExample(${i})">
+                    <div class="example-card-title">${ex.title}</div>
+                    <div class="example-card-preview">${ex.script[0].text}</div>
+                    <div class="example-card-duration">⏱️ ${ex.totalDuration} (${ex.script.length}개 씬)</div>
+                </div>
+            `).join('');
+        }
+
+        function applyScriptExample(index) {
+            const example = scriptExamples[currentScriptTheme][index];
+            document.getElementById('jsonEditor').value = JSON.stringify(example.script, null, 2);
+            alert('대본이 적용되었습니다!');
+        }
+
+        function updateScriptPrompt() {
+            const topic = document.getElementById('customScriptTopic').value || getDefaultScriptTopic();
+            const prompt = `긴 유튜브 영상 대본 만들어줘 (5분 이상)
+
+주제: ${topic}
+
+조건:
+- 8~12개 장면으로 구성
+- 각 장면마다 읽을 대사 작성 (자연스러운 말투)
+- 이미지 프롬프트는 영어로 상세하게
+- duration은 대사 길이에 맞게 10~30초 사이로 설정
+- 도입부 → 본론 → 결론 구조로
+
+이 JSON 형식으로 만들어줘:
+[
+  {
+    "text": "도입부 대사 (흥미 유발)",
+    "imagePrompt": "engaging intro scene, cinematic, high quality",
+    "duration": 12
+  },
+  {
+    "text": "본론 대사 (핵심 내용)",
+    "imagePrompt": "main content scene description",
+    "duration": 20
+  },
+  {
+    "text": "마무리 대사 (구독 유도)",
+    "imagePrompt": "closing scene, call to action",
+    "duration": 10
+  }
+]`;
+            document.getElementById('scriptPromptPreview').value = prompt;
+        }
+
+        function getDefaultScriptTopic() {
+            const topics = { documentary: '인류 문명의 기원', tutorial: '초보자를 위한 투자 가이드', story: '성공한 사람들의 이야기', review: '최신 스마트폰 비교', science: '우주의 신비', korea: '한국이 세계를 놀라게 한 순간들', international: '국제커플의 현실적인 이야기' };
+            return topics[currentScriptTheme] || '주제를 입력하세요';
+        }
+
+        function copyScriptPrompt() {
+            const prompt = document.getElementById('scriptPromptPreview').value;
+            navigator.clipboard.writeText(prompt).then(() => alert('프롬프트가 복사되었습니다! AI에 붙여넣기 하세요'));
+        }
+
+        // Templates
+        const templates = {
+            documentary: [
+                {
+                    text: "오늘 우리가 살펴볼 주제는 인류 역사상 가장 위대한 발명품 중 하나입니다.",
+                    imagePrompt: "Epic cinematic shot of human innovation through history, dramatic lighting, documentary style",
+                    duration: 8
+                },
+                {
+                    text: "고대부터 현대까지, 인류는 끊임없이 발전해왔습니다. 그 과정에서 수많은 도전과 실패가 있었지만, 우리는 포기하지 않았습니다.",
+                    imagePrompt: "Timeline montage showing human evolution and technological progress, from ancient to modern, documentary photography",
+                    duration: 12
+                },
+                {
+                    text: "이 여정의 시작점으로 돌아가보겠습니다. 모든 위대한 발명은 작은 아이디어에서 시작되었습니다.",
+                    imagePrompt: "A lightbulb moment, creative spark visualization, warm inspiring lighting, documentary style",
+                    duration: 10
+                },
+                {
+                    text: "다음 영상에서는 더 깊이 있는 내용을 다루겠습니다. 구독과 좋아요 부탁드립니다.",
+                    imagePrompt: "Modern subscribe button animation, call to action, clean professional style",
+                    duration: 8
+                }
+            ],
+            tutorial: [
+                {
+                    text: "안녕하세요, 오늘은 초보자도 쉽게 따라할 수 있는 튜토리얼을 준비했습니다.",
+                    imagePrompt: "Clean modern tutorial intro screen, welcoming atmosphere, professional educational style",
+                    duration: 6
+                },
+                {
+                    text: "먼저 기본 개념부터 차근차근 설명해드리겠습니다. 이 부분을 이해하면 나머지는 훨씬 쉬워집니다.",
+                    imagePrompt: "Step by step visual guide, numbered instructions, clean infographic style",
+                    duration: 12
+                },
+                {
+                    text: "이제 실제로 적용해보겠습니다. 화면을 잘 보시고 따라해주세요.",
+                    imagePrompt: "Hands-on demonstration, practical application, tutorial screen recording style",
+                    duration: 15
+                },
+                {
+                    text: "축하합니다! 이제 기본을 마스터하셨습니다. 더 궁금한 점이 있으시면 댓글로 남겨주세요.",
+                    imagePrompt: "Celebration, achievement unlocked, congratulatory graphics, positive energy",
+                    duration: 8
+                }
+            ],
+            story: [
+                {
+                    text: "이것은 아무도 믿지 않았던 한 사람의 이야기입니다. 하지만 그의 결심은 세상을 바꾸게 됩니다.",
+                    imagePrompt: "Silhouette of a determined person against dramatic sunset, cinematic storytelling",
+                    duration: 10
+                },
+                {
+                    text: "모든 것이 불가능해 보이던 그 순간, 그는 포기하지 않았습니다. 수많은 실패에도 불구하고 계속 도전했습니다.",
+                    imagePrompt: "Person facing obstacles, dramatic struggle, inspirational movie scene",
+                    duration: 12
+                },
+                {
+                    text: "그리고 마침내, 그 모든 노력이 빛을 발하는 순간이 찾아왔습니다.",
+                    imagePrompt: "Triumphant moment, success achievement, golden light, emotional climax",
+                    duration: 10
+                },
+                {
+                    text: "이 이야기가 여러분에게도 영감이 되었으면 합니다. 절대 포기하지 마세요.",
+                    imagePrompt: "Inspirational message, motivational ending, warm hopeful atmosphere",
+                    duration: 8
+                }
+            ],
+            review: [
+                {
+                    text: "오늘 리뷰할 제품을 소개합니다. 과연 이 제품이 가격만큼의 가치가 있을까요?",
+                    imagePrompt: "Product unboxing scene, professional review setup, clean background",
+                    duration: 8
+                },
+                {
+                    text: "먼저 외관부터 살펴보겠습니다. 디자인과 마감 품질이 어떤지 자세히 보여드릴게요.",
+                    imagePrompt: "Close-up product details, macro photography, professional product shots",
+                    duration: 12
+                },
+                {
+                    text: "실제 사용해본 결과를 말씀드리겠습니다. 장점과 단점을 솔직하게 정리했습니다.",
+                    imagePrompt: "Product in use, real-world testing, authentic review footage",
+                    duration: 15
+                },
+                {
+                    text: "결론적으로, 이 제품은 이런 분들께 추천드립니다. 구매 전 참고하시기 바랍니다.",
+                    imagePrompt: "Final verdict screen, recommendation summary, professional review conclusion",
+                    duration: 10
+                }
+            ]
+        };
+
+        // Load template
+        function loadTemplate(type) {
+            const template = templates[type];
+            if (template) {
+                document.getElementById('jsonEditor').value = JSON.stringify(template, null, 2);
+            }
+        }
+
+        // Load background music options
+        async function loadMusicOptions() {
+            try {
+                const response = await authFetch('/api/ai-shorts/music');
+                const data = await response.json();
+
+                if (data.success && data.music) {
+                    const select = document.getElementById('bgMusic');
+                    data.music.forEach(m => {
+                        const option = document.createElement('option');
+                        option.value = m.name;
+                        option.textContent = m.displayName;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading music:', error);
+            }
+        }
+
+        // Validate JSON
+        function validateJson() {
+            const jsonText = document.getElementById('jsonEditor').value;
+            try {
+                const data = JSON.parse(jsonText);
+                if (!Array.isArray(data)) {
+                    alert('JSON은 배열 형식이어야 합니다.');
+                    return false;
+                }
+                if (data.length === 0) {
+                    alert('최소 1개 이상의 씬이 필요합니다.');
+                    return false;
+                }
+
+                let totalDuration = 0;
+                for (let i = 0; i < data.length; i++) {
+                    if (!data[i].text || !data[i].imagePrompt) {
+                        alert(`씬 ${i + 1}: text와 imagePrompt는 필수입니다.`);
+                        return false;
+                    }
+                    totalDuration += data[i].duration || 10;
+                }
+
+                alert(`✅ JSON 형식이 올바릅니다!\n씬 개수: ${data.length}개\n예상 길이: 약 ${Math.ceil(totalDuration / 60)}분`);
+                return true;
+            } catch (e) {
+                alert('❌ JSON 형식이 올바르지 않습니다: ' + e.message);
+                return false;
+            }
+        }
+
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('progressLog');
+            const item = document.createElement('div');
+            item.className = 'log-item ' + type;
+            item.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(item);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Update progress
+        function updateProgress(percent, status) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressStatus').textContent = status;
+        }
+
+        // API 키 설정 여부 체크
+        async function checkApiKeyConfigured() {
+            try {
+                const response = await authFetch('/api/settings/keys');
+                const data = await response.json();
+                return data.success && data.keys?.AI_302_API_KEY;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // API 키 미설정 시 안내 팝업
+        function showApiKeyRequiredPopup() {
+            const existingPopup = document.getElementById('apiKeyRequiredPopup');
+            if (existingPopup) existingPopup.remove();
+
+            const popup = document.createElement('div');
+            popup.id = 'apiKeyRequiredPopup';
+            popup.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000;`;
+            popup.innerHTML = `
+                <div style="background: var(--color-bg-secondary, #fff); border-radius: 16px; padding: 2rem; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🔑</div>
+                    <h3 style="color: var(--color-gray-900, #333); margin-bottom: 0.75rem; font-size: 1.25rem;">302.AI API 키가 필요해요!</h3>
+                    <p style="color: var(--color-gray-600, #666); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                        AI 롱폼을 생성하려면 <strong>302.AI API 키</strong>가 필요해요.<br>
+                        하나의 키로 모든 AI 기능을 사용할 수 있습니다.<br>
+                        오른쪽 위 설정 버튼을 눌러 API 키를 입력해주세요!
+                    </p>
+                    <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                        <button onclick="this.closest('#apiKeyRequiredPopup').remove()" style="padding: 0.75rem 1.5rem; border: 1px solid var(--color-gray-300, #ddd); background: transparent; border-radius: 8px; cursor: pointer; font-size: 0.9rem; color: var(--color-gray-600, #666);">닫기</button>
+                        <button onclick="this.closest('#apiKeyRequiredPopup').remove(); openSettingsModal();" style="padding: 0.75rem 1.5rem; background: var(--color-primary, #3b82f6); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">설정 열기</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+            popup.addEventListener('click', (e) => { if (e.target === popup) popup.remove(); });
+        }
+
+        // Generate longform
+        async function generateLongform() {
+            // API 키 체크
+            const hasApiKey = await checkApiKeyConfigured();
+            if (!hasApiKey) {
+                showApiKeyRequiredPopup();
+                return;
+            }
+
+            const jsonText = document.getElementById('jsonEditor').value;
+            let scenes;
+
+            try {
+                scenes = JSON.parse(jsonText);
+            } catch (e) {
+                alert('JSON 형식이 올바르지 않습니다.');
+                return;
+            }
+
+            if (!Array.isArray(scenes) || scenes.length === 0) {
+                alert('최소 1개 이상의 씬이 필요합니다.');
+                return;
+            }
+
+            const title = document.getElementById('videoTitle').value || 'AI_Longform';
+            const style = document.getElementById('imageStyle').value;
+            const emotion = document.getElementById('voiceEmotion').value;
+            const bgMusic = document.getElementById('bgMusic').value || null;
+            const resolution = document.getElementById('resolution').value;
+            const aspectRatio = document.getElementById('aspectRatio').value;
+
+            // Show progress section
+            document.getElementById('inputSection').style.opacity = '0.5';
+            document.getElementById('progressSection').classList.add('active');
+            document.getElementById('resultSection').classList.remove('active');
+            document.getElementById('progressLog').innerHTML = '';
+
+            const generateBtn = document.getElementById('generateBtn');
+            generateBtn.disabled = true;
+            document.getElementById('generateBtnText').style.display = 'none';
+            document.getElementById('generateLoading').style.display = 'inline-block';
+
+            addLog(`롱폼 생성 시작: ${scenes.length}개 씬`);
+            updateProgress(5, '서버에 요청 중...');
+
+            try {
+                const response = await authFetch('/api/ai-shorts/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scenes,
+                        title,
+                        style,
+                        emotion,
+                        bgMusic,
+                        resolution,
+                        aspectRatio,
+                        isLongform: true
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    updateProgress(100, '완료!');
+                    addLog('✅ 롱폼 생성 완료!', 'success');
+
+                    // Show result
+                    document.getElementById('resultSection').classList.add('active');
+                    document.getElementById('resultVideo').src = data.videoPath;
+                    document.getElementById('downloadLink').href = data.videoPath;
+
+                    document.getElementById('resultInfo').innerHTML = `
+                        <p><strong>프로젝트:</strong> ${data.projectFolder}</p>
+                        <p><strong>성공:</strong> ${data.summary.successfulScenes}개 씬</p>
+                        <p><strong>실패:</strong> ${data.summary.failedScenes}개 씬</p>
+                    `;
+
+                    // Log individual results
+                    data.results.forEach(r => {
+                        if (r.success) {
+                            addLog(`씬 ${r.scene}: 성공 (${r.duration.toFixed(1)}초)`, 'success');
+                        } else {
+                            addLog(`씬 ${r.scene}: 실패 - ${r.error}`, 'error');
+                        }
+                    });
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                addLog('❌ 오류: ' + error.message, 'error');
+                updateProgress(0, '오류 발생');
+                alert('롱폼 생성 실패: ' + error.message);
+            } finally {
+                generateBtn.disabled = false;
+                document.getElementById('generateBtnText').style.display = 'inline';
+                document.getElementById('generateLoading').style.display = 'none';
+                document.getElementById('inputSection').style.opacity = '1';
+            }
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('progressSection').classList.remove('active');
+            document.getElementById('resultSection').classList.remove('active');
+            document.getElementById('jsonEditor').value = '';
+            document.getElementById('progressLog').innerHTML = '';
+            updateProgress(0, '');
+        }
+
+        // Update prompt preview when inputs change
+        function updatePromptPreview() {
+            const topic = document.getElementById('promptTopic').value || '[주제를 입력하세요]';
+            const type = document.getElementById('promptType').value;
+            const length = document.getElementById('promptLength').value;
+
+            const prompt = `긴 유튜브 영상 대본 만들어줘
+
+주제: ${topic}
+영상 종류: ${type}
+영상 길이: ${length}
+
+조건:
+- 처음에 관심 끄는 도입부
+- 중간에 핵심 내용
+- 마지막에 구독 유도
+- 그림 설명은 영어로
+
+이 형식으로 만들어줘:
+[
+  {
+    "text": "도입부 대사 (2~3문장)",
+    "imagePrompt": "intro scene, cinematic",
+    "duration": 15
+  },
+  {
+    "text": "본론 대사 (3~5문장)",
+    "imagePrompt": "main content scene",
+    "duration": 30
+  },
+  {
+    "text": "마무리 대사",
+    "imagePrompt": "closing scene",
+    "duration": 15
+  }
+]`;
+            document.getElementById('promptPreview').value = prompt;
+        }
+
+        // Copy prompt from textarea
+        function copyPromptFromTextarea() {
+            const textarea = document.getElementById('promptPreview');
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                alert('복사되었습니다! AI에 붙여넣기 하세요 😊');
+            });
+        }
+
+        // Guide Modal Functions
+        function openGuideModal() {
+            document.getElementById('guideModal').style.display = 'flex';
+        }
+
+        function closeGuideModal() {
+            document.getElementById('guideModal').style.display = 'none';
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            icon.textContent = theme === 'dark' ? '☀️ 라이트' : '🌙 다크';
+        }
+
+        // Initialize theme
+        (function () {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                updateThemeIcon(savedTheme);
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                updateThemeIcon('dark');
+            }
+        })();
+
+        // Mini Player
+        let miniPlayerAudio = null;
+        let isMiniPlayerPlaying = false;
+
+        function onMusicChange() {
+            const bgMusic = document.getElementById('bgMusic').value;
+            const miniPlayer = document.getElementById('miniPlayer');
+
+            // Stop current audio if playing
+            if (miniPlayerAudio) {
+                miniPlayerAudio.pause();
+                miniPlayerAudio = null;
+                isMiniPlayerPlaying = false;
+                updateMiniPlayerIcon();
+            }
+
+            if (bgMusic) {
+                miniPlayer.style.display = 'flex';
+                // Create new audio element
+                miniPlayerAudio = new Audio(`/audio/${bgMusic}`);
+                miniPlayerAudio.addEventListener('loadedmetadata', updateMiniPlayerTime);
+                miniPlayerAudio.addEventListener('timeupdate', updateMiniPlayerProgress);
+                miniPlayerAudio.addEventListener('ended', () => {
+                    isMiniPlayerPlaying = false;
+                    updateMiniPlayerIcon();
+                    miniPlayerAudio.currentTime = 0;
+                    updateMiniPlayerProgress();
+                });
+            } else {
+                miniPlayer.style.display = 'none';
+            }
+
+            // Reset progress
+            document.getElementById('miniPlayerProgress').style.width = '0%';
+            document.getElementById('miniPlayerTime').textContent = '0:00 / 0:00';
+        }
+
+        function toggleMiniPlayer() {
+            if (!miniPlayerAudio) return;
+
+            if (isMiniPlayerPlaying) {
+                miniPlayerAudio.pause();
+            } else {
+                miniPlayerAudio.play();
+            }
+            isMiniPlayerPlaying = !isMiniPlayerPlaying;
+            updateMiniPlayerIcon();
+        }
+
+        function updateMiniPlayerIcon() {
+            const btn = document.getElementById('miniPlayerBtn');
+            const playIcon = document.getElementById('playIcon');
+            const pauseIcon = document.getElementById('pauseIcon');
+            if (isMiniPlayerPlaying) {
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+                btn.classList.add('playing');
+            } else {
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+                btn.classList.remove('playing');
+            }
+        }
+
+        function updateMiniPlayerTime() {
+            if (!miniPlayerAudio) return;
+            const duration = miniPlayerAudio.duration || 0;
+            document.getElementById('miniPlayerTime').textContent = `0:00 / ${formatTime(duration)}`;
+        }
+
+        function updateMiniPlayerProgress() {
+            if (!miniPlayerAudio) return;
+            const current = miniPlayerAudio.currentTime || 0;
+            const duration = miniPlayerAudio.duration || 0;
+            const percent = duration > 0 ? (current / duration) * 100 : 0;
+            document.getElementById('miniPlayerProgress').style.width = percent + '%';
+            document.getElementById('miniPlayerTime').textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Progress bar click to seek
+        document.addEventListener('DOMContentLoaded', () => {
+            const progressContainer = document.querySelector('.mini-player-progress');
+            if (progressContainer) {
+                progressContainer.addEventListener('click', (e) => {
+                    if (!miniPlayerAudio || !miniPlayerAudio.duration) return;
+                    const rect = progressContainer.getBoundingClientRect();
+                    const percent = (e.clientX - rect.left) / rect.width;
+                    miniPlayerAudio.currentTime = percent * miniPlayerAudio.duration;
+                });
+            }
+        });
+
+        // Init
+        loadMusicOptions();
+    </script>
+
+    <!-- Floating Buttons Container -->
+    <style>
+        .floating-menu {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+        }
+
+        .floating-menu-toggle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-primary) 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-menu-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .floating-menu-toggle svg {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .floating-menu.open .menu-icon {
+            display: none;
+        }
+
+        .floating-menu.open .close-icon {
+            display: block !important;
+        }
+
+        .floating-menu-items {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-end;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-menu.open .floating-menu-items {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .floating-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            transform: translateX(20px);
+            opacity: 0;
+        }
+
+        .floating-menu.open .floating-menu-item {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(1) {
+            transition-delay: 0.05s;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(2) {
+            transition-delay: 0.1s;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(3) {
+            transition-delay: 0.15s;
+        }
+
+        .floating-menu-item:hover {
+            transform: translateX(-4px) !important;
+        }
+
+        .floating-menu-item svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .float-guide {
+            background: var(--color-primary);
+            color: white;
+            box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .float-telegram {
+            background: #0088cc;
+            color: white;
+            box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
+        }
+
+        .float-intro {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .floating-menu-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 99;
+            display: none;
+        }
+
+        .floating-menu.open+.floating-menu-backdrop {
+            display: block;
+        }
+    </style>
+
+    <!-- Floating Menu -->
+    <div class="floating-menu" id="floatingMenu">
+        <div class="floating-menu-items">
+            <button class="floating-menu-item float-guide" onclick="openGuideModal(); toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                <span>사용법</span>
+            </button>
+            <a href="https://t.me/shorts_factory" target="_blank" class="floating-menu-item float-telegram"
+                onclick="toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+                <span>공지채널</span>
+            </a>
+            <a href="https://shorts-factory-landing.web.app" target="_blank" class="floating-menu-item float-intro"
+                onclick="toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                <span>서비스 소개</span>
+            </a>
+        </div>
+        <button class="floating-menu-toggle" onclick="toggleFloatingMenu()" title="도움말">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" class="menu-icon">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" class="close-icon" style="display:none;">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        </button>
+    </div>
+    <div class="floating-menu-backdrop" onclick="toggleFloatingMenu()"></div>
+    <script>
+        function toggleFloatingMenu() {
+            document.getElementById('floatingMenu').classList.toggle('open');
+        }
+    </script>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>API 설정</h2>
+                <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- API 키 발급 가이드 -->
+                <div
+                    style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--color-gray-900); margin-bottom: 0.75rem; font-size: 0.95rem;">🔑 302.AI API
+                        키 준비</h4>
+                    <p
+                        style="color: var(--color-gray-600); font-size: 0.85rem; line-height: 1.6; margin-bottom: 0.75rem;">
+                        • 하나의 키로 모든 AI 모델 사용<br>
+                        • GPT, Claude, Gemini, DALL-E, Whisper 등 지원<br>
+                        • 사용한 만큼만 결제 (종량제)
+                    </p>
+                    <p style="color: var(--color-gray-500); font-size: 0.8rem; margin: 0;">
+                        API 키는 <a href="https://dash.302.ai/apis/markets" target="_blank"
+                            style="color: var(--color-primary);">302.AI 대시보드</a>에서 발급하세요.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label for="ai302ApiKey">302.AI API Key</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="password" id="ai302ApiKey" placeholder="sk-..." style="flex: 1;">
+                        <button class="btn btn-sm" onclick="toggleKeyVisibility('ai302ApiKey')">👁️</button>
+                    </div>
+                    <small style="color: var(--color-gray-500);">이미지 생성 (DALL-E)과 모든 AI 기능에 사용됩니다.</small>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button class="btn" onclick="test302AIConnection()" id="test302AIBtn">302.AI 테스트</button>
+                            <span id="ai302TestResult" style="margin-left: 0.5rem;"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 테마 설정 -->
+                <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--color-gray-200);">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <label style="font-weight: 600; color: var(--color-gray-900);">화면 테마</label>
+                            <p style="font-size: 0.8rem; color: var(--color-gray-500); margin-top: 0.25rem;">라이트/다크 모드를
+                                선택하세요</p>
+                        </div>
+                        <button onclick="toggleTheme()" id="themeToggleBtn"
+                            style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; background: var(--color-bg-tertiary); border: 1px solid var(--color-gray-300); border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: var(--color-gray-700); font-weight: 500;">
+                            <span id="themeIcon">🌙 다크</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSettingsModal()">취소</button>
+                <button class="btn btn-primary" onclick="saveSettings()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Settings Modal Functions
+        async function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            document.getElementById('ai302TestResult').textContent = '';
+            try {
+                const response = await authFetch('/api/settings/keys');
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('ai302ApiKey').placeholder = data.keys.AI_302_API_KEY || 'sk-...';
+                }
+            } catch (e) {
+                console.error('Failed to load keys:', e);
+            }
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+            document.getElementById('ai302ApiKey').value = '';
+        }
+
+        function toggleKeyVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        async function test302AIConnection() {
+            const btn = document.getElementById('test302AIBtn');
+            const result = document.getElementById('ai302TestResult');
+            const apiKey = document.getElementById('ai302ApiKey').value;
+            btn.disabled = true;
+            result.textContent = '테스트 중...';
+            result.style.color = 'var(--color-gray-500)';
+            try {
+                const response = await authFetch('/api/settings/test-302ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiKey: apiKey || undefined })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    result.textContent = '✓ 연결 성공!';
+                    result.style.color = 'var(--color-success)';
+                } else {
+                    result.textContent = data.error || '연결 실패';
+                    result.style.color = 'var(--color-error)';
+                }
+            } catch (e) {
+                result.textContent = '테스트 실패: ' + e.message;
+                result.style.color = 'var(--color-error)';
+            }
+            btn.disabled = false;
+        }
+
+        async function saveSettings() {
+            const ai302Key = document.getElementById('ai302ApiKey').value.trim();
+            if (!ai302Key) {
+                alert('302.AI API 키를 입력해주세요.');
+                return;
+            }
+            try {
+                const response = await authFetch('/api/settings/keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ AI_302_API_KEY: ai302Key })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('API 키가 저장되었습니다.');
+                    closeSettingsModal();
+                    location.reload();
+                } else {
+                    alert('저장 실패: ' + data.error);
+                }
+            } catch (e) {
+                alert('저장 실패: ' + e.message);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeSettingsModal();
+                closeGuideModal();
+            }
+        });
+
+        document.getElementById('settingsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'settingsModal') closeSettingsModal();
+        });
+
+        document.getElementById('guideModal').addEventListener('click', (e) => {
+            if (e.target.id === 'guideModal') closeGuideModal();
+        });
+    </script>
+
+    <!-- Firebase Auth -->
+    <script src="/js/firebase-config.js"></script>
+    <script src="/js/firebase-auth.js"></script>
+    <script>
+        // Check authentication
+        requireAuth().then(authState => {
+            if (authState) {
+                document.body.style.visibility = 'visible';
+                startTokenRefresh();
+
+                // Update header auth UI
+                setHeaderAuthState(authState);
+
+                // Add admin link if user is admin
+                if (authState.isAdmin) {
+                    const nav = document.querySelector('.header-nav');
+                    if (nav && !nav.querySelector('[href="/admin"]')) {
+                        const adminLink = document.createElement('a');
+                        adminLink.href = '/admin';
+                        adminLink.innerHTML = '<span>관리자</span>';
+                        nav.appendChild(adminLink);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

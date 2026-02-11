@@ -1,0 +1,14 @@
+{
+  "name": "shorts-factory-functions",
+  "description": "Firebase Functions for Shorts Factory Admin",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "private": true
+}

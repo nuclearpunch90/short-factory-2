@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>썸네일 메이커 - 쇼츠공장</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <link rel="stylesheet" href="/css/toss-style.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'GmarketSansBold';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+        }
+
+        @font-face {
+            font-family: 'SBAggroB';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/SBAggroB.woff') format('woff');
+        }
+
+        @font-face {
+            font-family: 'TTTtangsbudaejjigaeB';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2212@1.0/TTTtangsbudaejjigaeB.woff2') format('woff2');
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .template-card {
+            cursor: pointer;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            background: var(--color-bg-secondary);
+        }
+
+        .template-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .template-card.selected {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+
+        .template-card canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .template-card .template-name {
+            padding: 0.35rem;
+            font-size: 0.7rem;
+            color: var(--color-gray-600);
+            text-align: center;
+            background: var(--color-bg-tertiary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Thumbnail Preview Canvas */
+        .thumbnail-preview-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .thumbnail-preview-container canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Modal */
+        .preview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .preview-modal.active {
+            display: flex;
+        }
+
+        .preview-modal-content {
+            max-width: 1280px;
+            width: 100%;
+            background: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .preview-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            background: #2a2a2a;
+            border-bottom: 1px solid #333;
+        }
+
+        .preview-modal-header h3 {
+            color: #fff;
+            font-size: 1.1rem;
+        }
+
+        .preview-modal-close {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .preview-modal-close:hover {
+            color: #fff;
+        }
+
+        .preview-modal-body {
+            padding: 1.5rem;
+        }
+
+        .preview-modal-body canvas {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+
+        .preview-modal-actions {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            background: #2a2a2a;
+            border-top: 1px solid #333;
+        }
+
+        /* Input Section */
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .input-mode-tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .input-mode-tabs button {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid var(--color-gray-300);
+            background: var(--color-bg-secondary);
+            color: var(--color-gray-700);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .input-mode-tabs button.active {
+            border-color: var(--color-primary);
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .title-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .title-inputs input {
+            padding: 0.75rem;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .title-inputs input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Image Upload */
+        .image-upload-area {
+            border: 2px dashed var(--color-gray-300);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--color-bg-tertiary);
+        }
+
+        .image-upload-area:hover {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .image-upload-area.has-image {
+            padding: 0.5rem;
+        }
+
+        .image-upload-area img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 6px;
+        }
+
+        .uploaded-images {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .uploaded-image-item {
+            position: relative;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .uploaded-image-item img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+        }
+
+        .uploaded-image-item .remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .generating-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+            border-radius: 8px;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.75rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body style="visibility: hidden;">
+    <!-- Header (injected by header.js) -->
+    <div id="header-placeholder"></div>
+    <script src="/js/header.js"></script>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- 페이지 타이틀 -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1
+                style="font-size: 2rem; font-weight: 800; color: var(--color-gray-900); margin-bottom: 0.5rem; letter-spacing: -0.02em;">
+                🖼️ 썸네일 메이커
+            </h1>
+            <p style="color: var(--color-gray-600); font-size: 1rem;">
+                제목 입력 → 템플릿 선택 → 클릭 몇 번으로 썸네일 완성
+            </p>
+        </div>
+
+        <div class="main-row" style="display: flex; gap: 1.5rem; width: 100%;">
+            <!-- Left: Input Section -->
+            <div class="section" style="flex: 1; min-width: 0;">
+                <h2 class="section-title">🎨 썸네일 메이커</h2>
+
+                <!-- Input Mode Tabs -->
+                <div class="input-mode-tabs" style="margin-bottom: 1rem;">
+                    <button class="active" onclick="setInputMode('title')">직접 제목 입력</button>
+                    <button onclick="setInputMode('script')">대본으로 AI 생성</button>
+                </div>
+
+                <!-- Title Input Mode -->
+                <div id="titleInputMode" class="input-section">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.8rem; color: var(--color-gray-500);">텍스트 입력</span>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+                            <select id="exampleSelect"
+                                style="padding: 0.4rem 0.5rem; font-size: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; background: var(--color-bg-secondary); max-width: 200px;">
+                                <option value="">예시 선택...</option>
+                                <option value="1">예시 1: 독일 자동차의 몰락</option>
+                                <option value="2">예시 2: 어머님 요양원</option>
+                                <option value="3">예시 3: 충격 고백</option>
+                                <option value="4">예시 4: 결국 들통났다</option>
+                                <option value="5">예시 5: 전문가도 놀란</option>
+                                <option value="6">예시 6: 돈 버는 비밀</option>
+                            </select>
+                            <button onclick="applyExample()"
+                                style="padding: 0.4rem 0.75rem; font-size: 0.75rem; background: var(--color-primary); color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">적용</button>
+                        </div>
+                    </div>
+                    <div class="title-inputs">
+                        <div>
+                            <label id="line1Label"
+                                style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.25rem; display: block;">첫
+                                번째 줄</label>
+                            <input type="text" id="topText" placeholder="예: 한국인 발길 뚝 끊겼다" oninput="updatePreview()">
+                        </div>
+                        <div>
+                            <label id="line2Label"
+                                style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.25rem; display: block;">두
+                                번째 줄</label>
+                            <input type="text" id="bottomText" placeholder="예: 독일 자동차의 몰락" oninput="updatePreview()">
+                        </div>
+                        <div id="line3Container" style="display: none;">
+                            <label
+                                style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.25rem; display: block;">세
+                                번째 줄 (하이라이트 박스)</label>
+                            <input type="text" id="line3Text" placeholder="예: 며느리 몰래 집팔고" oninput="updatePreview()">
+                        </div>
+                        <div id="line4Container" style="display: none;">
+                            <label
+                                style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.25rem; display: block;">네
+                                번째 줄</label>
+                            <input type="text" id="line4Text" placeholder="예: 크루즈여행 가는 시어머니" oninput="updatePreview()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Script Input Mode (Hidden by default) -->
+                <div id="scriptInputMode" class="input-section" style="display: none;">
+                    <div>
+                        <label
+                            style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.25rem; display: block;">대본
+                            입력</label>
+                        <textarea id="scriptInput" placeholder="대본을 입력하면 AI가 적절한 썸네일 제목을 생성합니다..."
+                            style="width: 100%; min-height: 150px; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 8px; font-size: 0.9rem; resize: vertical;"></textarea>
+                    </div>
+                    <button onclick="generateTitleFromScript()" class="btn btn-primary" style="width: 100%;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="margin-right: 0.5rem;">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                        </svg>
+                        AI로 제목 생성
+                    </button>
+                    <div id="aiGeneratedTitle"
+                        style="display: none; background: var(--color-bg-tertiary); padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
+                        <p style="font-size: 0.8rem; color: var(--color-gray-500); margin-bottom: 0.5rem;">AI 생성 제목:</p>
+                        <p id="aiTopText" style="font-weight: 600; color: var(--color-gray-800);"></p>
+                        <p id="aiBottomText" style="font-weight: 800; font-size: 1.1rem; color: var(--color-primary);">
+                        </p>
+                        <button onclick="applyAiTitle()" class="btn btn-secondary"
+                            style="margin-top: 0.75rem; width: 100%;">이 제목 사용하기</button>
+                    </div>
+                </div>
+
+                <!-- Image Upload -->
+                <div style="margin-top: 1.5rem;">
+                    <label
+                        style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.5rem; display: block;">배경
+                        이미지 (선택)</label>
+                    <div class="image-upload-area" onclick="document.getElementById('imageUpload').click()">
+                        <div id="uploadPlaceholder">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-gray-400)"
+                                stroke-width="1.5" style="margin-bottom: 0.5rem;">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <polyline points="21 15 16 10 5 21" />
+                            </svg>
+                            <p style="color: var(--color-gray-500); font-size: 0.9rem;">클릭하여 이미지 업로드</p>
+                            <p style="color: var(--color-gray-400); font-size: 0.8rem;">또는 드래그 앤 드롭</p>
+                        </div>
+                        <div id="uploadedImages" class="uploaded-images" style="display: none;"></div>
+                    </div>
+                    <input type="file" id="imageUpload" accept="image/*" multiple style="display: none;"
+                        onchange="handleImageUpload(event)">
+                </div>
+
+                <!-- Generate Button -->
+                <button onclick="downloadThumbnail()" class="btn btn-primary"
+                    style="width: 100%; margin-top: 1.5rem; padding: 1rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="margin-right: 0.5rem;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    PNG 다운로드 (1280x720)
+                </button>
+            </div>
+
+            <!-- Right: Preview & Template Selection -->
+            <div class="section" style="flex: 1.5; min-width: 0;">
+                <h2 class="section-title">미리보기</h2>
+
+                <!-- Preview -->
+                <div class="thumbnail-preview-container" id="previewContainer">
+                    <canvas id="thumbnailCanvas" width="1280" height="720"></canvas>
+                </div>
+
+                <!-- Template Selection -->
+                <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 1rem; color: var(--color-gray-800);">
+                    템플릿 선택</h3>
+                <div class="template-grid" id="templateGrid">
+                    <!-- Templates will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="preview-modal" id="previewModal">
+        <div class="preview-modal-content">
+            <div class="preview-modal-header">
+                <h3 id="modalTemplateName">템플릿 미리보기</h3>
+                <button class="preview-modal-close" onclick="closePreviewModal()">&times;</button>
+            </div>
+            <div class="preview-modal-body">
+                <canvas id="modalCanvas" width="1280" height="720"></canvas>
+            </div>
+            <div class="preview-modal-actions">
+                <button onclick="selectTemplateFromModal()" class="btn btn-primary" style="flex: 1;">이 템플릿 선택</button>
+                <button onclick="closePreviewModal()" class="btn btn-secondary" style="flex: 1;">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal (same as other pages) -->
+    <div id="settingsModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>설정</h3>
+                <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>302.AI API Key</label>
+                    <input type="password" id="api302Key" placeholder="sk-..."
+                        style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 8px;">
+                    <p style="font-size: 0.8rem; color: var(--color-gray-500); margin-top: 0.25rem;">AI 제목 생성에 사용됩니다.
+                    </p>
+                </div>
+                <button onclick="saveSettings()" class="btn btn-primary"
+                    style="width: 100%; margin-top: 1rem;">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Template definitions
+        const TEMPLATES = [
+            { id: 1, name: 'GmarketSans 빨강/흰색', font: 'GmarketSansBold', topColor: '#FFFFFF', bottomColor: '#FF0000', borderColor: '#00E5CC', type: 'two-line', imageCount: 2 },
+            { id: 2, name: '탕수육체 파랑/흰색', font: 'TTTtangsbudaejjigaeB', topColor: '#FFFFFF', bottomColor: '#00CCFF', borderColor: '#00AAFF', type: 'two-line', imageCount: 2 },
+            { id: 3, name: '어그로체 핑크/시안', font: 'SBAggroB', topColor: '#00FFFF', bottomColor: '#FF0066', borderColor: '#FF00AA', type: 'two-line', imageCount: 2 },
+            { id: 4, name: '도현체 초록/흰색', font: 'Do Hyeon', topColor: '#FFFFFF', bottomColor: '#00FF44', borderColor: '#00FF88', type: 'two-line', imageCount: 2 },
+            { id: 5, name: '어그로체 금색/흰색', font: 'SBAggroB', topColor: '#FFFFFF', bottomColor: '#FFD700', borderColor: '#FFD700', type: 'two-line', imageCount: 2 },
+            { id: 6, name: '한줄 - 빨강 테두리', font: 'GmarketSansBold', topColor: '#FFFFFF', bottomColor: '#FF0000', borderColor: '#FF3333', type: 'single-line', textColor: '#FFFFFF', imageCount: 1 },
+            { id: 7, name: '한줄 - 네온 그린', font: 'SBAggroB', topColor: '#00FF66', bottomColor: '#00FF66', borderColor: '#00FF66', type: 'single-line', textColor: '#00FF66', imageCount: 1 },
+            { id: 8, name: '한줄 - 불꽃 빨강', font: 'SBAggroB', topColor: '#FFFF00', bottomColor: '#FFFF00', borderColor: '#FF2200', type: 'single-line', textColor: '#FFFF00', imageCount: 1 },
+            { id: 9, name: '한줄 - 일렉트릭 블루', font: 'TTTtangsbudaejjigaeB', topColor: '#00FFFF', bottomColor: '#00FFFF', borderColor: '#00FFFF', type: 'single-line', textColor: '#00FFFF', imageCount: 1 },
+            { id: 10, name: '한줄 - 골드 프리미엄', font: 'GmarketSansBold', topColor: '#FFD700', bottomColor: '#FFD700', borderColor: '#FFD700', type: 'single-line', textColor: '#FFD700', imageCount: 1 },
+            { id: 11, name: '한줄 - 퍼플 글로우', font: 'SBAggroB', topColor: '#FFFFFF', bottomColor: '#FFFFFF', borderColor: '#9933FF', type: 'single-line', textColor: '#FFFFFF', imageCount: 1 },
+            { id: 12, name: 'GmarketSans 오렌지', font: 'GmarketSansBold', topColor: '#FFFFFF', bottomColor: '#FF6600', borderColor: '#FF6600', type: 'two-line', imageCount: 1 },
+            { id: 13, name: '어그로체 보라/시안', font: 'SBAggroB', topColor: '#00FFFF', bottomColor: '#9933FF', borderColor: '#9933FF', type: 'two-line', imageCount: 1 },
+            { id: 14, name: '탕수육체 노랑', font: 'TTTtangsbudaejjigaeB', topColor: '#FFFFFF', bottomColor: '#FFFF00', borderColor: '#FFFF00', type: 'two-line', imageCount: 1 },
+            { id: 15, name: 'GmarketSans 핑크', font: 'GmarketSansBold', topColor: '#FFFFFF', bottomColor: '#FF0099', borderColor: '#FF0099', type: 'two-line', imageCount: 1 },
+            { id: 16, name: '어그로체 시안', font: 'SBAggroB', topColor: '#FFFFFF', bottomColor: '#00FFFF', borderColor: '#00FFFF', type: 'two-line', imageCount: 1 },
+            { id: 17, name: '탕수육체 라임', font: 'TTTtangsbudaejjigaeB', topColor: '#FFFFFF', bottomColor: '#AAFF00', borderColor: '#AAFF00', type: 'two-line', imageCount: 1 },
+            { id: 18, name: 'GmarketSans 빨강 테두리', font: 'GmarketSansBold', topColor: '#FFFFFF', bottomColor: '#FF0000', borderColor: '#FF0000', type: 'two-line', imageCount: 1 },
+            { id: 19, name: 'GmarketSans 마젠타 테두리', font: 'GmarketSansBold', topColor: '#FFFFFF', bottomColor: '#FF0000', borderColor: '#FF00FF', type: 'two-line', imageCount: 1 },
+            { id: 20, name: 'GmarketSans 블루 테두리', font: 'GmarketSansBold', topColor: '#FFFFFF', bottomColor: '#FF0000', borderColor: '#0066FF', type: 'two-line', imageCount: 1 },
+            { id: 21, name: 'GmarketSans 흰색 테두리', font: 'GmarketSansBold', topColor: '#FFFFFF', bottomColor: '#FF0000', borderColor: '#FFFFFF', type: 'two-line', imageCount: 1 },
+            { id: 22, name: 'GmarketSans 노랑 테두리', font: 'GmarketSansBold', topColor: '#FFFFFF', bottomColor: '#FF0000', borderColor: '#FFFF00', type: 'two-line', imageCount: 1 },
+            // Multi-line templates (4 lines with highlight box)
+            { id: 23, name: '다중줄 노랑/빨강박스', font: 'GmarketSansBold', line1Color: '#FFD700', line2Color: '#FFFFFF', highlightBg: '#FF0000', highlightColor: '#FFFFFF', line4Color: '#FFD700', borderColor: '#FFD700', type: 'multi-line', imageCount: 1 },
+            { id: 24, name: '다중줄 흰색/시안', font: 'SBAggroB', line1Color: '#FFFFFF', line2Color: '#FFFFFF', highlightBg: '#FF0000', highlightColor: '#FFFFFF', line4Color: '#00FFFF', borderColor: '#00FFFF', type: 'multi-line', imageCount: 1 },
+            { id: 25, name: '다중줄 노랑/파랑박스', font: 'TTTtangsbudaejjigaeB', line1Color: '#FFFF00', line2Color: '#FFFFFF', highlightBg: '#0066FF', highlightColor: '#FFFFFF', line4Color: '#FF00AA', borderColor: '#FF00AA', type: 'multi-line', imageCount: 1 },
+            { id: 26, name: '다중줄 초록/빨강박스', font: 'GmarketSansBold', line1Color: '#00FF66', line2Color: '#FFFFFF', highlightBg: '#FF0000', highlightColor: '#FFFFFF', line4Color: '#FFFFFF', borderColor: '#00FF66', type: 'multi-line', imageCount: 1 },
+            // Split layout templates (left text, right image)
+            { id: 27, name: '좌텍스트 노랑/빨강박스', font: 'GmarketSansBold', line1Color: '#FFD700', line2Color: '#FFFFFF', highlightBg: '#FF0000', highlightColor: '#FFFFFF', line4Color: '#FFD700', borderColor: '#FFD700', type: 'split', imageCount: 1 },
+            { id: 28, name: '좌텍스트 시안/빨강박스', font: 'SBAggroB', line1Color: '#00FFFF', line2Color: '#FFFFFF', highlightBg: '#FF0000', highlightColor: '#FFFFFF', line4Color: '#00FFFF', borderColor: '#00FFFF', type: 'split', imageCount: 1 },
+            { id: 29, name: '좌텍스트 핑크/파랑박스', font: 'TTTtangsbudaejjigaeB', line1Color: '#FF00AA', line2Color: '#FFFFFF', highlightBg: '#0066FF', highlightColor: '#FFFFFF', line4Color: '#FFFF00', borderColor: '#FF00AA', type: 'split', imageCount: 1 },
+            { id: 30, name: '좌텍스트 초록/빨강박스', font: 'GmarketSansBold', line1Color: '#00FF66', line2Color: '#FFFFFF', highlightBg: '#FF0000', highlightColor: '#FFFFFF', line4Color: '#FFFFFF', borderColor: '#00FF66', type: 'split', imageCount: 1 },
+            // Vertical layout templates (top text, bottom image)
+            { id: 31, name: '상단텍스트 흰색/빨강', font: 'GmarketSansBold', line1Color: '#FFFFFF', line2Color: '#FF0000', borderColor: '#FF0000', type: 'vertical', imageCount: 1 },
+            { id: 32, name: '상단텍스트 흰색/시안', font: 'SBAggroB', line1Color: '#FFFFFF', line2Color: '#00FFFF', borderColor: '#00FFFF', type: 'vertical', imageCount: 1 },
+            { id: 33, name: '상단텍스트 흰색/노랑', font: 'TTTtangsbudaejjigaeB', line1Color: '#FFFFFF', line2Color: '#FFFF00', borderColor: '#FFFF00', type: 'vertical', imageCount: 1 },
+            { id: 34, name: '상단텍스트 흰색/초록', font: 'GmarketSansBold', line1Color: '#FFFFFF', line2Color: '#00FF66', borderColor: '#00FF66', type: 'vertical', imageCount: 1 },
+        ];
+
+        let selectedTemplate = TEMPLATES[0];
+        let uploadedImages = [];
+        let currentInputMode = 'title';
+        let modalTemplateId = null;
+
+        // Example texts for different template types
+        const EXAMPLES = {
+            '1': { line1: '"한국인 발길 뚝 끊겼다"', line2: '독일 자동차의 몰락', line3: '', line4: '' },
+            '2': { line1: '여보, 어머님 요양원', line2: '빨리 보내!', line3: '며느리 몰래 집팔고', line4: '크루즈여행 가는 시어머니' },
+            '3': { line1: '충격 고백', line2: '"이건 비밀인데..."', line3: '10년간 숨겨온', line4: '놀라운 진실' },
+            '4': { line1: '결국 들통났다', line2: '충격적 실체', line3: '', line4: '' },
+            '5': { line1: '전문가도 놀란', line2: '"이게 가능해?"', line3: '아무도 몰랐던', line4: '역대급 반전' },
+            '6': { line1: '이거 모르면 손해', line2: '돈 버는 비밀', line3: '', line4: '' },
+        };
+
+        function applyExample() {
+            const select = document.getElementById('exampleSelect');
+            const example = EXAMPLES[select.value];
+            if (example) {
+                document.getElementById('topText').value = example.line1;
+                document.getElementById('bottomText').value = example.line2;
+                document.getElementById('line3Text').value = example.line3;
+                document.getElementById('line4Text').value = example.line4;
+                updatePreview();
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTemplateGrid();
+            updatePreview();
+        });
+
+        function loadTemplateGrid() {
+            const grid = document.getElementById('templateGrid');
+            grid.innerHTML = '';
+
+            TEMPLATES.forEach((template, index) => {
+                const card = document.createElement('div');
+                card.className = `template-card ${index === 0 ? 'selected' : ''}`;
+                card.dataset.templateId = template.id;
+                card.style.position = 'relative';
+
+                // Single click = select template
+                card.onclick = () => selectTemplate(template);
+
+                // Double click = open preview modal
+                card.ondblclick = () => openPreviewModal(template);
+
+                // Use static image for template preview
+                const img = document.createElement('img');
+                img.src = `/images/templates/template-${template.id}.png`;
+                img.alt = template.name;
+                img.style.width = '100%';
+                img.style.height = 'auto';
+                img.style.display = 'block';
+
+                // Fallback to canvas if image fails to load
+                img.onerror = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 320;
+                    canvas.height = 180;
+                    renderTemplate(canvas, template, '제목 예시', '메인 텍스트', true, '강조 텍스트', '네번째 줄');
+                    card.replaceChild(canvas, img);
+                };
+
+                // Image count badge
+                const badge = document.createElement('div');
+                badge.className = 'image-count-badge';
+                badge.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg> ${template.imageCount}`;
+                badge.style.cssText = 'position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.75); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; display: flex; align-items: center; gap: 3px;';
+
+                const name = document.createElement('div');
+                name.className = 'template-name';
+                name.textContent = template.name;
+
+                card.appendChild(img);
+                card.appendChild(badge);
+                card.appendChild(name);
+                grid.appendChild(card);
+            });
+        }
+
+        function renderTemplate(canvas, template, topText, bottomText, isMini = false, line3Text = '', line4Text = '') {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Clear
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, w, h);
+
+            // Split layout type - left text, right image
+            if (template.type === 'split') {
+                const textAreaWidth = w * 0.48;
+                const imageAreaWidth = w * 0.52;
+
+                // Draw black background for text area
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, textAreaWidth, h);
+
+                // Draw image on right side
+                if (uploadedImages.length > 0 && !isMini) {
+                    ctx.drawImage(uploadedImages[0], textAreaWidth, 0, imageAreaWidth, h);
+                } else {
+                    // Placeholder gradient for image area
+                    const grad = ctx.createLinearGradient(textAreaWidth, 0, w, h);
+                    grad.addColorStop(0, '#2a2a2a');
+                    grad.addColorStop(1, '#1a1a1a');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(textAreaWidth, 0, imageAreaWidth, h);
+                }
+
+                // Gradient transition between text and image
+                const gradientX = textAreaWidth - (isMini ? 8 : 30);
+                const gradientWidth = isMini ? 25 : 80;
+                const transitionGrad = ctx.createLinearGradient(gradientX, 0, gradientX + gradientWidth, 0);
+                transitionGrad.addColorStop(0, '#000000');
+                transitionGrad.addColorStop(0.3, '#000000');
+                transitionGrad.addColorStop(0.6, 'rgba(0,0,0,0.7)');
+                transitionGrad.addColorStop(1, 'transparent');
+                ctx.fillStyle = transitionGrad;
+                ctx.fillRect(gradientX, 0, gradientWidth, h);
+
+                // Draw 4 lines of text - vertically stretched to fill height
+                const fontSize = isMini ? 22 : 85;
+                const textX = isMini ? 8 : 25;
+                const padding = isMini ? 15 : 50;
+                const availableHeight = h - padding * 2;
+                const lineSpacing = availableHeight / 4;
+
+                // Calculate Y positions for each line (evenly distributed)
+                const line1Y = padding + lineSpacing * 0.5;
+                const line2Y = padding + lineSpacing * 1.5;
+                const line3Y = padding + lineSpacing * 2.5;
+                const line4Y = padding + lineSpacing * 3.5;
+
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.font = `900 ${fontSize}px ${template.font}, sans-serif`;
+
+                // Text shadow settings
+                ctx.shadowColor = '#000';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = isMini ? 1 : 5;
+                ctx.shadowOffsetY = isMini ? 1 : 5;
+
+                // Vertical scaling factor for taller text
+                const scaleY = 1.4;
+
+                // Line 1
+                ctx.save();
+                ctx.translate(textX, line1Y);
+                ctx.scale(1, scaleY);
+                ctx.fillStyle = template.line1Color;
+                ctx.fillText(topText || '첫 번째 줄', 0, 0);
+                ctx.restore();
+
+                // Line 2
+                ctx.save();
+                ctx.translate(textX, line2Y);
+                ctx.scale(1, scaleY);
+                ctx.fillStyle = template.line2Color;
+                ctx.fillText(bottomText || '두 번째 줄', 0, 0);
+                ctx.restore();
+
+                // Line 3 with highlight box
+                const highlightText = line3Text || '강조 텍스트';
+                const textMetrics = ctx.measureText(highlightText);
+                const boxPadding = isMini ? 5 : 20;
+                const boxHeight = fontSize * scaleY * 1.2;
+
+                // Draw highlight box (scaled)
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.fillStyle = template.highlightBg;
+                ctx.fillRect(textX - boxPadding / 2, line3Y - boxHeight / 2, textMetrics.width + boxPadding, boxHeight);
+
+                // Draw line 3 text
+                ctx.shadowOffsetX = isMini ? 1 : 5;
+                ctx.shadowOffsetY = isMini ? 1 : 5;
+                ctx.save();
+                ctx.translate(textX, line3Y);
+                ctx.scale(1, scaleY);
+                ctx.fillStyle = template.highlightColor;
+                ctx.fillText(highlightText, 0, 0);
+                ctx.restore();
+
+                // Line 4
+                ctx.save();
+                ctx.translate(textX, line4Y);
+                ctx.scale(1, scaleY);
+                ctx.fillStyle = template.line4Color;
+                ctx.fillText(line4Text || '네 번째 줄', 0, 0);
+                ctx.restore();
+
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+            }
+            // Vertical layout type - top text, bottom image
+            else if (template.type === 'vertical') {
+                const textAreaHeight = h * 0.30;
+                const imageAreaHeight = h * 0.70;
+
+                // Draw black background for text area
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, w, textAreaHeight);
+
+                // Draw image on bottom
+                if (uploadedImages.length > 0 && !isMini) {
+                    ctx.drawImage(uploadedImages[0], 0, textAreaHeight, w, imageAreaHeight);
+                } else {
+                    // Placeholder gradient for image area
+                    const grad = ctx.createLinearGradient(0, textAreaHeight, 0, h);
+                    grad.addColorStop(0, '#2a2a2a');
+                    grad.addColorStop(1, '#1a1a1a');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, textAreaHeight, w, imageAreaHeight);
+                }
+
+                // Gradient transition between text and image
+                const gradientY = textAreaHeight - (isMini ? 10 : 30);
+                const gradientHeight = isMini ? 25 : 80;
+                const transitionGrad = ctx.createLinearGradient(0, gradientY, 0, gradientY + gradientHeight);
+                transitionGrad.addColorStop(0, '#000000');
+                transitionGrad.addColorStop(0.5, 'rgba(0,0,0,0.5)');
+                transitionGrad.addColorStop(1, 'transparent');
+                ctx.fillStyle = transitionGrad;
+                ctx.fillRect(0, gradientY, w, gradientHeight);
+
+                // Draw 2 lines of text
+                const fontSize = isMini ? 26 : 105;
+                const lineHeight = fontSize * 1.15;
+                const startY = textAreaHeight / 2 - lineHeight / 2 + (isMini ? 15 : 50);
+
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = `900 ${fontSize}px ${template.font}, sans-serif`;
+
+                // Text shadow settings
+                ctx.shadowColor = '#000';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = isMini ? 1 : 5;
+                ctx.shadowOffsetY = isMini ? 1 : 5;
+
+                // Line 1
+                ctx.fillStyle = template.line1Color;
+                ctx.fillText(topText || '첫 번째 줄', w / 2, startY);
+
+                // Line 2
+                ctx.fillStyle = template.line2Color;
+                ctx.fillText(bottomText || '두 번째 줄', w / 2, startY + lineHeight);
+
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+            }
+            // Multi-line type - full background with 4 lines
+            else if (template.type === 'multi-line') {
+                // Draw uploaded images or placeholder (full background)
+                if (uploadedImages.length > 0 && !isMini) {
+                    ctx.drawImage(uploadedImages[0], 0, 0, w, h);
+                } else {
+                    // Placeholder gradient
+                    const grad = ctx.createLinearGradient(0, 0, w, h);
+                    grad.addColorStop(0, '#1a1a1a');
+                    grad.addColorStop(1, '#2a2a2a');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, w, h);
+                }
+
+                // Dark overlay for text readability
+                ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                ctx.fillRect(0, 0, w, h);
+
+                // Draw 4 lines of text
+                const fontSize = isMini ? 28 : 110;
+                const lineHeight = fontSize * 1.2;
+                const startY = h / 2 - lineHeight * 1.5;
+
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = `900 ${fontSize}px ${template.font}, sans-serif`;
+
+                // Text shadow settings
+                ctx.shadowColor = '#000';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = isMini ? 2 : 6;
+                ctx.shadowOffsetY = isMini ? 2 : 6;
+
+                // Line 1
+                ctx.fillStyle = template.line1Color;
+                ctx.fillText(topText || '첫 번째 줄', w / 2, startY);
+
+                // Line 2
+                ctx.fillStyle = template.line2Color;
+                ctx.fillText(bottomText || '두 번째 줄', w / 2, startY + lineHeight);
+
+                // Line 3 with highlight box
+                const multiHighlightText = line3Text || '강조 텍스트';
+                const multiLine3Y = startY + lineHeight * 2;
+                const multiTextMetrics = ctx.measureText(multiHighlightText);
+                const boxPadding = isMini ? 8 : 30;
+                const boxHeight = fontSize * 1.1;
+
+                // Draw highlight box
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.fillStyle = template.highlightBg;
+                ctx.fillRect(w / 2 - multiTextMetrics.width / 2 - boxPadding, multiLine3Y - boxHeight / 2, multiTextMetrics.width + boxPadding * 2, boxHeight);
+
+                // Draw line 3 text
+                ctx.shadowOffsetX = isMini ? 2 : 6;
+                ctx.shadowOffsetY = isMini ? 2 : 6;
+                ctx.fillStyle = template.highlightColor;
+                ctx.fillText(multiHighlightText, w / 2, multiLine3Y);
+
+                // Line 4
+                ctx.fillStyle = template.line4Color;
+                ctx.fillText(line4Text || '네 번째 줄', w / 2, startY + lineHeight * 3);
+
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+            }
+            else {
+                // Original two-line and single-line types
+                // Draw uploaded images or placeholder
+                if (uploadedImages.length > 0 && !isMini) {
+                    const imgH = h * 0.7;
+                    if (uploadedImages.length === 1) {
+                        ctx.drawImage(uploadedImages[0], 0, 0, w, imgH);
+                    } else {
+                        const halfW = w / 2;
+                        ctx.drawImage(uploadedImages[0], 0, 0, halfW - 2, imgH);
+                        ctx.drawImage(uploadedImages[1] || uploadedImages[0], halfW + 2, 0, halfW - 2, imgH);
+                    }
+                } else {
+                    // Placeholder gradient
+                    const imgH = h * 0.7;
+                    const grad = ctx.createLinearGradient(0, 0, w, imgH);
+                    grad.addColorStop(0, '#1a1a1a');
+                    grad.addColorStop(1, '#2a2a2a');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, w, imgH);
+                }
+
+                // Text overlay gradient
+                const textGrad = ctx.createLinearGradient(0, h * 0.5, 0, h);
+                textGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                textGrad.addColorStop(0.35, 'rgba(0,0,0,0.95)');
+                ctx.fillStyle = textGrad;
+                ctx.fillRect(0, h * 0.5, w, h * 0.5);
+
+                // Set font
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                if (template.type === 'single-line') {
+                    // Single line mode
+                    const text = bottomText || topText || '텍스트';
+                    const fontSize = isMini ? 36 : 130;
+                    ctx.font = `900 ${fontSize}px ${template.font}, sans-serif`;
+                    ctx.fillStyle = template.textColor || '#FFFFFF';
+
+                    // Text shadow
+                    ctx.shadowColor = '#000';
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = isMini ? 2 : 6;
+                    ctx.shadowOffsetY = isMini ? 2 : 6;
+
+                    ctx.fillText(text, w / 2, h * 0.75);
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                } else {
+                    // Two line mode
+                    // Top text
+                    const topFontSize = isMini ? 22 : 90;
+                    ctx.font = `900 ${topFontSize}px ${template.font}, sans-serif`;
+                    ctx.fillStyle = template.topColor;
+
+                    ctx.shadowColor = '#000';
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = isMini ? 1 : 5;
+                    ctx.shadowOffsetY = isMini ? 1 : 5;
+
+                    const topY = h * 0.72;
+                    ctx.fillText(topText || '첫 번째 줄', w / 2, topY);
+
+                    // Bottom text
+                    const bottomFontSize = isMini ? 36 : 145;
+                    ctx.font = `900 ${bottomFontSize}px ${template.font}, sans-serif`;
+                    ctx.fillStyle = template.bottomColor;
+
+                    ctx.shadowOffsetX = isMini ? 2 : 6;
+                    ctx.shadowOffsetY = isMini ? 2 : 6;
+
+                    const bottomY = h * 0.88;
+                    ctx.fillText(bottomText || '두 번째 줄', w / 2, bottomY);
+
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                }
+            }
+
+            // Border - draw LAST so it's on top of everything
+            const borderWidth = isMini ? 6 : 12;
+            ctx.strokeStyle = template.borderColor;
+            ctx.lineWidth = borderWidth;
+            ctx.strokeRect(borderWidth / 2, borderWidth / 2, w - borderWidth, h - borderWidth);
+        }
+
+        function updatePreview() {
+            const topText = document.getElementById('topText').value || '"제목을 입력하세요"';
+            const bottomText = document.getElementById('bottomText').value || '메인 텍스트';
+            const line3Text = document.getElementById('line3Text').value || '하이라이트 텍스트';
+            const line4Text = document.getElementById('line4Text').value || '네 번째 줄';
+            const canvas = document.getElementById('thumbnailCanvas');
+            renderTemplate(canvas, selectedTemplate, topText, bottomText, false, line3Text, line4Text);
+        }
+
+        function selectTemplate(template) {
+            selectedTemplate = template;
+
+            // Update UI - use dataset.templateId for accurate matching
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.toggle('selected', parseInt(card.dataset.templateId) === template.id);
+            });
+
+            // Show/hide extra input fields based on template type
+            const is4Lines = template.type === 'multi-line' || template.type === 'split';
+            document.getElementById('line3Container').style.display = is4Lines ? 'block' : 'none';
+            document.getElementById('line4Container').style.display = is4Lines ? 'block' : 'none';
+
+            // Update labels based on template type
+            const line1Label = document.getElementById('line1Label');
+            const line2Label = document.getElementById('line2Label');
+            if (template.type === 'single-line') {
+                line1Label.textContent = '한 줄 텍스트';
+                line2Label.parentElement.style.display = 'none';
+            } else {
+                line1Label.textContent = '첫 번째 줄';
+                line2Label.parentElement.style.display = 'block';
+            }
+
+            updatePreview();
+        }
+
+        function openPreviewModal(template) {
+            modalTemplateId = template.id;
+            const modal = document.getElementById('previewModal');
+            const canvas = document.getElementById('modalCanvas');
+            const topText = document.getElementById('topText').value || '"제목을 입력하세요"';
+            const bottomText = document.getElementById('bottomText').value || '메인 텍스트';
+            const line3Text = document.getElementById('line3Text').value || '하이라이트 텍스트';
+            const line4Text = document.getElementById('line4Text').value || '네 번째 줄';
+
+            document.getElementById('modalTemplateName').textContent = template.name;
+            renderTemplate(canvas, template, topText, bottomText, false, line3Text, line4Text);
+            modal.classList.add('active');
+        }
+
+        function closePreviewModal() {
+            document.getElementById('previewModal').classList.remove('active');
+        }
+
+        function selectTemplateFromModal() {
+            const template = TEMPLATES.find(t => t.id === modalTemplateId);
+            if (template) {
+                selectTemplate(template);
+            }
+            closePreviewModal();
+        }
+
+        function setInputMode(mode) {
+            currentInputMode = mode;
+            document.querySelectorAll('.input-mode-tabs button').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.includes(mode === 'title' ? '직접' : '대본'));
+            });
+
+            document.getElementById('titleInputMode').style.display = mode === 'title' ? 'block' : 'none';
+            document.getElementById('scriptInputMode').style.display = mode === 'script' ? 'block' : 'none';
+        }
+
+        async function generateTitleFromScript() {
+            const script = document.getElementById('scriptInput').value.trim();
+            if (!script) {
+                alert('대본을 입력해주세요.');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> 생성 중...';
+
+            try {
+                const response = await authFetch('/api/thumbnail/generate-title', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ script })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('aiTopText').textContent = data.topText;
+                    document.getElementById('aiBottomText').textContent = data.bottomText;
+                    document.getElementById('aiGeneratedTitle').style.display = 'block';
+                } else {
+                    alert('제목 생성 실패: ' + data.error);
+                }
+            } catch (error) {
+                alert('오류 발생: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.5rem;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> AI로 제목 생성';
+            }
+        }
+
+        function applyAiTitle() {
+            document.getElementById('topText').value = document.getElementById('aiTopText').textContent;
+            document.getElementById('bottomText').value = document.getElementById('aiBottomText').textContent;
+            setInputMode('title');
+            updatePreview();
+        }
+
+        function handleImageUpload(event) {
+            const files = event.target.files;
+            uploadedImages = [];
+
+            Array.from(files).slice(0, 2).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        uploadedImages[index] = img;
+                        updateImagePreview();
+                        updatePreview();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updateImagePreview() {
+            const container = document.getElementById('uploadedImages');
+            const placeholder = document.getElementById('uploadPlaceholder');
+
+            if (uploadedImages.length > 0) {
+                placeholder.style.display = 'none';
+                container.style.display = 'grid';
+                container.innerHTML = '';
+
+                uploadedImages.forEach((img, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'uploaded-image-item';
+                    item.innerHTML = `
+                        <img src="${img.src}">
+                        <button class="remove-btn" onclick="removeImage(${index})">&times;</button>
+                    `;
+                    container.appendChild(item);
+                });
+            } else {
+                placeholder.style.display = 'block';
+                container.style.display = 'none';
+            }
+        }
+
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            updateImagePreview();
+            updatePreview();
+        }
+
+        function downloadThumbnail() {
+            const canvas = document.getElementById('thumbnailCanvas');
+            const link = document.createElement('a');
+            link.download = `thumbnail_${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Settings modal
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function saveSettings() {
+            const apiKey = document.getElementById('api302Key').value;
+            localStorage.setItem('api302Key', apiKey);
+            closeSettingsModal();
+            alert('설정이 저장되었습니다.');
+        }
+
+        // Close modal on outside click
+        document.getElementById('previewModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('previewModal')) {
+                closePreviewModal();
+            }
+        });
+
+        document.getElementById('settingsModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('settingsModal')) {
+                closeSettingsModal();
+            }
+        });
+
+    </script>
+
+    <!-- Firebase Auth -->
+    <script src="/js/firebase-config.js"></script>
+    <script src="/js/firebase-auth.js"></script>
+    <script>
+        // Check authentication
+        requireAuth().then(authState => {
+            if (authState) {
+                document.body.style.visibility = 'visible';
+                startTokenRefresh();
+
+                // Update header auth UI
+                setHeaderAuthState(authState);
+
+                // Add admin link if user is admin
+                if (authState.isAdmin) {
+                    const nav = document.querySelector('.header-nav');
+                    if (nav && !nav.querySelector('[href="/admin"]')) {
+                        const adminLink = document.createElement('a');
+                        adminLink.href = '/admin';
+                        adminLink.innerHTML = '<span>관리자</span>';
+                        nav.appendChild(adminLink);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,2546 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>쇼츠공장 - AI 이미지 쇼츠</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <link rel="stylesheet" href="/css/toss-style.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <style>
+        /* JSON 입력 */
+        .json-editor {
+            width: 100%;
+            min-height: 400px;
+            padding: 1rem;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            line-height: 1.5;
+            resize: vertical;
+            background: var(--color-bg-tertiary);
+            color: var(--color-gray-900);
+        }
+
+        .json-editor:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(77, 158, 255, 0.15);
+        }
+
+        /* 설정 */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .setting-item label {
+            font-size: 0.8rem;
+            color: var(--color-gray-600);
+            font-weight: 500;
+        }
+
+        .setting-item input,
+        .setting-item select {
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            background: var(--color-bg-tertiary);
+            color: var(--color-gray-900);
+        }
+
+        /* 버튼 */
+        .actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-secondary {
+            background: var(--color-gray-100);
+            color: var(--color-gray-700);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-gray-200);
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 도움말 */
+        .help-box {
+            background: var(--color-gray-50);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .help-box h4 {
+            font-size: 0.85rem;
+            color: var(--color-gray-800);
+            margin-bottom: 0.5rem;
+        }
+
+        .help-box pre {
+            background: var(--color-bg-tertiary);
+            padding: 1rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            overflow-x: auto;
+            color: var(--color-gray-300);
+        }
+
+        .help-box p {
+            font-size: 0.8rem;
+            color: var(--color-gray-600);
+            margin-top: 0.5rem;
+        }
+
+        /* 진행 상태 */
+        .progress-section {
+            display: none;
+        }
+
+        .progress-section.active {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .progress-bar-container {
+            background: var(--color-gray-200);
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+            background: var(--color-primary);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-status {
+            font-size: 0.85rem;
+            color: var(--color-gray-600);
+            text-align: center;
+        }
+
+        .progress-log {
+            background: var(--color-bg-tertiary);
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 100px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.75rem;
+            color: var(--color-gray-500);
+            margin-top: 1rem;
+        }
+
+        .progress-log .log-item {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid var(--color-gray-200);
+        }
+
+        .progress-log .log-item:last-child {
+            border-bottom: none;
+        }
+
+        .progress-log .success {
+            color: var(--color-success);
+        }
+
+        .progress-log .error {
+            color: var(--color-error);
+        }
+
+        /* 결과 */
+        .result-section {
+            display: none;
+        }
+
+        .result-section.active {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .result-video {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            display: block;
+            border-radius: 12px;
+            background: #000;
+        }
+
+        .result-info {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--color-gray-50);
+            border-radius: 8px;
+        }
+
+        .result-info p {
+            font-size: 0.85rem;
+            color: var(--color-gray-600);
+            margin: 0.25rem 0;
+        }
+
+        .result-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        /* 로딩 */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 템플릿 버튼 */
+        .template-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .template-btn {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--color-gray-300);
+            background: var(--color-bg-elevated);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: var(--color-gray-600);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .template-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        /* Mini Player Styles */
+        .mini-player {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--color-bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--color-gray-200);
+        }
+
+        .mini-player-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--color-gray-300);
+            background: var(--color-bg-secondary);
+            color: var(--color-gray-500);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            padding: 0;
+        }
+
+        .mini-player-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            transform: scale(1.08);
+        }
+
+        .mini-player-btn:active {
+            transform: scale(0.95);
+        }
+
+        .mini-player-btn.playing {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+            }
+        }
+
+        .mini-player-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .mini-player-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .mini-player-progress {
+            height: 4px;
+            background: var(--color-gray-200);
+            border-radius: 2px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .mini-player-progress-bar {
+            height: 100%;
+            background: var(--color-primary);
+            width: 0%;
+            transition: width 0.1s linear;
+            border-radius: 2px;
+        }
+
+        .mini-player-time {
+            font-size: 0.7rem;
+            color: var(--color-gray-500);
+            margin-top: 0.25rem;
+            display: block;
+        }
+
+        /* 테마 버튼 스타일 */
+        .theme-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--color-gray-300);
+            background: var(--color-bg-tertiary);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--color-gray-600);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .theme-btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .theme-btn.active {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-primary);
+        }
+
+        .example-card {
+            padding: 0.75rem;
+            border: 1px solid var(--color-gray-200);
+            border-radius: 8px;
+            background: var(--color-bg-tertiary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .example-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+        }
+
+        .example-card-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-gray-800);
+            margin-bottom: 0.25rem;
+        }
+
+        .example-card-preview {
+            font-size: 0.75rem;
+            color: var(--color-gray-500);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .example-card-duration {
+            font-size: 0.7rem;
+            color: var(--color-primary);
+            margin-top: 0.25rem;
+        }
+
+        /* 2단 레이아웃 */
+        .main-row {
+            display: flex;
+            gap: 1.5rem;
+            width: 100%;
+            align-items: stretch;
+            /* 높이 동일하게 맞춤 */
+        }
+
+        .left-column {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 섹션 높이 채우기 */
+        .left-column>.section,
+        .right-column>#inputSection {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 대본 생성기 내부 컨텐츠 채우기 */
+        .left-column #scriptGenContent {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .right-column {
+            flex: 1;
+            min-width: 0;
+        }
+
+        @media (max-width: 900px) {
+            .main-row {
+                flex-direction: column;
+            }
+
+            .left-column {
+                position: static;
+                width: 100%;
+                max-height: none;
+            }
+
+            .right-column {
+                width: 100%;
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+
+<body style="visibility: hidden;">
+    <!-- Header (injected by header.js) -->
+    <div id="header-placeholder"></div>
+    <script src="/js/header.js"></script>
+
+    <!-- 사용법 모달 -->
+    <div id="guideModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>📖 사용법</h3>
+                <button class="modal-close" onclick="closeGuideModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- API 키 안내 -->
+                <div
+                    style="background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; border: 1px solid #ffc107;">
+                    <p style="color: #856404; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">⚠️ 먼저 302.AI
+                        API 키가 필요해요!</p>
+                    <p style="color: #856404; font-size: 0.85rem; line-height: 1.6;">
+                        하나의 <strong>302.AI 키</strong>로 이미지 생성(DALL-E), 음성 등 모든 기능을 사용할 수 있어요.<br>
+                        오른쪽 위 설정 버튼을 눌러서 API 키를 먼저 등록해주세요!
+                    </p>
+                </div>
+
+                <div
+                    style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem;">
+                    <p style="color: var(--color-gray-700); font-size: 0.9rem; line-height: 1.8;">
+                        <strong style="color: var(--color-primary);">AI 숏폼</strong>은 글과 그림 설명을 입력하면 AI가 이미지를 그리고, 목소리를
+                        입혀서 영상을 만들어줍니다!
+                    </p>
+                    <div
+                        style="margin-top: 1rem; padding: 1rem; background: var(--color-bg-secondary); border-radius: 8px; border-left: 3px solid var(--color-primary);">
+                        <p
+                            style="color: var(--color-gray-800); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">
+                            3단계로 끝!</p>
+                        <p style="color: var(--color-gray-600); font-size: 0.875rem; line-height: 1.8;">
+                            1️⃣ 아래 버튼 눌러서 ChatGPT로 씬 구성 만들기<br>
+                            2️⃣ 만들어진 씬 복사해서 붙여넣기<br>
+                            3️⃣ "숏폼 생성" 버튼 클릭!
+                        </p>
+                    </div>
+                </div>
+                <div style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1.25rem;">
+                    <h4 style="color: var(--color-gray-900); margin-bottom: 0.75rem; font-size: 0.95rem;">💬 AI한테 씬 구성
+                        만들어달라고 하기</h4>
+                    <p style="color: var(--color-gray-500); font-size: 0.8rem; margin-bottom: 0.75rem;">ChatGPT, Claude,
+                        Gemini 등 아무 AI나 사용 가능!</p>
+
+                    <div style="display: grid; gap: 0.75rem; margin-bottom: 1rem;">
+                        <div>
+                            <label
+                                style="font-size: 0.8rem; color: var(--color-gray-600); margin-bottom: 0.25rem; display: block;">주제</label>
+                            <input type="text" id="promptTopic" placeholder="예: 고양이의 비밀, 돈 버는 습관"
+                                oninput="updatePromptPreview()"
+                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.85rem;">
+                        </div>
+                    </div>
+
+                    <textarea id="promptPreview" readonly
+                        style="width: 100%; min-height: 200px; padding: 0.75rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.8rem; font-family: inherit; line-height: 1.6; background: var(--color-bg-secondary); color: var(--color-gray-700); resize: vertical; margin-bottom: 0.75rem;">AI가 그림 그리는 유튜브 숏폼 만들어줘
+
+주제: [주제를 입력하세요]
+
+조건:
+- 3~5개 장면으로 나누기
+- 각 장면마다 읽을 대사 쓰기
+- 그림 설명은 영어로 자세하게
+
+이 형식으로 만들어줘:
+[
+  {
+    "text": "첫번째 장면에서 읽을 대사",
+    "imagePrompt": "first scene image, cinematic, beautiful"
+  },
+  {
+    "text": "두번째 장면 대사",
+    "imagePrompt": "second scene description"
+  }
+]</textarea>
+
+                    <button onclick="copyPromptFromTextarea()"
+                        style="width: 100%; background: var(--color-primary); color: white; border: none; padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600;">📋
+                        프롬프트 복사하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 페이지 타이틀 -->
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1
+                style="font-size: 2rem; font-weight: 800; color: var(--color-gray-900); margin-bottom: 0.5rem; letter-spacing: -0.02em;">
+                🤖 AI 이미지 숏폼 생성기
+            </h1>
+            <p style="color: var(--color-gray-600); font-size: 1rem;">
+                대본 입력 → AI 이미지 생성 → AI 음성 합성 → 자동 숏폼 완성
+            </p>
+        </div>
+
+        <!-- 메인 레이아웃 (좌우 배치) -->
+        <div class="main-row">
+            <!-- 왼쪽: 대본 생성기 -->
+            <div class="left-column">
+                <!-- 대본 생성기 -->
+                <div class="section">
+                    <!-- OLD Script Gen (Hidden) -->
+                    <div style="display:none;">
+                        <h2 class="section-title">📝 대본 생성기 (Old)</h2>
+                        <div id="scriptGenContent">
+                            <div style="margin-bottom: 1rem;">
+                                <label
+                                    style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.5rem; display: block;">테마
+                                    선택</label>
+                                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;" id="themeButtons">
+                                    <button type="button" class="theme-btn active" data-theme="story"
+                                        onclick="selectTheme('story')">📖 스토리</button>
+                                    <button type="button" class="theme-btn" data-theme="facts"
+                                        onclick="selectTheme('facts')">🌍
+                                        상식/팩트</button>
+                                    <button type="button" class="theme-btn" data-theme="motivation"
+                                        onclick="selectTheme('motivation')">🔥 동기부여</button>
+                                    <button type="button" class="theme-btn" data-theme="horror"
+                                        onclick="selectTheme('horror')">👻
+                                        공포</button>
+                                    <button type="button" class="theme-btn" data-theme="tips"
+                                        onclick="selectTheme('tips')">💡
+                                        꿀팁</button>
+                                    <button type="button" class="theme-btn" data-theme="korea"
+                                        onclick="selectTheme('korea')">🇰🇷
+                                        국뽕</button>
+                                    <button type="button" class="theme-btn" data-theme="international"
+                                        onclick="selectTheme('international')">💑 국결</button>
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label
+                                    style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.5rem; display: block;">예시
+                                    대본 (클릭하여 적용)</label>
+                                <div id="exampleScripts" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                </div>
+                            </div>
+                            <div style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1rem;">
+                                <label
+                                    style="font-size: 0.85rem; color: var(--color-gray-600); margin-bottom: 0.5rem; display: block;">AI에게
+                                    대본 요청하기</label>
+                                <input type="text" id="customScriptTopic" placeholder="주제 입력 (예: 우주의 신비, 고양이의 비밀)"
+                                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.85rem; margin-bottom: 0.5rem;"
+                                    oninput="updateScriptPrompt()">
+                                <textarea id="scriptPromptPreview" readonly
+                                    style="width: 100%; min-height: 180px; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.8rem; font-family: inherit; background: var(--color-bg-secondary); color: var(--color-gray-600); resize: vertical;"></textarea>
+                                <button type="button" onclick="copyScriptPrompt()"
+                                    style="margin-top: 0.5rem; width: 100%; padding: 0.6rem; background: var(--color-primary); color: white; border: none; border-radius: 6px; font-size: 0.85rem; cursor: pointer; font-weight: 500;">📋
+                                    프롬프트 복사하기</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NEW Script Gen (from ai-video.html) -->
+                    <div class="collapsible-section">
+                        <div id="scriptSectionContent">
+                            <style>
+                                /* Form Layout Styles */
+                                .form-grid {
+                                    display: flex;
+                                    flex-direction: column;
+                                    gap: 1.25rem;
+                                }
+
+                                .form-row {
+                                    display: grid;
+                                    gap: 1rem;
+                                }
+
+                                .form-row.cols-2 {
+                                    grid-template-columns: 1fr 1fr;
+                                }
+
+                                .form-row.cols-3 {
+                                    grid-template-columns: 1fr 1fr 1fr;
+                                }
+
+                                .input-group label {
+                                    display: block;
+                                    font-size: 0.85rem;
+                                    font-weight: 600;
+                                    color: var(--color-gray-700);
+                                    margin-bottom: 0.4rem;
+                                }
+
+                                .input-box {
+                                    width: 100%;
+                                    padding: 0.6rem 0.75rem;
+                                    border: 1px solid var(--color-gray-300);
+                                    border-radius: 8px;
+                                    font-size: 0.9rem;
+                                    background: var(--color-bg-primary);
+                                    transition: border-color 0.2s, box-shadow 0.2s;
+                                }
+
+                                .input-box:focus {
+                                    border-color: var(--color-primary);
+                                    outline: none;
+                                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                                }
+
+                                /* Modern Radio Group */
+                                .radio-group-modern {
+                                    display: flex;
+                                    background: var(--color-bg-tertiary, #f3f4f6);
+                                    padding: 4px;
+                                    border-radius: 10px;
+                                    border: 1px solid var(--color-border);
+                                }
+
+                                .radio-option {
+                                    flex: 1;
+                                    position: relative;
+                                }
+
+                                .radio-option input {
+                                    position: absolute;
+                                    opacity: 0;
+                                    cursor: pointer;
+                                    width: 100%;
+                                    height: 100%;
+                                    z-index: 1;
+                                }
+
+                                .radio-option span {
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    padding: 0.6rem;
+                                    border-radius: 8px;
+                                    font-size: 0.9rem;
+                                    font-weight: 500;
+                                    color: var(--color-text-secondary);
+                                    transition: all 0.2s;
+                                }
+
+                                .radio-option input:checked+span {
+                                    background: var(--color-bg-primary);
+                                    color: var(--color-primary);
+                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                    font-weight: 700;
+                                }
+
+                                .helper-text {
+                                    margin-top: 0.5rem;
+                                    font-size: 0.85rem;
+                                    color: var(--color-gray-600);
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 0.5rem;
+                                }
+
+                                /* Chips Grid */
+                                .style-grid {
+                                    display: grid;
+                                    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                                    gap: 0.5rem;
+                                }
+
+                                .style-option-chip {
+                                    padding: 0.5rem;
+                                    border: 1px solid var(--color-gray-300);
+                                    border-radius: 20px;
+                                    background: var(--color-bg-primary);
+                                    cursor: pointer;
+                                    text-align: center;
+                                    font-size: 0.8rem;
+                                    transition: all 0.2s;
+                                    color: var(--color-gray-600);
+                                }
+
+                                .style-option-chip:hover {
+                                    border-color: var(--color-primary);
+                                    color: var(--color-primary);
+                                }
+
+                                .style-option-chip.selected {
+                                    border-color: var(--color-primary);
+                                    background: rgba(59, 130, 246, 0.1);
+                                    color: var(--color-primary);
+                                    font-weight: 700;
+                                }
+
+                                /* Responsive adjustments */
+                                @media (max-width: 800px) {
+
+                                    .form-row.cols-2,
+                                    .form-row.cols-3 {
+                                        grid-template-columns: 1fr;
+                                        gap: 0.75rem;
+                                    }
+                                }
+
+                                /* Result Styles */
+                                .script-result-card {
+                                    background: var(--color-bg-secondary);
+                                    border: 1px solid var(--color-border);
+                                    border-radius: 12px;
+                                    padding: 1.25rem;
+                                    margin-bottom: 1rem;
+                                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                                }
+
+                                .script-result-header {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                    margin-bottom: 0.75rem;
+                                    font-weight: 700;
+                                    color: var(--color-gray-800);
+                                }
+
+                                .audio-player-container {
+                                    margin-top: 1rem;
+                                    padding-top: 1rem;
+                                    border-top: 1px solid var(--color-border);
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 0.75rem;
+                                }
+                            </style>
+
+                            <div class="form-grid">
+                                <!-- Content Mode -->
+                                <div class="input-group">
+                                    <label>콘텐츠 모드</label>
+                                    <div class="radio-group-modern">
+                                        <div class="radio-option">
+                                            <input type="radio" name="scriptMode" value="business" checked
+                                                onchange="toggleScriptMode()">
+                                            <span>📢 업체 홍보형</span>
+                                        </div>
+                                        <div class="radio-option">
+                                            <input type="radio" name="scriptMode" value="entertainment"
+                                                onchange="toggleScriptMode()">
+                                            <span>🎭 엔터테인먼트형</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Store & Location Row -->
+                                <div class="form-row cols-2">
+                                    <div class="input-group">
+                                        <label id="labelName">🏪 가게 이름</label>
+                                        <input type="text" id="storeName" class="input-box"
+                                            placeholder="예: 고양시 맛집 할매순대국">
+                                        <div class="helper-text">
+                                            <label
+                                                style="cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+                                                <input type="checkbox" id="includeName" checked>
+                                                대본에 <span id="labelDetailInclude">이름</span> 포함
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="input-group" id="locationGroup">
+                                        <label>📍 위치 정보 (선택)</label>
+                                        <input type="text" id="storeLocation" class="input-box" placeholder="예: 서울 강남구">
+                                        <div class="helper-text">
+                                            <span style="font-weight: 500;">위치 언급:</span>
+                                            <label
+                                                style="cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                                                <input type="radio" name="locationIn" value="intro" checked> 인트로
+                                            </label>
+                                            <label
+                                                style="cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                                                <input type="radio" name="locationIn" value="outro"> 아웃트로
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Description -->
+                                <div class="input-group">
+                                    <label id="labelDescription">✏️ 가게 설명 / 특징</label>
+                                    <textarea id="storeDescription" class="input-box"
+                                        style="min-height: 80px; resize: vertical; line-height: 1.6;"
+                                        placeholder="40년 전통의 순대국 전문점입니다. 국물이 진하고 고기가 많아요. 24시간 영업합니다."></textarea>
+                                </div>
+
+                                <!-- Settings Row: Language, TTS, Filter -->
+                                <div class="form-row cols-3">
+                                    <div class="input-group">
+                                        <label>🗣️ 언어</label>
+                                        <select id="scriptLanguage" class="input-box">
+                                            <option value="Korean" selected>Korean</option>
+                                            <option value="English">English</option>
+                                        </select>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>🔊 TTS 설정</label>
+                                        <select id="ttsProvider" class="input-box">
+                                            <option value="Google" selected>Google Cloud TTS (기본)</option>
+                                            <option value="Azure">Azure (자연스러운 한국어)</option>
+                                        </select>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>🎨 영상 필터</label>
+                                        <select id="videoFilter" class="input-box">
+                                            <option value="original" selected>원본 (기본)</option>
+                                            <option value="cinematic">시네마틱</option>
+                                            <option value="vintage">빈티지</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Script Style -->
+                                <div class="input-group">
+                                    <label>🎨 대본 스타일 (다중 선택)</label>
+                                    <div class="style-grid" id="scriptStyleGrid">
+                                        <!-- Initial Styles for Business Mode -->
+                                        <div class="style-option-chip selected" data-style="Review"
+                                            onclick="toggleStyleChip(this)">리뷰형</div>
+                                        <div class="style-option-chip selected" data-style="Promotional"
+                                            onclick="toggleStyleChip(this)">홍보형</div>
+                                        <div class="style-option-chip" data-style="Storytelling"
+                                            onclick="toggleStyleChip(this)">스토리텔링형</div>
+                                        <div class="style-option-chip" data-style="Tips"
+                                            onclick="toggleStyleChip(this)">팁/추천형</div>
+                                        <div class="style-option-chip" data-style="Urgency"
+                                            onclick="toggleStyleChip(this)">긴급/FOMO형</div>
+                                        <div class="style-option-chip" data-style="Comparison"
+                                            onclick="toggleStyleChip(this)">비교형</div>
+                                        <div class="style-option-chip" data-style="Question"
+                                            onclick="toggleStyleChip(this)">질문형</div>
+                                    </div>
+                                </div>
+
+                                <!-- Intro/Outro Style -->
+                                <div class="form-row cols-2">
+                                    <div class="input-group">
+                                        <label>🎬 인트로 스타일</label>
+                                        <select id="introStyle" class="input-box">
+                                            <option value="직설적 소개형">직설적 소개형</option>
+                                            <option value="충격적 사실형">충격적 사실형</option>
+                                            <option value="질문 던지기형">질문 던지기형</option>
+                                            <option value="놀람 후크형">놀람 후크형</option>
+                                            <option value="지역 인증형">지역 인증형</option>
+                                            <option value="방문 인증형" selected>방문 인증형</option>
+                                        </select>
+                                    </div>
+                                    <div class="input-group">
+                                        <label>🎭 아웃트로 스타일</label>
+                                        <select id="outroStyle" class="input-box">
+                                            <option value="추천형" selected>추천형</option>
+                                            <option value="물음표 마무리형">물음표 마무리형</option>
+                                            <option value="장점 강조 물음형">장점 강조 물음형</option>
+                                            <option value="물음표 장난형">물음표 장난형</option>
+                                            <option value="행동 유도형">행동 유도형</option>
+                                            <option value="반전 확신형">반전 확신형</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Generate Button -->
+                                <button class="btn btn-primary btn-block" onclick="generateScripts()"
+                                    id="generateScriptsBtn"
+                                    style="width: 100%; padding: 1rem; font-size: 1.1rem; border-radius: 12px; margin-top: 1rem; font-weight: 700;">
+                                    ✨ 대본 생성 시작
+                                </button>
+                            </div>
+
+                            <!-- Results Area -->
+                            <div id="scriptResultsArea" style="margin-top: 2rem; display: none;">
+                                <h3 class="section-title">📝 생성된 대본 & 오디오</h3>
+                                <div id="generatedScriptsList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- left-column 끝 -->
+
+            <!-- 오른쪽: 설정 및 생성 -->
+            <div class="right-column">
+
+
+
+                <!-- 입력 섹션 -->
+                <div class="section" id="inputSection">
+                    <div class="section-title">🎬 영상 장면 구성</div>
+
+                    <div class="settings-grid"
+                        style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--color-gray-200);">
+                        <div class="setting-item">
+                            <label>제목</label>
+                            <input type="text" id="videoTitle" value="AI_Shorts" placeholder="영상 제목">
+                            <div style="margin-top: 0.5rem; display: flex; align-items: center;">
+                                <input type="checkbox" id="includeTitle" checked style="margin-right: 0.5rem;">
+                                <label for="includeTitle"
+                                    style="font-size: 0.9rem; color: var(--color-gray-700); cursor: pointer;">영상에 제목
+                                    포함하기</label>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label>이미지 스타일</label>
+                            <select id="imageStyle">
+                                <option value="realistic">실사 (Realistic)</option>
+                                <option value="anime">애니메이션 (Anime)</option>
+                                <option value="cartoon">카툰 (Cartoon)</option>
+                                <option value="comic">미국 만화 (Comic)</option>
+                                <option value="watercolor">수채화 (Watercolor)</option>
+                                <option value="oil">유화 (Oil Painting)</option>
+                                <option value="3d">3D 렌더링</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label>배경음악</label>
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                <select id="musicFolder" onchange="onMusicFolderChange()"
+                                    style="flex: 1; padding: 0.6rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.9rem;">
+                                    <option value="">폴더 선택</option>
+                                </select>
+                                <select id="musicFile" onchange="onMusicFileChange()"
+                                    style="flex: 2; padding: 0.6rem; border: 1px solid var(--color-gray-300); border-radius: 6px; font-size: 0.9rem;">
+                                    <option value="">음악 선택</option>
+                                </select>
+                            </div>
+                            <!-- Mini Player -->
+                            <div id="miniPlayer" class="mini-player" style="display: none;">
+                                <button type="button" class="mini-player-btn" onclick="toggleMiniPlayer()"
+                                    id="miniPlayerBtn">
+                                    <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                    <svg id="pauseIcon" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                                    </svg>
+                                </button>
+                                <div class="mini-player-info">
+                                    <div class="mini-player-progress">
+                                        <div class="mini-player-progress-bar" id="miniPlayerProgress"></div>
+                                    </div>
+                                    <span class="mini-player-time" id="miniPlayerTime">0:00 / 0:00</span>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="voiceEmotion" value="neutral">
+                    </div>
+
+                    <div class="template-buttons">
+                        <button class="template-btn" onclick="loadTemplate('story')">📖 스토리 템플릿</button>
+                        <button class="template-btn" onclick="loadTemplate('facts')">💡 팩트 템플릿</button>
+                        <button class="template-btn" onclick="loadTemplate('tips')">✨ 팁 템플릿</button>
+                    </div>
+
+                    <textarea id="jsonEditor" class="json-editor" placeholder='[
+  {
+    "text": "첫 번째 장면에서 나레이션할 텍스트",
+    "imagePrompt": "DALL-E에게 요청할 이미지 프롬프트 (영어 권장)"
+  },
+  {
+    "text": "두 번째 장면 텍스트",
+    "imagePrompt": "second scene image description"
+  }
+]'></textarea>
+
+                    <div class="actions">
+                        <button class="btn btn-secondary" onclick="validateJson()">구성 내용 확인</button>
+                        <button class="btn btn-primary" id="generateBtn" onclick="generateShorts()">
+                            <span id="generateBtnText">🎬 숏폼 생성</span>
+                            <span class="loading" id="generateLoading" style="display: none;"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 진행 상태 -->
+                <div class="section progress-section" id="progressSection">
+                    <div class="section-title">⏳ 생성 진행 중...</div>
+
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                    <div class="progress-status" id="progressStatus">준비 중...</div>
+
+                    <div class="progress-log" id="progressLog"></div>
+                </div>
+
+                <!-- 결과 -->
+                <div class="section result-section" id="resultSection">
+                    <div class="section-title">✅ 생성 완료!</div>
+
+                    <video id="resultVideo" class="result-video" controls></video>
+
+                    <div class="result-info" id="resultInfo"></div>
+
+                    <div class="result-actions">
+                        <button class="btn btn-secondary" onclick="resetForm()">새로 만들기</button>
+                        <a id="downloadLink" class="btn btn-primary" download>📥 다운로드</a>
+                    </div>
+                </div>
+            </div> <!-- right-column 끝 -->
+        </div> <!-- main-row 끝 -->
+    </div>
+
+    <script>
+        // 대본 생성기 예시 데이터
+        const scriptExamples = {
+            story: [
+                {
+                    title: "마법 소녀의 모험", script: [
+                        { text: "옛날 옛적에 깊은 숲 속에 작은 마을이 있었습니다.", imagePrompt: "A small peaceful village in a deep magical forest, fairy tale style, soft lighting, Studio Ghibli inspired" },
+                        { text: "그 마을에는 마법을 사용할 수 있는 소녀가 살고 있었어요.", imagePrompt: "A young girl with magical powers, glowing hands, wearing a cloak, fantasy art style" },
+                        { text: "어느 날, 소녀는 숲에서 신비로운 생물을 만나게 됩니다.", imagePrompt: "A mystical glowing creature in an enchanted forest, meeting a young girl, magical atmosphere" },
+                        { text: "그 생물이 말했어요. 너만이 세상을 구할 수 있어.", imagePrompt: "Magical creature speaking to girl, dramatic lighting, fantasy scene, epic moment" }
+                    ]
+                },
+                {
+                    title: "바다 속 비밀", script: [
+                        { text: "깊은 바다 속에 아무도 모르는 왕국이 있대요.", imagePrompt: "Underwater magical kingdom, bioluminescent buildings, mermaids, beautiful ocean scene" },
+                        { text: "그곳에는 천 년을 산 거북이 왕이 살고 있어요.", imagePrompt: "Ancient wise turtle king with crown, underwater throne, majestic ocean palace" },
+                        { text: "거북이 왕은 인간에게 중요한 메시지를 전하고 싶었대요.", imagePrompt: "Turtle king looking up towards ocean surface, hopeful expression, dramatic underwater lighting" },
+                        { text: "바다를 지켜달라고요.", imagePrompt: "Beautiful healthy ocean ecosystem, colorful coral reefs, marine life, conservation message" }
+                    ]
+                }
+            ],
+            facts: [
+                {
+                    title: "우주에서 가장 큰 별", script: [
+                        { text: "우주에서 가장 큰 별이 얼마나 큰지 아세요?", imagePrompt: "Vast universe with stars and galaxies, cosmic scale, awe-inspiring space photography style" },
+                        { text: "스티븐슨 2-18이라는 별인데요, 태양보다 2,150배 커요.", imagePrompt: "Size comparison Stephenson 2-18 vs Sun, massive scale difference, space infographic style" },
+                        { text: "이 별을 태양 자리에 놓으면, 토성 궤도까지 삼켜버려요.", imagePrompt: "Giant red star engulfing solar system up to Saturn, cosmic destruction scene" },
+                        { text: "그런데 우주 전체에서 보면, 이것도 먼지보다 작아요.", imagePrompt: "Zooming out to show vast universe with billions of galaxies, humbling cosmic perspective" }
+                    ]
+                },
+                {
+                    title: "인간 뇌의 비밀", script: [
+                        { text: "인간의 뇌에 대해 충격적인 사실 알려드릴게요.", imagePrompt: "Human brain visualization, neural networks glowing, scientific medical illustration" },
+                        { text: "뇌의 60%가 지방이에요. 그래서 좋은 지방을 먹어야 해요.", imagePrompt: "Healthy brain foods, omega-3 rich foods, nuts, fish, avocado, colorful healthy diet" },
+                        { text: "그리고 뇌는 통증을 느끼지 못해요. 통증 수용체가 없거든요.", imagePrompt: "Cross-section of brain showing no pain receptors, medical educational illustration" },
+                        { text: "신기하지 않아요? 우리 뇌는 정말 미스터리예요.", imagePrompt: "Mysterious glowing brain with question marks, wonder and curiosity concept, magical" }
+                    ]
+                }
+            ],
+            motivation: [
+                {
+                    title: "멈추지 마세요", script: [
+                        { text: "지금 힘드신가요? 포기하고 싶으신가요?", imagePrompt: "Person sitting alone on mountain edge, contemplating, sunset, dramatic emotional scene" },
+                        { text: "기억하세요. 다이아몬드도 엄청난 압력을 받아야 만들어져요.", imagePrompt: "Diamond forming under pressure underground, glowing transformation process, dramatic" },
+                        { text: "지금 겪는 어려움이 바로 당신을 빛나게 만드는 과정이에요.", imagePrompt: "Person emerging from darkness into light, transformation metaphor, hopeful dramatic lighting" },
+                        { text: "멈추지 마세요. 끝까지 가면 분명 빛날 거예요.", imagePrompt: "Person standing victorious on mountain top, sunrise, golden light, triumphant pose" }
+                    ]
+                }
+            ],
+            horror: [
+                {
+                    title: "엘리베이터에서 생긴 일", script: [
+                        { text: "새벽 3시, 혼자 엘리베이터를 탔어요.", imagePrompt: "Empty elevator interior at 3am, flickering lights, horror atmosphere, creepy mood" },
+                        { text: "5층을 눌렀는데, 엘리베이터가 13층에서 멈췄어요.", imagePrompt: "Elevator display showing floor 13, red ominous glow, horror movie style" },
+                        { text: "문이 열렸는데, 복도에 누군가 서 있었어요. 등을 보이고요.", imagePrompt: "Dark corridor view from elevator, mysterious figure standing with back turned, horror" },
+                        { text: "천천히 고개를 돌리더니... 웃고 있었어요. 눈은 없는데.", imagePrompt: "Creepy figure turning around, eyeless face with wide smile, horror supernatural" }
+                    ]
+                }
+            ],
+            tips: [
+                {
+                    title: "모기 퇴치 꿀팁", script: [
+                        { text: "여름밤 모기 때문에 잠 못 자시는 분?", imagePrompt: "Person lying in bed annoyed by mosquito buzzing around, summer night, bedroom" },
+                        { text: "모기가 제일 싫어하는 게 뭔지 아세요? 바로 레몬 향이에요.", imagePrompt: "Fresh lemons and lemon essential oil, bright clean aesthetic, natural mosquito repellent" },
+                        { text: "레몬즙을 피부에 바르면 모기가 안 와요. 천연 모기 퇴치제예요.", imagePrompt: "Person applying natural lemon solution on arm, DIY mosquito repellent, helpful tip" },
+                        { text: "오늘 밤부터 꿀잠 자세요!", imagePrompt: "Person sleeping peacefully in bed, no mosquitoes, peaceful summer night" }
+                    ]
+                }
+            ],
+            korea: [
+                {
+                    title: "외국인이 놀란 한국", script: [
+                        { text: "외국인들이 한국 와서 충격받은 것들 알려드릴게요.", imagePrompt: "Foreigner tourist amazed in Seoul, Korean cityscape, modern Korea, surprised expression" },
+                        { text: "첫째, 배달 문화. 산꼭대기에도 치킨이 와요.", imagePrompt: "Korean delivery scooter on mountain, chicken delivery box, amazing Korean service" },
+                        { text: "둘째, 인터넷 속도. 세계 1위예요. 지하철에서도 끊김 없어요.", imagePrompt: "Fast internet speed visualization, 5G network, Seoul subway with people using phones" },
+                        { text: "한국인으로 태어난 거 진짜 복이에요!", imagePrompt: "Proud Korean flag waving, beautiful Korea landscape, patriotic feeling" }
+                    ]
+                },
+                {
+                    title: "한국이 세계 1위인 것들", script: [
+                        { text: "한국이 세계 1위인 거 몇 개나 아세요?", imagePrompt: "South Korea on world map glowing, number one, champion trophy" },
+                        { text: "인터넷 속도 1위, 반도체 메모리 1위, 조선 산업 1위.", imagePrompt: "Korean technology achievements, semiconductors, ships, internet icons, infographic style" },
+                        { text: "K-pop, K-드라마, K-뷰티까지. 문화 강국이에요.", imagePrompt: "K-pop idols, Korean drama scene, K-beauty products, cultural soft power" },
+                        { text: "대한민국 국민인 게 자랑스럽지 않으세요?", imagePrompt: "Korean flag with pride, celebrating Korea, patriotic moment, golden sunset" }
+                    ]
+                }
+            ],
+            international: [
+                {
+                    title: "국제커플 일상", script: [
+                        { text: "국제커플의 현실 알려드릴게요.", imagePrompt: "International couple, Korean person with foreign partner, happy couple, diverse love" },
+                        { text: "언어 장벽? 처음엔 힘들어요. 근데 그래서 더 노력하게 돼요.", imagePrompt: "Couple struggling with language, translation app, but smiling, learning together" },
+                        { text: "문화 차이도 있어요. 근데 서로 다르니까 더 재미있어요.", imagePrompt: "Cultural exchange, sharing different foods, celebrating different holidays, fun diversity" },
+                        { text: "사랑에 국경은 없어요!", imagePrompt: "International couple holding hands, world map background, love without borders, romantic" }
+                    ]
+                },
+                {
+                    title: "외국인 애인이 놀란 한국", script: [
+                        { text: "외국인 남자친구가 한국 와서 충격받았대요.", imagePrompt: "Foreign boyfriend surprised in Korea, amazed expression, Korean street scene" },
+                        { text: "첫째, 편의점. 24시간이고 뭐든 있대요.", imagePrompt: "Korean convenience store at night, variety of products, 24 hours sign" },
+                        { text: "둘째, 안전함. 새벽에 혼자 다녀도 무섭지 않대요.", imagePrompt: "Safe Korean street at night, peaceful atmosphere, safe walking alone" },
+                        { text: "한국 사는 게 행운이래요!", imagePrompt: "Happy couple in Korea, enjoying Korean life, grateful expression, heart" }
+                    ]
+                }
+            ]
+        };
+        let currentScriptTheme = 'story';
+
+        // 대본 생성기 토글
+        // 대본 생성기 토글 (항상 펼침)
+        /*
+        document.getElementById('scriptGenToggle').addEventListener('click', () => {
+            const content = document.getElementById('scriptGenContent');
+            const icon = document.getElementById('scriptGenToggleIcon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▲ 접기';
+                updateExampleScripts();
+                updateScriptPrompt();
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼ 펼치기';
+            }
+        });
+        */
+
+        function selectTheme(theme) {
+            currentScriptTheme = theme;
+            document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.theme-btn[data-theme="${theme}"]`).classList.add('active');
+            updateExampleScripts();
+            updateScriptPrompt();
+        }
+
+        function updateExampleScripts() {
+            const container = document.getElementById('exampleScripts');
+            const examples = scriptExamples[currentScriptTheme] || [];
+            container.innerHTML = examples.map((ex, i) => `
+                <div class="example-card" onclick="applyScriptExample(${i})">
+                    <div class="example-card-title">${ex.title}</div>
+                    <div class="example-card-preview">${ex.script[0].text}</div>
+                </div>
+            `).join('');
+        }
+
+        function applyScriptExample(index) {
+            const example = scriptExamples[currentScriptTheme][index];
+            document.getElementById('jsonEditor').value = JSON.stringify(example.script, null, 2);
+            alert('대본이 적용되었습니다!');
+        }
+
+        function updateScriptPrompt() {
+            const topic = document.getElementById('customScriptTopic').value || getDefaultScriptTopic();
+            const prompt = `AI가 그림 그리는 유튜브 쇼츠 만들어줘
+
+주제: ${topic}
+
+조건:
+- 4~5개 장면으로 나누기
+- 각 장면마다 읽을 대사 쓰기 (친근한 말투)
+- 이미지 프롬프트는 영어로 상세하게
+
+이 JSON 형식으로 만들어줘:
+[
+  {
+    "text": "첫 번째 장면 대사",
+    "imagePrompt": "detailed scene description, cinematic, high quality"
+  },
+  {
+    "text": "두 번째 장면 대사",
+    "imagePrompt": "scene description"
+  }
+]`;
+            document.getElementById('scriptPromptPreview').value = prompt;
+        }
+
+        function getDefaultScriptTopic() {
+            const topics = { story: '마법의 숲 이야기', facts: '우주의 신비', motivation: '포기하지 마세요', horror: '소름 돋는 이야기', tips: '생활 꿀팁', korea: '외국인이 놀란 한국의 장점', international: '국제커플의 일상' };
+            return topics[currentScriptTheme] || '주제를 입력하세요';
+        }
+
+        function copyScriptPrompt() {
+            const prompt = document.getElementById('scriptPromptPreview').value;
+            navigator.clipboard.writeText(prompt).then(() => alert('프롬프트가 복사되었습니다! AI에 붙여넣기 하세요'));
+        }
+
+        // Templates
+        const templates = {
+            story: [
+                {
+                    text: "옛날 옛적에 깊은 숲 속에 작은 마을이 있었습니다.",
+                    imagePrompt: "A small peaceful village in a deep magical forest, fairy tale style, soft lighting, Studio Ghibli inspired"
+                },
+                {
+                    text: "그 마을에는 마법을 사용할 수 있는 소녀가 살고 있었어요.",
+                    imagePrompt: "A young girl with magical powers, glowing hands, wearing a cloak, fantasy art style, beautiful detailed"
+                },
+                {
+                    text: "어느 날, 소녀는 숲에서 신비로운 생물을 만나게 됩니다.",
+                    imagePrompt: "A mystical glowing creature in an enchanted forest, meeting a young girl, magical atmosphere, ethereal lighting"
+                }
+            ],
+            facts: [
+                {
+                    text: "우주에서 가장 큰 별인 스티븐슨 투비는 태양보다 2,150배나 큽니다.",
+                    imagePrompt: "Comparison of Stephenson 2-18 star with our Sun, space infographic style, dramatic scale difference, cosmic background"
+                },
+                {
+                    text: "만약 이 별을 태양 자리에 놓는다면, 토성 궤도까지 삼켜버릴 정도입니다.",
+                    imagePrompt: "Massive red hypergiant star engulfing Saturn's orbit, solar system scale comparison, scientific illustration"
+                },
+                {
+                    text: "하지만 이렇게 거대한 별도 우주 전체에서 보면 먼지만큼 작습니다.",
+                    imagePrompt: "Zooming out from a star to reveal the vastness of the universe, galaxies and nebulas, humbling cosmic perspective"
+                }
+            ],
+            tips: [
+                {
+                    text: "오늘 알려드릴 생산성 꿀팁 첫 번째!",
+                    imagePrompt: "Productivity tips concept, clean modern desk setup, motivational atmosphere, bright and energetic style"
+                },
+                {
+                    text: "아침에 일어나자마자 핸드폰을 보지 마세요. 대신 물 한 잔을 마시세요.",
+                    imagePrompt: "Person drinking water in the morning, avoiding phone, healthy morning routine, warm sunrise lighting"
+                },
+                {
+                    text: "이 작은 습관이 하루의 집중력을 완전히 바꿔줄 거예요!",
+                    imagePrompt: "Focused productive person working, clear mind visualization, achievement and success imagery, inspiring atmosphere"
+                }
+            ]
+        };
+
+        // Load template
+        function loadTemplate(type) {
+            const template = templates[type];
+            if (template) {
+                document.getElementById('jsonEditor').value = JSON.stringify(template, null, 2);
+            }
+        }
+
+        // Load background music folders
+        async function loadMusicFolders() {
+            try {
+                const response = await authFetch('/api/ai-shorts/music-folders');
+                const data = await response.json();
+
+                if (data.success && data.folders) {
+                    const select = document.getElementById('musicFolder');
+                    select.innerHTML = '<option value="">폴더 선택</option>';
+                    data.folders.forEach(f => {
+                        const option = document.createElement('option');
+                        option.value = f;
+                        option.textContent = f;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading music folders:', error);
+            }
+        }
+
+        async function onMusicFolderChange() {
+            const folder = document.getElementById('musicFolder').value;
+            const fileSelect = document.getElementById('musicFile');
+            fileSelect.innerHTML = '<option value="">음악 선택</option>';
+
+            if (!folder) return;
+
+            try {
+                const response = await authFetch(`/api/ai-shorts/music-files?folder=${encodeURIComponent(folder)}`);
+                const data = await response.json();
+
+                if (data.success && data.files) {
+                    // Add Random Option
+                    const randomOption = document.createElement('option');
+                    randomOption.value = 'random';
+                    randomOption.textContent = '🎲 랜덤 (Random)';
+                    fileSelect.appendChild(randomOption);
+
+                    data.files.forEach(f => {
+                        const option = document.createElement('option');
+                        option.value = f;
+                        option.textContent = f.replace(/\.[^/.]+$/, '');;
+                        fileSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading music files:', error);
+            }
+        }
+
+        // Validate JSON
+        function validateJson() {
+            const jsonText = document.getElementById('jsonEditor').value;
+            try {
+                const data = JSON.parse(jsonText);
+                if (!Array.isArray(data)) {
+                    alert('JSON은 배열 형식이어야 합니다.');
+                    return false;
+                }
+                if (data.length === 0) {
+                    alert('최소 1개 이상의 씬이 필요합니다.');
+                    return false;
+                }
+                for (let i = 0; i < data.length; i++) {
+                    if (!data[i].text || !data[i].imagePrompt) {
+                        alert(`씬 ${i + 1}: text와 imagePrompt는 필수입니다.`);
+                        return false;
+                    }
+                }
+                alert(`✅ JSON 형식이 올바릅니다! (${data.length}개 씬)`);
+                return true;
+            } catch (e) {
+                alert('❌ JSON 형식이 올바르지 않습니다: ' + e.message);
+                return false;
+            }
+        }
+
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const log = document.getElementById('progressLog');
+            const item = document.createElement('div');
+            item.className = 'log-item ' + type;
+            item.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(item);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Update progress
+        function updateProgress(percent, status) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressStatus').textContent = status;
+        }
+
+        // API 키 설정 여부 체크
+        async function checkApiKeyConfigured() {
+            try {
+                const response = await authFetch('/api/settings/keys');
+                const data = await response.json();
+                return data.success && data.keys?.AI_302_API_KEY;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // API 키 미설정 시 안내 팝업
+        function showApiKeyRequiredPopup() {
+            const existingPopup = document.getElementById('apiKeyRequiredPopup');
+            if (existingPopup) existingPopup.remove();
+
+            const popup = document.createElement('div');
+            popup.id = 'apiKeyRequiredPopup';
+            popup.style.cssText = `position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 10000;`;
+            popup.innerHTML = `
+                <div style="background: var(--color-bg-secondary, #fff); border-radius: 16px; padding: 2rem; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🔑</div>
+                    <h3 style="color: var(--color-gray-900, #333); margin-bottom: 0.75rem; font-size: 1.25rem;">302.AI API 키가 필요해요!</h3>
+                    <p style="color: var(--color-gray-600, #666); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                        AI 쇼츠를 생성하려면 <strong>302.AI API 키</strong>가 필요해요.<br>
+                        하나의 키로 모든 AI 기능을 사용할 수 있습니다.<br>
+                        오른쪽 위 설정 버튼을 눌러 API 키를 입력해주세요!
+                    </p>
+                    <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                        <button onclick="this.closest('#apiKeyRequiredPopup').remove()" style="padding: 0.75rem 1.5rem; border: 1px solid var(--color-gray-300, #ddd); background: transparent; border-radius: 8px; cursor: pointer; font-size: 0.9rem; color: var(--color-gray-600, #666);">닫기</button>
+                        <button onclick="this.closest('#apiKeyRequiredPopup').remove(); openSettingsModal();" style="padding: 0.75rem 1.5rem; background: var(--color-primary, #3b82f6); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">설정 열기</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(popup);
+            popup.addEventListener('click', (e) => { if (e.target === popup) popup.remove(); });
+        }
+
+        // Generate shorts
+        async function generateShorts() {
+            // API 키 체크
+            const hasApiKey = await checkApiKeyConfigured();
+            if (!hasApiKey) {
+                showApiKeyRequiredPopup();
+                return;
+            }
+
+            const jsonText = document.getElementById('jsonEditor').value;
+            let scenes;
+
+            try {
+                scenes = JSON.parse(jsonText);
+            } catch (e) {
+                alert('JSON 형식이 올바르지 않습니다.');
+                return;
+            }
+
+            if (!Array.isArray(scenes) || scenes.length === 0) {
+                alert('최소 1개 이상의 씬이 필요합니다.');
+                return;
+            }
+
+            const title = document.getElementById('videoTitle').value || 'AI_Shorts';
+            const style = document.getElementById('imageStyle').value;
+            const emotion = document.getElementById('voiceEmotion').value;
+            const musicFolder = document.getElementById('musicFolder').value;
+            const musicFile = document.getElementById('musicFile').value;
+            const bgMusic = null; // Unused in new logic
+            const includeTitle = document.getElementById('includeTitle').checked;
+
+            // Show progress section
+            document.getElementById('inputSection').style.opacity = '0.5';
+            document.getElementById('progressSection').classList.add('active');
+            document.getElementById('resultSection').classList.remove('active');
+            document.getElementById('progressLog').innerHTML = '';
+
+            const generateBtn = document.getElementById('generateBtn');
+            generateBtn.disabled = true;
+            document.getElementById('generateBtnText').style.display = 'none';
+            document.getElementById('generateLoading').style.display = 'inline-block';
+
+            addLog(`쇼츠 생성 시작: ${scenes.length}개 씬`);
+            updateProgress(5, '서버에 요청 중...');
+
+            try {
+                const response = await authFetch('/api/ai-shorts/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scenes,
+                        title,
+                        style,
+                        emotion,
+                        bgMusic,
+                        musicFolder,
+                        musicFile,
+                        includeTitle
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    updateProgress(100, '완료!');
+                    addLog('✅ 쇼츠 생성 완료!', 'success');
+
+                    // Show result
+                    document.getElementById('resultSection').classList.add('active');
+                    document.getElementById('resultVideo').src = data.videoPath;
+                    document.getElementById('downloadLink').href = data.videoPath;
+
+                    document.getElementById('resultInfo').innerHTML = `
+                        <p><strong>프로젝트:</strong> ${data.projectFolder}</p>
+                        <p><strong>성공:</strong> ${data.summary.successfulScenes}개 씬</p>
+                        <p><strong>실패:</strong> ${data.summary.failedScenes}개 씬</p>
+                    `;
+
+                    // Log individual results
+                    data.results.forEach(r => {
+                        if (r.success) {
+                            addLog(`씬 ${r.scene}: 성공 (${r.duration.toFixed(1)}초)`, 'success');
+                        } else {
+                            addLog(`씬 ${r.scene}: 실패 - ${r.error}`, 'error');
+                        }
+                    });
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                addLog('❌ 오류: ' + error.message, 'error');
+                updateProgress(0, '오류 발생');
+                alert('쇼츠 생성 실패: ' + error.message);
+            } finally {
+                generateBtn.disabled = false;
+                document.getElementById('generateBtnText').style.display = 'inline';
+                document.getElementById('generateLoading').style.display = 'none';
+                document.getElementById('inputSection').style.opacity = '1';
+            }
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('progressSection').classList.remove('active');
+            document.getElementById('resultSection').classList.remove('active');
+            document.getElementById('jsonEditor').value = '';
+            document.getElementById('progressLog').innerHTML = '';
+            updateProgress(0, '');
+        }
+
+        // Update prompt preview when topic changes
+        function updatePromptPreview() {
+            const topic = document.getElementById('promptTopic').value || '[주제를 입력하세요]';
+            const prompt = `AI가 그림 그리는 유튜브 쇼츠 만들어줘
+
+주제: ${topic}
+
+조건:
+- 3~5개 장면으로 나누기
+- 각 장면마다 읽을 대사 쓰기
+- 그림 설명은 영어로 자세하게
+
+이 형식으로 만들어줘:
+[
+  {
+    "text": "첫번째 장면에서 읽을 대사",
+    "imagePrompt": "first scene image, cinematic, beautiful"
+  },
+  {
+    "text": "두번째 장면 대사",
+    "imagePrompt": "second scene description"
+  }
+]`;
+            document.getElementById('promptPreview').value = prompt;
+        }
+
+        // Copy prompt from textarea
+        function copyPromptFromTextarea() {
+            const textarea = document.getElementById('promptPreview');
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                alert('복사되었습니다! AI에 붙여넣기 하세요 😊');
+            });
+        }
+
+        // Guide Modal Functions
+        function openGuideModal() {
+            document.getElementById('guideModal').style.display = 'flex';
+        }
+
+        function closeGuideModal() {
+            document.getElementById('guideModal').style.display = 'none';
+        }
+
+        // Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            icon.textContent = theme === 'dark' ? '☀️ 라이트' : '🌙 다크';
+        }
+
+        // Initialize theme
+        (function () {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                updateThemeIcon(savedTheme);
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                updateThemeIcon('dark');
+            }
+        })();
+
+        // Mini Player
+        let miniPlayerAudio = null;
+        let isMiniPlayerPlaying = false;
+
+        function onMusicFileChange() {
+            const folder = document.getElementById('musicFolder').value;
+            const file = document.getElementById('musicFile').value;
+            const miniPlayer = document.getElementById('miniPlayer');
+
+            // Stop current audio if playing
+            if (miniPlayerAudio) {
+                miniPlayerAudio.pause();
+                miniPlayerAudio = null;
+                isMiniPlayerPlaying = false;
+                updateMiniPlayerIcon();
+            }
+
+            if (folder && file && file !== 'random') {
+                miniPlayer.style.display = 'flex';
+                // Create new audio element with new static path
+                miniPlayerAudio = new Audio(`/background-music/${encodeURIComponent(folder)}/${encodeURIComponent(file)}`);
+                miniPlayerAudio.addEventListener('loadedmetadata', updateMiniPlayerTime);
+                miniPlayerAudio.addEventListener('timeupdate', updateMiniPlayerProgress);
+                miniPlayerAudio.addEventListener('ended', () => {
+                    isMiniPlayerPlaying = false;
+                    updateMiniPlayerIcon();
+                    miniPlayerAudio.currentTime = 0;
+                    updateMiniPlayerProgress();
+                });
+            } else {
+                miniPlayer.style.display = 'none';
+            }
+
+            // Reset progress
+            document.getElementById('miniPlayerProgress').style.width = '0%';
+            document.getElementById('miniPlayerTime').textContent = '0:00 / 0:00';
+        }
+
+        function toggleMiniPlayer() {
+            if (!miniPlayerAudio) return;
+
+            if (isMiniPlayerPlaying) {
+                miniPlayerAudio.pause();
+            } else {
+                miniPlayerAudio.play();
+            }
+            isMiniPlayerPlaying = !isMiniPlayerPlaying;
+            updateMiniPlayerIcon();
+        }
+
+        function updateMiniPlayerIcon() {
+            const btn = document.getElementById('miniPlayerBtn');
+            const playIcon = document.getElementById('playIcon');
+            const pauseIcon = document.getElementById('pauseIcon');
+            if (isMiniPlayerPlaying) {
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+                btn.classList.add('playing');
+            } else {
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+                btn.classList.remove('playing');
+            }
+        }
+
+        function updateMiniPlayerTime() {
+            if (!miniPlayerAudio) return;
+            const duration = miniPlayerAudio.duration || 0;
+            document.getElementById('miniPlayerTime').textContent = `0:00 / ${formatTime(duration)}`;
+        }
+
+        function updateMiniPlayerProgress() {
+            if (!miniPlayerAudio) return;
+            const current = miniPlayerAudio.currentTime || 0;
+            const duration = miniPlayerAudio.duration || 0;
+            const percent = duration > 0 ? (current / duration) * 100 : 0;
+            document.getElementById('miniPlayerProgress').style.width = percent + '%';
+            document.getElementById('miniPlayerTime').textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Progress bar click to seek
+        document.addEventListener('DOMContentLoaded', () => {
+            const progressContainer = document.querySelector('.mini-player-progress');
+            if (progressContainer) {
+                progressContainer.addEventListener('click', (e) => {
+                    if (!miniPlayerAudio || !miniPlayerAudio.duration) return;
+                    const rect = progressContainer.getBoundingClientRect();
+                    const percent = (e.clientX - rect.left) / rect.width;
+                    miniPlayerAudio.currentTime = percent * miniPlayerAudio.duration;
+                });
+            }
+        });
+
+        // Init
+        loadMusicFolders();
+    </script>
+
+    <style>
+        .floating-menu {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+        }
+
+        .floating-menu-toggle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-primary) 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-menu-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .floating-menu-toggle svg {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s ease;
+        }
+
+        .floating-menu.open .menu-icon {
+            display: none;
+        }
+
+        .floating-menu.open .close-icon {
+            display: block !important;
+        }
+
+        .floating-menu-items {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: flex-end;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .floating-menu.open .floating-menu-items {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .floating-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            transform: translateX(20px);
+            opacity: 0;
+        }
+
+        .floating-menu.open .floating-menu-item {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(1) {
+            transition-delay: 0.05s;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(2) {
+            transition-delay: 0.1s;
+        }
+
+        .floating-menu.open .floating-menu-item:nth-child(3) {
+            transition-delay: 0.15s;
+        }
+
+        .floating-menu-item:hover {
+            transform: translateX(-4px) !important;
+        }
+
+        .floating-menu-item svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .float-guide {
+            background: var(--color-primary);
+            color: white;
+            box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .float-telegram {
+            background: #0088cc;
+            color: white;
+            box-shadow: 0 3px 10px rgba(0, 136, 204, 0.3);
+        }
+
+        .float-intro {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .floating-menu-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 99;
+            display: none;
+        }
+
+        .floating-menu.open+.floating-menu-backdrop {
+            display: block;
+        }
+    </style>
+
+    <!-- Floating Menu -->
+    <div class="floating-menu" id="floatingMenu">
+        <div class="floating-menu-items">
+            <button class="floating-menu-item float-guide" onclick="openGuideModal(); toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                <span>사용법</span>
+            </button>
+            <a href="https://t.me/shorts_factory" target="_blank" class="floating-menu-item float-telegram"
+                onclick="toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
+                <span>공지채널</span>
+            </a>
+            <a href="https://shorts-factory-landing.web.app" target="_blank" class="floating-menu-item float-intro"
+                onclick="toggleFloatingMenu();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="16" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                <span>서비스 소개</span>
+            </a>
+        </div>
+        <button class="floating-menu-toggle" onclick="toggleFloatingMenu()" title="도움말">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" class="menu-icon">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                stroke-linejoin="round" class="close-icon" style="display:none;">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        </button>
+    </div>
+    <div class="floating-menu-backdrop" onclick="toggleFloatingMenu()"></div>
+    <script>
+        function toggleFloatingMenu() {
+            document.getElementById('floatingMenu').classList.toggle('open');
+        }
+    </script>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>API 설정</h2>
+                <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- API 키 발급 가이드 -->
+                <div
+                    style="background: var(--color-bg-tertiary); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <h4 style="color: var(--color-gray-900); margin-bottom: 0.75rem; font-size: 0.95rem;">🔑 302.AI API
+                        키 준비</h4>
+                    <p
+                        style="color: var(--color-gray-600); font-size: 0.85rem; line-height: 1.6; margin-bottom: 0.75rem;">
+                        • 하나의 키로 모든 AI 모델 사용<br>
+                        • GPT, Claude, Gemini, DALL-E, Whisper 등 지원<br>
+                        • 사용한 만큼만 결제 (종량제)
+                    </p>
+                    <p style="color: var(--color-gray-500); font-size: 0.8rem; margin: 0;">
+                        API 키는 <a href="https://dash.302.ai/apis/markets" target="_blank"
+                            style="color: var(--color-primary);">302.AI 대시보드</a>에서 발급하세요.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label for="ai302ApiKey">302.AI API Key</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="password" id="ai302ApiKey" placeholder="sk-..." style="flex: 1;">
+                        <button class="btn btn-sm" onclick="toggleKeyVisibility('ai302ApiKey')">👁️</button>
+                    </div>
+                    <small style="color: var(--color-gray-500);">이미지 생성 (DALL-E)과 모든 AI 기능에 사용됩니다.</small>
+                </div>
+
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button class="btn" onclick="test302AIConnection()" id="test302AIBtn">302.AI 테스트</button>
+                            <span id="ai302TestResult" style="margin-left: 0.5rem;"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 테마 설정 -->
+                <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--color-gray-200);">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <label style="font-weight: 600; color: var(--color-gray-900);">화면 테마</label>
+                            <p style="font-size: 0.8rem; color: var(--color-gray-500); margin-top: 0.25rem;">라이트/다크 모드를
+                                선택하세요</p>
+                        </div>
+                        <button onclick="toggleTheme()" id="themeToggleBtn"
+                            style="display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; background: var(--color-bg-tertiary); border: 1px solid var(--color-gray-300); border-radius: 8px; cursor: pointer; font-size: 0.85rem; color: var(--color-gray-700); font-weight: 500;">
+                            <span id="themeIcon">🌙 다크</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSettingsModal()">취소</button>
+                <button class="btn btn-primary" onclick="saveSettings()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Settings Modal Functions
+        async function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            document.getElementById('ai302TestResult').textContent = '';
+            try {
+                const response = await authFetch('/api/settings/keys');
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('ai302ApiKey').placeholder = data.keys.AI_302_API_KEY || 'sk-...';
+                }
+            } catch (e) {
+                console.error('Failed to load keys:', e);
+            }
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+            document.getElementById('ai302ApiKey').value = '';
+        }
+
+        function toggleKeyVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        async function test302AIConnection() {
+            const btn = document.getElementById('test302AIBtn');
+            const result = document.getElementById('ai302TestResult');
+            const apiKey = document.getElementById('ai302ApiKey').value;
+            btn.disabled = true;
+            result.textContent = '테스트 중...';
+            result.style.color = 'var(--color-gray-500)';
+            try {
+                const response = await authFetch('/api/settings/test-302ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ apiKey: apiKey || undefined })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    result.textContent = '✓ 연결 성공!';
+                    result.style.color = 'var(--color-success)';
+                } else {
+                    result.textContent = data.error || '연결 실패';
+                    result.style.color = 'var(--color-error)';
+                }
+            } catch (e) {
+                result.textContent = '테스트 실패: ' + e.message;
+                result.style.color = 'var(--color-error)';
+            }
+            btn.disabled = false;
+        }
+
+        async function saveSettings() {
+            const ai302Key = document.getElementById('ai302ApiKey').value.trim();
+            if (!ai302Key) {
+                alert('302.AI API 키를 입력해주세요.');
+                return;
+            }
+            try {
+                const response = await authFetch('/api/settings/keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ AI_302_API_KEY: ai302Key })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert('API 키가 저장되었습니다.');
+                    closeSettingsModal();
+                    location.reload();
+                } else {
+                    alert('저장 실패: ' + data.error);
+                }
+            } catch (e) {
+                alert('저장 실패: ' + e.message);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeSettingsModal();
+                closeGuideModal();
+            }
+        });
+
+        document.getElementById('settingsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'settingsModal') closeSettingsModal();
+        });
+
+        document.getElementById('guideModal').addEventListener('click', (e) => {
+            if (e.target.id === 'guideModal') closeGuideModal();
+        });
+        // ==========================================
+        //  Scripts from ai-video.html (Ported)
+        // ==========================================
+
+        // === 스크립트 스타일 정의 ===
+        const scriptStyles = {
+            review: { korean: "리뷰형", english: "Review", description: "개인적인 방문 경험을 바탕으로 한 진솔한 리뷰 스타일" },
+            promotional: { korean: "홍보형", english: "Promotional", description: "매장의 장점을 강조하는 직접적인 홍보 스타일" },
+            storytelling: { korean: "스토리텔링형", english: "Storytelling", description: "가게의 스토리나 사장님의 이야기를 담은 감성 스타일" },
+            tips: { korean: "팁/추천형", english: "Tips", description: "꿀팁이나 추천 메뉴를 소개하는 정보 제공 스타일" },
+            urgency: { korean: "긴급/FOMO형", english: "Urgency", description: "지금 가야 하는 이유를 강조하는 긴박감 있는 스타일" },
+            comparison: { korean: "비교형", english: "Comparison", description: "다른 곳과 비교하며 차별점을 부각하는 스타일" },
+            question: { korean: "질문형", english: "Question", description: "시청자에게 질문을 던지며 호기심을 유발하는 스타일" }
+        };
+
+        const introStyles = {
+            shocking: { korean: "충격적 사실형", prompt: "Start with a shocking, surprising fact that makes viewers stop scrolling" },
+            question: { korean: "질문 던지기형", prompt: "Begin with an engaging question that makes viewers curious" },
+            surprise: { korean: "놀람 후크형", prompt: "Start with an exclamation of amazement or surprise" },
+            local: { korean: "지역 인증형", prompt: "Establish credibility by mentioning local recognition or popularity" },
+            direct: { korean: "직설적 소개형", prompt: "Get straight to the point with a direct introduction" },
+            visit: { korean: "방문 인증형", prompt: "Start by verifying your visit to the location" }
+        };
+
+        const outroStyles = {
+            question_mark: { korean: "물음표 마무리형", prompt: "End with a teaser question that makes viewers curious about the location" },
+            benefits: { korean: "장점 강조 물음형", prompt: "Summarize key benefits and end with 'Where is this place?'" },
+            playful: { korean: "물음표 장난형", prompt: "End with a witty, playful question" },
+            recommend: { korean: "추천형", prompt: "End with a strong, direct recommendation to visit" },
+            cta: { korean: "행동 유도형", prompt: "End with a clear call-to-action encouraging viewers to visit" },
+            confident: { korean: "반전 확신형", prompt: "End with confident confirmation that this is a genuine hidden gem" }
+        };
+
+        // === 엔터테인먼트 스타일 정의 ===
+        const entertainmentScriptStyles = {
+            humor: { korean: "유머/개그", english: "Humor/Gag", description: "재미있고 웃긴 요소가 강조된 스타일" },
+            info: { korean: "정보전달", english: "Information", description: "유용한 정보나 사실을 전달하는 스타일" },
+            ranking: { korean: "순위/랭킹", english: "Ranking/Top 5", description: "Top 5 등 순위를 매겨 소개하는 스타일" },
+            vlog: { korean: "브이로그", english: "Vlog", description: "일상적인 이야기를 자연스럽게 풀어내는 스타일" },
+            reaction: { korean: "리액션/후기", english: "Reaction", description: "찐 반응과 리얼한 후기를 담은 스타일" },
+            story: { korean: "썰/스토리", english: "Story/Rumor", description: "흥미진진한 이야기를 들려주는 스타일" }
+        };
+
+        const entertainmentIntroStyles = {
+            hook: { korean: "시선강탈형", english: "Hook/Attention", description: "초반 3초 안에 시선을 확 끄는 비주얼이나 멘트" },
+            curiosity: { korean: "질문유발형", english: "Question/Curiosity", description: "궁금증을 자아내는 질문으로 시작" },
+            conclusion: { korean: "결론제시형", english: "Conclusion First", description: "결과물이나 결론을 먼저 보여주고 시작" },
+            skit: { korean: "상황극형", english: "Situation/Skit", description: "짧은 상황극으로 재미있게 시작" }
+        };
+
+        const entertainmentOutroStyles = {
+            subscribe: { korean: "구독/좋아요 유도", english: "Subscribe/Like", description: "구독과 좋아요를 자연스럽게 요청" },
+            next: { korean: "다음화 예고", english: "Next Episode", description: "다음 내용을 예고하며 기대감 조성" },
+            comment: { korean: "댓글참여 유도", english: "Comment Question", description: "시청자의 의견을 묻는 질문으로 댓글 유도" },
+            summary: { korean: "요약정리", english: "Summary", description: "핵심 내용을 짧게 요약하며 마무리" }
+        };
+
+        // === 대본 생성기 토글 ===
+        function toggleScriptSection() {
+            const content = document.getElementById('scriptSectionContent');
+            const icon = document.getElementById('scriptSectionIcon');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.textContent = '▲';
+            } else {
+                content.style.display = 'none';
+                icon.textContent = '▼';
+            }
+        }
+
+        function toggleStyleChip(element) {
+            element.classList.toggle('selected');
+        }
+
+        async function generateScripts() {
+            const storeName = document.getElementById('storeName').value;
+            const storeDescription = document.getElementById('storeDescription').value;
+            const includeName = document.getElementById('includeName') ? document.getElementById('includeName').checked : false;
+            const storeLocation = document.getElementById('storeLocation') ? document.getElementById('storeLocation').value : '';
+            const locationIn = document.querySelector('input[name="locationIn"]:checked') ? document.querySelector('input[name="locationIn"]:checked').value : 'intro';
+
+            const language = document.getElementById('scriptLanguage').value;
+            const introStyle = document.getElementById('introStyle').value;
+            const outroStyle = document.getElementById('outroStyle').value;
+
+            // Get selected styles
+            const selectedStyles = Array.from(document.querySelectorAll('#scriptStyleGrid .style-option-chip.selected'))
+                .map(el => el.dataset.style);
+
+            const mode = document.querySelector('input[name="scriptMode"]:checked') ? document.querySelector('input[name="scriptMode"]:checked').value : 'business';
+
+            if (!storeName) {
+                alert('가게 이름(또는 주제)을 입력해주세요.');
+                return;
+            }
+
+            if (selectedStyles.length === 0) {
+                alert('최소 하나의 대본 스타일을 선택해주세요.');
+                return;
+            }
+
+            const btn = document.getElementById('generateScriptsBtn');
+            const originalText = btn.innerText;
+            btn.innerText = '⏳ 대본 생성 중...';
+            btn.disabled = true;
+
+            try {
+                const response = await authFetch('/api/ai-video/generate-scripts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode,
+                        restaurantName: storeName,
+                        description: storeDescription,
+                        includeRestaurantName: includeName,
+                        location: storeLocation,
+                        locationIn: locationIn,
+                        styles: selectedStyles,
+                        language: language,
+                        introStyle: introStyle,
+                        outroStyle: outroStyle
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayScriptResults(data.results);
+                } else {
+                    alert('대본 생성 실패: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Script generation failed:', error);
+                alert('대본 생성 중 오류가 발생했습니다.');
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function displayScriptResults(results) {
+            const container = document.getElementById('generatedScriptsList');
+            const resultsArea = document.getElementById('scriptResultsArea');
+            container.innerHTML = '';
+            resultsArea.style.display = 'block';
+
+            Object.entries(results).forEach(([style, script]) => {
+                const id = `script_${Math.random().toString(36).substr(2, 9)}`;
+                const div = document.createElement('div');
+                div.className = 'script-result-card';
+                div.innerHTML = `
+                    <div class="script-result-header">
+                        <span>📌 ${style}</span>
+                        <button class="btn btn-sm btn-secondary" onclick="copyToClipboard('${id}')">📋 복사</button>
+                    </div>
+                    <textarea id="${id}" style="width: 100%; min-height: 150px; padding: 0.5rem; border: 1px solid var(--color-gray-300); border-radius: 4px; font-size: 0.9rem; margin-bottom: 0.5rem;">${script}</textarea>
+                    
+                    <div class="audio-player-container">
+                        <button class="btn btn-sm btn-primary" onclick="generateAudio('${id}', this)">🔊 오디오 생성 (TTS)</button>
+                        <audio controls style="width: 100%; display: none; height: 35px; margin-left:10px;"></audio>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            // Scroll to results
+            resultsArea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function generateAudio(textAreaId, btnElement) {
+            let text = document.getElementById(textAreaId).value;
+            const ttsProvider = document.getElementById('ttsProvider').value;
+            const language = document.getElementById('scriptLanguage').value;
+
+            // Clean text
+            text = text.replace(/^(제목|Title):.*$/gm, '');
+            text = text.replace(/^(대본|Script):\s*/gm, '');
+            text = text.trim();
+
+            if (!text) {
+                alert('재생할 텍스트가 없습니다.');
+                return;
+            }
+
+            const originalText = btnElement.innerText;
+            btnElement.innerText = '⏳ 생성 중...';
+            btnElement.disabled = true;
+
+            try {
+                // 텍스트에서 의미 있는 첫 단어들을 제목으로 추출 (최대 20자)
+                const meaningfulText = text.replace(/[^\w\s가-힣]/g, ' ').trim();
+                const title = meaningfulText.slice(0, 20).trim() || '대본';
+
+                const response = await authFetch('/api/ai-video/generate-tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        provider: ttsProvider,
+                        language: language,
+                        title: title
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const audio = btnElement.nextElementSibling; // The <audio> element
+                    audio.src = data.audioPath;
+                    audio.style.display = 'block';
+                    audio.play();
+                    // Hide button as requested
+                    btnElement.style.display = 'none';
+                } else {
+                    alert('TTS 생성 실패: ' + data.error);
+                }
+            } catch (error) {
+                console.error('TTS failed:', error);
+                alert('TTS 생성 중 오류가 발생했습니다.');
+            } finally {
+                // Only reset if button is still visible
+                if (btnElement.style.display !== 'none') {
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                }
+            }
+        }
+
+        function copyToClipboard(elementId) {
+            const copyText = document.getElementById(elementId);
+            copyText.select();
+            document.execCommand("copy");
+        }
+
+        function toggleScriptMode() {
+            const mode = document.querySelector('input[name="scriptMode"]:checked').value;
+            const labelName = document.getElementById('labelName');
+            const labelDesc = document.getElementById('labelDescription');
+            const storeNameInput = document.getElementById('storeName');
+            const storeDescInput = document.getElementById('storeDescription');
+            const locGroup = document.getElementById('locationGroup');
+            const labelDetail = document.getElementById('labelDetailInclude');
+
+            if (mode === 'entertainment') {
+                labelName.textContent = '🎬 주제 / 제목';
+                storeNameInput.placeholder = '예: 웃긴 고양이 모음, 여행 브이로그';
+
+                labelDesc.textContent = '📝 영상 내용 설명';
+                storeDescInput.placeholder = '예: 고양이가 점프하다가 넘어지는 장면, 잠자는 모습 등 귀여운 순간들 모음입니다.';
+
+                if (labelDetail) labelDetail.textContent = '제목';
+                if (locGroup) locGroup.style.display = 'none'; // Hide location
+
+                // Update Styles for Entertainment
+                updateStyleOptions(entertainmentScriptStyles, entertainmentIntroStyles, entertainmentOutroStyles);
+            } else {
+                labelName.textContent = '🏪 가게 이름';
+                storeNameInput.placeholder = '예: 고양시 맛집 할매순대국';
+
+                labelDesc.textContent = '✏️ 가게 설명 / 특징';
+                storeDescInput.placeholder = '예: 40년 전통의 순대국 전문점입니다. 국물이 진하고 고기가 많아요. 24시간 영업합니다.';
+
+                if (labelDetail) labelDetail.textContent = '이름';
+                if (locGroup) locGroup.style.display = 'block'; // Show location
+
+                // Update Styles for Business
+                updateStyleOptions(scriptStyles, introStyles, outroStyles);
+            }
+        }
+
+        function updateStyleOptions(sStyles, iStyles, oStyles) {
+            // 1. Script Styles (Chips)
+            const styleGrid = document.getElementById('scriptStyleGrid');
+            if (!styleGrid) return;
+            styleGrid.innerHTML = '';
+            Object.values(sStyles).forEach(style => {
+                const div = document.createElement('div');
+                div.className = 'style-option-chip';
+                div.textContent = style.korean;
+                div.dataset.style = style.english; // Use English key for backend
+                div.onclick = function () {
+                    toggleStyleChip(this);
+                    saveScriptInputs(); // Save on click
+                };
+                styleGrid.appendChild(div);
+            });
+
+            // 2. Intro Styles (Select)
+            const introSelect = document.getElementById('introStyle');
+            if (introSelect) {
+                const currentIntro = introSelect.value;
+                introSelect.innerHTML = '';
+                Object.values(iStyles).forEach(style => {
+                    const opt = document.createElement('option');
+                    opt.value = style.korean;
+                    opt.textContent = style.korean;
+                    introSelect.appendChild(opt);
+                });
+                // Restore logic is better handled in loadScriptInputs or logic below
+                // For now, reset to first or keep previous if valid
+                if (Object.values(iStyles).some(s => s.korean === currentIntro)) {
+                    introSelect.value = currentIntro;
+                } else {
+                    introSelect.selectedIndex = 0;
+                }
+            }
+
+            // 3. Outro Styles (Select)
+            const outroSelect = document.getElementById('outroStyle');
+            if (outroSelect) {
+                const currentOutro = outroSelect.value;
+                outroSelect.innerHTML = '';
+                Object.values(oStyles).forEach(style => {
+                    const opt = document.createElement('option');
+                    opt.value = style.korean;
+                    opt.textContent = style.korean;
+                    outroSelect.appendChild(opt);
+                });
+                if (Object.values(oStyles).some(s => s.korean === currentOutro)) {
+                    outroSelect.value = currentOutro;
+                } else {
+                    outroSelect.selectedIndex = 0;
+                }
+            }
+        }
+
+        // === Input Persistence ===
+        function saveScriptInputs() {
+            const inputs = {
+                scriptMode: document.querySelector('input[name="scriptMode"]:checked')?.value,
+                storeName: document.getElementById('storeName').value,
+                includeName: document.getElementById('includeName').checked,
+                storeLocation: document.getElementById('storeLocation').value,
+                locationIn: document.querySelector('input[name="locationIn"]:checked')?.value,
+                storeDescription: document.getElementById('storeDescription').value,
+                scriptLanguage: document.getElementById('scriptLanguage').value,
+                introStyle: document.getElementById('introStyle').value,
+                outroStyle: document.getElementById('outroStyle').value,
+                ttsProvider: document.getElementById('ttsProvider').value,
+                selectedStyles: Array.from(document.querySelectorAll('#scriptStyleGrid .style-option-chip.selected'))
+                    .map(el => el.dataset.style)
+            };
+            localStorage.setItem('scriptGenInputs', JSON.stringify(inputs));
+        }
+
+        function loadScriptInputs() {
+            const saved = localStorage.getItem('scriptGenInputs');
+            if (!saved) return;
+
+            try {
+                const inputs = JSON.parse(saved);
+
+                // Mode
+                if (inputs.scriptMode) {
+                    const modeRadio = document.querySelector(`input[name="scriptMode"][value="${inputs.scriptMode}"]`);
+                    if (modeRadio) {
+                        modeRadio.checked = true;
+                        toggleScriptMode(); // This refreshes fields and options
+                    }
+                }
+
+                // Text fields
+                if (inputs.storeName) document.getElementById('storeName').value = inputs.storeName;
+                if (inputs.storeDescription) document.getElementById('storeDescription').value = inputs.storeDescription;
+                if (inputs.storeLocation) document.getElementById('storeLocation').value = inputs.storeLocation;
+
+                // Checks
+                if (inputs.includeName !== undefined) document.getElementById('includeName').checked = inputs.includeName;
+                if (inputs.locationIn) {
+                    const locRadio = document.querySelector(`input[name="locationIn"][value="${inputs.locationIn}"]`);
+                    if (locRadio) locRadio.checked = true;
+                }
+
+                // Selects
+                if (inputs.scriptLanguage) document.getElementById('scriptLanguage').value = inputs.scriptLanguage;
+                if (inputs.ttsProvider) document.getElementById('ttsProvider').value = inputs.ttsProvider;
+
+                // Intro/Outro styles might need to be set after updateStyleOptions ensures they exist
+                if (inputs.introStyle) {
+                    const el = document.getElementById('introStyle');
+                    if (el && Array.from(el.options).some(o => o.value === inputs.introStyle)) el.value = inputs.introStyle;
+                }
+                if (inputs.outroStyle) {
+                    const el = document.getElementById('outroStyle');
+                    if (el && Array.from(el.options).some(o => o.value === inputs.outroStyle)) el.value = inputs.outroStyle;
+                }
+
+                // Style Chips
+                if (inputs.selectedStyles && Array.isArray(inputs.selectedStyles)) {
+                    const chips = document.querySelectorAll('#scriptStyleGrid .style-option-chip');
+                    chips.forEach(chip => {
+                        if (inputs.selectedStyles.includes(chip.dataset.style)) {
+                            chip.classList.add('selected');
+                        } else {
+                            chip.classList.remove('selected');
+                        }
+                    });
+                }
+
+            } catch (e) {
+                console.error("Failed to load script inputs", e);
+            }
+        }
+
+        // Initialize script mode on load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Only if the elements exist (they should now)
+            if (document.querySelector('input[name="scriptMode"]')) {
+                // First load stored mode to set correct fields
+                const saved = localStorage.getItem('scriptGenInputs');
+                if (saved) {
+                    loadScriptInputs();
+                } else {
+                    toggleScriptMode();
+                }
+
+                // Add event listeners for auto-save
+                const inputs = [
+                    'storeName', 'storeDescription', 'storeLocation',
+                    'includeName', 'scriptLanguage', 'introStyle', 'outroStyle', 'ttsProvider'
+                ];
+                inputs.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.addEventListener('change', saveScriptInputs);
+                    if (el) el.addEventListener('input', saveScriptInputs);
+                });
+
+                document.querySelectorAll('input[name="scriptMode"], input[name="locationIn"]').forEach(el => {
+                    el.addEventListener('change', saveScriptInputs);
+                });
+            }
+        });
+
+    </script>
+
+    <!-- Firebase Auth -->
+    <script src="/js/firebase-config.js"></script>
+    <script src="/js/firebase-auth.js"></script>
+    <script>
+        // Check authentication
+        requireAuth().then(authState => {
+            if (authState) {
+                document.body.style.visibility = 'visible';
+                startTokenRefresh();
+
+                // Update header auth UI
+                setHeaderAuthState(authState);
+
+                // Add admin link if user is admin
+                if (authState.isAdmin) {
+                    const nav = document.querySelector('.header-nav');
+                    if (nav && !nav.querySelector('[href="/admin"]')) {
+                        const adminLink = document.createElement('a');
+                        adminLink.href = '/admin';
+                        adminLink.innerHTML = '<span>관리자</span>';
+                        nav.appendChild(adminLink);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

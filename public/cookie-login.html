@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>소셜 미디어 로그인 - 쇼츠공장</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <link rel="stylesheet" href="/css/toss-style.css">
+    <style>
+        .cookie-manager {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .platform-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-gray-300);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .platform-card h3 {
+            margin: 0 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .platform-icon {
+            font-size: 1.5rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--color-gray-200);
+            color: var(--color-gray-700);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-gray-300);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-logged-in {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-not-logged-in {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-box h4 {
+            margin: 0 0 0.5rem 0;
+            color: #1e40af;
+        }
+
+        .info-box ul {
+            margin: 0.5rem 0 0 1.5rem;
+            color: #1e3a8a;
+        }
+
+        .cookie-file-path {
+            background: white;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            font-family: monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            color: var(--color-gray-700);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <img src="/logo.svg" alt="Logo" style="width: 32px; height: 32px;">
+                <span>쇼츠공장</span>
+            </a>
+            <div class="nav-links">
+                <a href="/index.html">TTS 쇼츠</a>
+                <a href="/ai-shorts.html">AI 쇼츠</a>
+                <a href="/ai-longform.html">AI 롱폼</a>
+                <a href="/ranking-video.html">랭킹 비디오</a>
+                <a href="/cookie-login.html" class="active">소셜 로그인</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="cookie-manager">
+        <h1>소셜 미디어 로그인 관리</h1>
+
+        <div class="info-box">
+            <h4>💡 이 기능은 무엇인가요?</h4>
+            <ul>
+                <li>Instagram과 TikTok에 로그인하여 인증 쿠키를 저장합니다</li>
+                <li>저장된 쿠키로 비공개 동영상이나 로그인이 필요한 콘텐츠를 다운로드할 수 있습니다</li>
+                <li>쿠키는 안전하게 로컬에 저장되며, yt-dlp가 자동으로 사용합니다</li>
+            </ul>
+        </div>
+
+        <!-- Instagram -->
+        <div class="platform-card">
+            <h3>
+                <span class="platform-icon">📷</span>
+                Instagram
+            </h3>
+            <p>Instagram 계정으로 로그인하여 스토리나 비공개 게시물을 다운로드하세요.</p>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="openInstagram()">
+                    Chrome에서 로그인
+                </button>
+            </div>
+        </div>
+
+        <!-- TikTok -->
+        <div class="platform-card">
+            <h3>
+                <span class="platform-icon">🎵</span>
+                TikTok
+            </h3>
+            <p>TikTok 계정으로 로그인하여 비공개 동영상을 다운로드하세요.</p>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="openTikTok()">
+                    Chrome에서 로그인
+                </button>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h4>📝 사용 방법</h4>
+            <ul>
+                <li><strong>1. "Chrome에서 로그인" 버튼 클릭</strong> → Chrome 브라우저에서 Instagram/TikTok 로그인 페이지가 열립니다</li>
+                <li><strong>2. 계정 로그인</strong> → 열린 브라우저에서 평소처럼 로그인하세요</li>
+                <li><strong>3. 완료!</strong> → Chrome 브라우저에 로그인만 되어 있으면 됩니다</li>
+            </ul>
+            <p style="margin-top: 1rem; padding: 0.75rem; background: #fef3c7; border-radius: 6px; color: #92400e;">
+                💡 <strong>핵심:</strong> Chrome 브라우저에서 Instagram/TikTok에 로그인만 해두면 자동으로 작동합니다!
+            </p>
+        </div>
+    </div>
+
+    <script>
+        console.log('Cookie login page loaded');
+
+        function openInstagram() {
+            console.log('Instagram 로그인 버튼 클릭');
+            const url = 'https://www.instagram.com/accounts/login/';
+
+            // Tauri인 경우 shell API 사용 시도
+            if (window.__TAURI__?.shell?.open) {
+                window.__TAURI__.shell.open(url)
+                    .then(() => {
+                        alert('Chrome에서 Instagram 로그인 페이지가 열렸습니다.\n\n로그인하시면 자동으로 쿠키가 연동됩니다.');
+                    })
+                    .catch((error) => {
+                        console.error('Shell API 실패:', error);
+                        window.location.href = url;
+                    });
+            } else {
+                window.location.href = url;
+            }
+        }
+
+        function openTikTok() {
+            console.log('TikTok 로그인 버튼 클릭');
+            const url = 'https://www.tiktok.com/login';
+
+            // Tauri인 경우 shell API 사용 시도
+            if (window.__TAURI__?.shell?.open) {
+                window.__TAURI__.shell.open(url)
+                    .then(() => {
+                        alert('Chrome에서 TikTok 로그인 페이지가 열렸습니다.\n\n로그인하시면 자동으로 쿠키가 연동됩니다.');
+                    })
+                    .catch((error) => {
+                        console.error('Shell API 실패:', error);
+                        window.location.href = url;
+                    });
+            } else {
+                window.location.href = url;
+            }
+        }
+    </script>
+</body>
+</html>

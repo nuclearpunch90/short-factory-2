@@ -1,0 +1,17 @@
+Start specific import test
+Import failed Error: Unknown system error -70: Unknown system error -70, read
+    at Object.readSync (node:fs:740:18)
+    at tryReadSync (node:fs:417:20)
+    at readFileSync (node:fs:463:19)
+    at getSourceSync (node:internal/modules/esm/load:41:14)
+    at defaultLoad (node:internal/modules/esm/load:92:34)
+    at ModuleLoader.load (node:internal/modules/esm/loader:815:12)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:594:31)
+    at #createModuleJob (node:internal/modules/esm/loader:624:36)
+    at #getJobFromResolveResult (node:internal/modules/esm/loader:343:34)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:311:41) {
+  errno: -70,
+  code: 'Unknown system error -70',
+  syscall: 'read'
+}
+End specific import test

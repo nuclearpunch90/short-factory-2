@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube 썸네일 템플릿</title>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gothic+A1:wght@900&family=Noto+Sans+KR:wght@900&family=Gugi&family=Sunflower:wght@700&family=Poor+Story&family=Gaegu:wght@700&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'GmarketSansBold';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+        }
+        @font-face {
+            font-family: 'SDSamliphopangche_Outline';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts-20-12@1.0/SDSamliphopangche_Outline.woff') format('woff');
+        }
+        @font-face {
+            font-family: 'SBAggroB';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/SBAggroB.woff') format('woff');
+        }
+        @font-face {
+            font-family: 'BMJUA';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_one@1.0/BMJUA.woff') format('woff');
+        }
+        @font-face {
+            font-family: 'TTTtangsbudaejjigaeB';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2212@1.0/TTTtangsbudaejjigaeB.woff2') format('woff2');
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a0a;
+            padding: 40px;
+        }
+        h1 { color: #fff; text-align: center; margin-bottom: 50px; font-family: sans-serif; }
+        .templates-container {
+            display: flex;
+            flex-direction: column;
+            gap: 120px;
+            align-items: center;
+        }
+        .template-wrapper { text-align: center; }
+        .template-label { color: #555; margin-bottom: 15px; font-size: 14px; font-family: sans-serif; }
+
+        /* 썸네일 기본 */
+        .thumbnail {
+            width: 1280px;
+            height: 720px;
+            position: relative;
+            overflow: hidden;
+            border: 8px solid #00E5CC;
+        }
+        .thumbnail-preview {
+            transform: scale(0.5);
+            transform-origin: top center;
+            margin-bottom: -360px;
+        }
+
+        /* 이미지 그리드 */
+        .image-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70%;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 4px;
+            background: #000;
+        }
+        .image-grid.two-images {
+            grid-template-columns: 1fr 1fr;
+        }
+        .img-cell {
+            position: relative;
+            overflow: hidden;
+            background: #111;
+        }
+        .img-cell img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .placeholder-img {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-size: 28px;
+            font-family: sans-serif;
+        }
+
+        /* 텍스트 오버레이 */
+        .text-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 25px 30px 30px;
+            background: linear-gradient(transparent 0%, rgba(0,0,0,0.95) 35%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .top-text {
+            font-size: 90px;
+            font-weight: 900;
+            margin-bottom: 15px;
+            white-space: nowrap;
+            text-shadow: 5px 5px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000;
+            letter-spacing: -3px;
+            transform: scaleY(1.15);
+        }
+
+        .bottom-text {
+            font-size: 145px;
+            font-weight: 900;
+            white-space: nowrap;
+            text-shadow: 6px 6px 0 #000, -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000;
+            letter-spacing: -5px;
+            line-height: 0.95;
+            transform: scaleY(1.25);
+        }
+
+        /* ===== 템플릿 1: GmarketSans 빨강 ===== */
+        .template-1 { border-color: #00E5CC; }
+        .template-1 .top-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-1 .bottom-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FF0000;
+        }
+
+        /* ===== 템플릿 2: 탕수육체 파랑 ===== */
+        .template-2 { border-color: #00AAFF; }
+        .template-2 .top-text {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+            text-shadow: 4px 4px 0 #003366, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000;
+        }
+        .template-2 .bottom-text {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #00CCFF;
+            text-shadow: 6px 6px 0 #003366, -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000;
+        }
+
+        /* ===== 템플릿 3: SBAggroB 핑크 ===== */
+        .template-3 { border-color: #FF00AA; }
+        .template-3 .top-text {
+            font-family: 'SBAggroB', sans-serif;
+            color: #00FFFF;
+        }
+        .template-3 .bottom-text {
+            font-family: 'SBAggroB', sans-serif;
+            color: #FF0066;
+        }
+
+        /* ===== 템플릿 4: Do Hyeon 초록 ===== */
+        .template-4 { border-color: #00FF88; }
+        .template-4 .top-text {
+            font-family: 'Do Hyeon', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-4 .bottom-text {
+            font-family: 'Do Hyeon', sans-serif;
+            color: #00FF44;
+            text-shadow: 6px 6px 0 #004400, -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000;
+        }
+
+        /* ===== 템플릿 5: 어그로체 노랑/검정 ===== */
+        .template-5 { border-color: #FFD700; }
+        .template-5 .top-text {
+            font-family: 'SBAggroB', 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+            text-shadow: 4px 4px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 0 0 30px rgba(255,215,0,0.5);
+        }
+        .template-5 .bottom-text {
+            font-family: 'SBAggroB', 'GmarketSansBold', sans-serif;
+            color: #FFD700;
+            text-shadow: 6px 6px 0 #000, -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000, 0 0 40px rgba(255,215,0,0.4);
+        }
+
+        /* ===== 한줄 템플릿 공통 스타일 ===== */
+        .template-6 .image-grid,
+        .template-7 .image-grid {
+            height: 100%;
+            gap: 0;
+            background: transparent;
+        }
+        .single-line-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: linear-gradient(to bottom,
+                rgba(0,0,0,0) 0%,
+                rgba(0,0,0,0.1) 30%,
+                rgba(0,0,0,0.4) 60%,
+                rgba(0,0,0,0.7) 80%,
+                rgba(0,0,0,0.85) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .single-text {
+            font-size: 130px;
+            font-weight: 900;
+            white-space: nowrap;
+            letter-spacing: -4px;
+            transform: scaleY(1.3);
+        }
+
+        /* ===== 템플릿 6: 한줄 - GmarketSans 흰색/빨강 테두리 ===== */
+        .template-6 { border-color: #FF3333; }
+        .template-6 .single-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+            text-shadow:
+                8px 8px 0 #FF0000,
+                -3px -3px 0 #FF0000, 3px -3px 0 #FF0000, -3px 3px 0 #FF0000,
+                0 0 60px rgba(255,0,0,0.8);
+        }
+
+        /* ===== 템플릿 7: 한줄 - 어그로체 네온 그린 ===== */
+        .template-7 { border-color: #00FF66; }
+        .template-7 .single-text {
+            font-family: 'SBAggroB', sans-serif;
+            color: #00FF66;
+            text-shadow:
+                6px 6px 0 #000,
+                -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000,
+                0 0 50px rgba(0,255,102,0.9),
+                0 0 100px rgba(0,255,102,0.5);
+        }
+
+        /* ===== 템플릿 8: 한줄 - 불꽃 빨강 ===== */
+        .template-8 .image-grid { height: 100%; gap: 0; background: transparent; }
+        .template-8 { border-color: #FF2200; }
+        .template-8 .single-text {
+            font-family: 'SBAggroB', sans-serif;
+            color: #FFFF00;
+            font-size: 145px;
+            text-shadow:
+                0 0 30px #FF0000,
+                0 0 60px #FF4400,
+                8px 8px 0 #CC0000,
+                -5px -5px 0 #880000, 5px -5px 0 #880000, -5px 5px 0 #880000;
+        }
+
+        /* ===== 템플릿 9: 한줄 - 일렉트릭 블루 ===== */
+        .template-9 .image-grid { height: 100%; gap: 0; background: transparent; }
+        .template-9 { border-color: #00FFFF; }
+        .template-9 .single-text {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #00FFFF;
+            font-size: 135px;
+            text-shadow:
+                0 0 25px #00FFFF,
+                0 0 50px #0088FF,
+                6px 6px 0 #003366,
+                -4px -4px 0 #001133, 4px -4px 0 #001133, -4px 4px 0 #001133;
+        }
+
+        /* ===== 템플릿 10: 한줄 - 골드 프리미엄 ===== */
+        .template-10 .image-grid { height: 100%; gap: 0; background: transparent; }
+        .template-10 { border-color: #FFD700; }
+        .template-10 .single-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFD700;
+            font-size: 140px;
+            text-shadow:
+                3px 3px 0 #B8860B,
+                6px 6px 0 #8B6914,
+                0 0 30px rgba(255,215,0,0.8),
+                0 0 60px rgba(255,165,0,0.5),
+                -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000;
+        }
+
+        /* ===== 템플릿 11: 한줄 - 퍼플 글로우 ===== */
+        .template-11 .image-grid { height: 100%; gap: 0; background: transparent; }
+        .template-11 { border-color: #9933FF; }
+        .template-11 .single-text {
+            font-family: 'SBAggroB', sans-serif;
+            color: #FFFFFF;
+            font-size: 140px;
+            text-shadow:
+                0 0 20px #9933FF,
+                0 0 40px #6600CC,
+                0 0 80px #9933FF,
+                6px 6px 0 #4400AA,
+                -4px -4px 0 #220066, 4px -4px 0 #220066, -4px 4px 0 #220066;
+        }
+
+        /* ===== 템플릿 12: 두줄 - 오렌지/흰색 ===== */
+        .template-12 { border-color: #FF6600; }
+        .template-12 .top-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-12 .bottom-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FF6600;
+            text-shadow: 6px 6px 0 #662200, -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000;
+        }
+
+        /* ===== 템플릿 13: 두줄 - 보라/시안 ===== */
+        .template-13 { border-color: #9933FF; }
+        .template-13 .top-text {
+            font-family: 'SBAggroB', sans-serif;
+            color: #00FFFF;
+        }
+        .template-13 .bottom-text {
+            font-family: 'SBAggroB', sans-serif;
+            color: #9933FF;
+            text-shadow: 6px 6px 0 #330066, -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000;
+        }
+
+        /* ===== 템플릿 14: 두줄 - 노랑/검정 테두리 ===== */
+        .template-14 { border-color: #FFFF00; }
+        .template-14 .top-text {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-14 .bottom-text {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FFFF00;
+            text-shadow: 8px 8px 0 #000, -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000;
+        }
+
+        /* ===== 템플릿 15: 두줄 - 네온 핑크/흰색 ===== */
+        .template-15 { border-color: #FF0099; }
+        .template-15 .top-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+            text-shadow: 5px 5px 0 #000, -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000, 0 0 30px rgba(255,0,153,0.5);
+        }
+        .template-15 .bottom-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FF0099;
+            text-shadow: 6px 6px 0 #000, -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000, 0 0 40px rgba(255,0,153,0.7);
+        }
+
+        /* ===== 템플릿 16: 두줄 - 시안/흰색 ===== */
+        .template-16 { border-color: #00FFFF; }
+        .template-16 .top-text {
+            font-family: 'SBAggroB', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-16 .bottom-text {
+            font-family: 'SBAggroB', sans-serif;
+            color: #00FFFF;
+            text-shadow: 6px 6px 0 #004444, -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000;
+        }
+
+        /* ===== 템플릿 17: 두줄 - 라임/검정 ===== */
+        .template-17 { border-color: #AAFF00; }
+        .template-17 .top-text {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-17 .bottom-text {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #AAFF00;
+            text-shadow: 7px 7px 0 #335500, -5px -5px 0 #000, 5px -5px 0 #000, -5px 5px 0 #000;
+        }
+
+        /* ===== 템플릿 18: GmarketSans 빨강 - 빨강 테두리 ===== */
+        .template-18 { border-color: #FF0000; }
+        .template-18 .top-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-18 .bottom-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FF0000;
+        }
+
+        /* ===== 템플릿 19: GmarketSans 빨강 - 마젠타 테두리 ===== */
+        .template-19 { border-color: #FF00FF; }
+        .template-19 .top-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-19 .bottom-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FF0000;
+        }
+
+        /* ===== 템플릿 20: GmarketSans 빨강 - 블루 테두리 ===== */
+        .template-20 { border-color: #0066FF; }
+        .template-20 .top-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-20 .bottom-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FF0000;
+        }
+
+        /* ===== 템플릿 21: GmarketSans 빨강 - 흰색 테두리 ===== */
+        .template-21 { border-color: #FFFFFF; }
+        .template-21 .top-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-21 .bottom-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FF0000;
+        }
+
+        /* ===== 템플릿 22: GmarketSans 빨강 - 노랑 테두리 ===== */
+        .template-22 { border-color: #FFFF00; }
+        .template-22 .top-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-22 .bottom-text {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FF0000;
+        }
+
+        /* ===== 다중줄 썸네일 공통 스타일 ===== */
+        .multi-line-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            background: linear-gradient(
+                to bottom,
+                rgba(0,0,0,0.3) 0%,
+                rgba(0,0,0,0.5) 50%,
+                rgba(0,0,0,0.7) 100%
+            );
+        }
+        .multi-line-text {
+            font-size: 85px;
+            font-weight: 900;
+            white-space: nowrap;
+            letter-spacing: -3px;
+            line-height: 1.15;
+            text-shadow:
+                6px 6px 0 #000,
+                -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000,
+                8px 8px 0 rgba(0,0,0,0.5);
+            transform: scaleY(1.1);
+        }
+        .highlight-box {
+            display: inline-block;
+            background: #FF0000;
+            padding: 5px 25px;
+            margin: 8px 0;
+        }
+        .highlight-box .multi-line-text {
+            text-shadow:
+                4px 4px 0 #000,
+                -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000;
+        }
+
+        /* ===== 템플릿 23: 다중줄 - 노랑/빨강박스/노랑 ===== */
+        .template-23 { border-color: #FFD700; }
+        .template-23 .image-grid { height: 100%; gap: 0; background: transparent; }
+        .template-23 .line-1 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFD700;
+        }
+        .template-23 .line-2 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-23 .highlight-box {
+            background: #FF0000;
+        }
+        .template-23 .highlight-box .multi-line-text {
+            color: #FFFFFF;
+        }
+        .template-23 .line-4 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFD700;
+        }
+
+        /* ===== 템플릿 24: 다중줄 - 흰색/빨강박스/시안 ===== */
+        .template-24 { border-color: #00FFFF; }
+        .template-24 .image-grid { height: 100%; gap: 0; background: transparent; }
+        .template-24 .line-1 {
+            font-family: 'SBAggroB', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-24 .line-2 {
+            font-family: 'SBAggroB', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-24 .highlight-box {
+            background: #FF0000;
+        }
+        .template-24 .highlight-box .multi-line-text {
+            color: #FFFFFF;
+        }
+        .template-24 .line-4 {
+            font-family: 'SBAggroB', sans-serif;
+            color: #00FFFF;
+        }
+
+        /* ===== 템플릿 25: 다중줄 - 노랑/파랑박스/핑크 ===== */
+        .template-25 { border-color: #FF00AA; }
+        .template-25 .image-grid { height: 100%; gap: 0; background: transparent; }
+        .template-25 .line-1 {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FFFF00;
+        }
+        .template-25 .line-2 {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-25 .highlight-box {
+            background: #0066FF;
+        }
+        .template-25 .highlight-box .multi-line-text {
+            color: #FFFFFF;
+        }
+        .template-25 .line-4 {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FF00AA;
+        }
+
+        /* ===== 템플릿 26: 다중줄 - 초록/빨강박스/흰색 ===== */
+        .template-26 { border-color: #00FF66; }
+        .template-26 .image-grid { height: 100%; gap: 0; background: transparent; }
+        .template-26 .line-1 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #00FF66;
+        }
+        .template-26 .line-2 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-26 .highlight-box {
+            background: #FF0000;
+        }
+        .template-26 .highlight-box .multi-line-text {
+            color: #FFFFFF;
+        }
+        .template-26 .line-4 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+
+        /* ===== 좌측 텍스트 + 우측 이미지 레이아웃 공통 스타일 ===== */
+        .split-layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+        .split-text-area {
+            width: 48%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            align-items: flex-start;
+            padding: 20px 25px;
+            background: #000000;
+            position: relative;
+            z-index: 2;
+            overflow: visible;
+        }
+        .split-image-area {
+            width: 52%;
+            height: 100%;
+            position: relative;
+            z-index: 1;
+        }
+        .split-image-area::before {
+            content: '';
+            position: absolute;
+            left: -30px;
+            top: 0;
+            width: 80px;
+            height: 100%;
+            background: linear-gradient(to right, #000000 0%, rgba(0,0,0,0.7) 40%, transparent 100%);
+            z-index: 2;
+        }
+        .split-image-area .placeholder-img,
+        .split-image-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .split-text-line {
+            font-size: 85px;
+            font-weight: 900;
+            white-space: nowrap;
+            letter-spacing: -5px;
+            line-height: 1.0;
+            text-shadow:
+                5px 5px 0 #000,
+                -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000;
+            transform: scaleY(1.4);
+            margin: 0;
+        }
+        .split-highlight-box {
+            display: inline-block;
+            background: #FF0000;
+            padding: 12px 20px;
+            margin: 0;
+            transform: scaleY(1.4);
+        }
+        .split-highlight-box .split-text-line {
+            text-shadow:
+                3px 3px 0 #000,
+                -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            margin: 0;
+            transform: none;
+        }
+
+        /* ===== 템플릿 27: 좌텍스트/우이미지 - 노랑/빨강박스 ===== */
+        .template-27 { border-color: #FFD700; }
+        .template-27 .split-line-1 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFD700;
+        }
+        .template-27 .split-line-2 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-27 .split-highlight-box { background: #FF0000; }
+        .template-27 .split-highlight-box .split-text-line { color: #FFFFFF; }
+        .template-27 .split-line-4 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFD700;
+        }
+
+        /* ===== 템플릿 28: 좌텍스트/우이미지 - 시안/빨강박스 ===== */
+        .template-28 { border-color: #00FFFF; }
+        .template-28 .split-line-1 {
+            font-family: 'SBAggroB', sans-serif;
+            color: #00FFFF;
+        }
+        .template-28 .split-line-2 {
+            font-family: 'SBAggroB', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-28 .split-highlight-box { background: #FF0000; }
+        .template-28 .split-highlight-box .split-text-line { color: #FFFFFF; }
+        .template-28 .split-line-4 {
+            font-family: 'SBAggroB', sans-serif;
+            color: #00FFFF;
+        }
+
+        /* ===== 템플릿 29: 좌텍스트/우이미지 - 핑크/파랑박스 ===== */
+        .template-29 { border-color: #FF00AA; }
+        .template-29 .split-line-1 {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FF00AA;
+        }
+        .template-29 .split-line-2 {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-29 .split-highlight-box { background: #0066FF; }
+        .template-29 .split-highlight-box .split-text-line { color: #FFFFFF; }
+        .template-29 .split-line-4 {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FFFF00;
+        }
+
+        /* ===== 템플릿 30: 좌텍스트/우이미지 - 초록/빨강박스 ===== */
+        .template-30 { border-color: #00FF66; }
+        .template-30 .split-line-1 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #00FF66;
+        }
+        .template-30 .split-line-2 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-30 .split-highlight-box { background: #FF0000; }
+        .template-30 .split-highlight-box .split-text-line { color: #FFFFFF; }
+        .template-30 .split-line-4 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+
+        /* ===== 상단 텍스트 + 하단 이미지 레이아웃 공통 스타일 ===== */
+        .vertical-layout {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+        .vertical-text-area {
+            width: 100%;
+            height: 30%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 40px 10px 40px;
+            background: #000000;
+            position: relative;
+            z-index: 2;
+        }
+        .vertical-image-area {
+            width: 100%;
+            height: 70%;
+            position: relative;
+            z-index: 1;
+        }
+        .vertical-image-area::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: -30px;
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(to bottom, #000000 0%, rgba(0,0,0,0.5) 50%, transparent 100%);
+            z-index: 2;
+        }
+        .vertical-image-area .placeholder-img,
+        .vertical-image-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .vertical-text-line {
+            font-size: 105px;
+            font-weight: 900;
+            white-space: nowrap;
+            letter-spacing: -4px;
+            line-height: 1.15;
+            text-align: center;
+            text-shadow:
+                6px 6px 0 #000,
+                -4px -4px 0 #000, 4px -4px 0 #000, -4px 4px 0 #000;
+            transform: scaleY(1.15);
+            margin: 5px 0;
+        }
+
+        /* ===== 템플릿 31: 상텍스트/하이미지 - 흰색/빨강 ===== */
+        .template-31 { border-color: #FF0000; }
+        .template-31 .vertical-line-1 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-31 .vertical-line-2 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FF0000;
+        }
+
+        /* ===== 템플릿 32: 상텍스트/하이미지 - 흰색/시안 ===== */
+        .template-32 { border-color: #00FFFF; }
+        .template-32 .vertical-line-1 {
+            font-family: 'SBAggroB', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-32 .vertical-line-2 {
+            font-family: 'SBAggroB', sans-serif;
+            color: #00FFFF;
+        }
+
+        /* ===== 템플릿 33: 상텍스트/하이미지 - 흰색/노랑 ===== */
+        .template-33 { border-color: #FFFF00; }
+        .template-33 .vertical-line-1 {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-33 .vertical-line-2 {
+            font-family: 'TTTtangsbudaejjigaeB', 'GmarketSansBold', sans-serif;
+            color: #FFFF00;
+        }
+
+        /* ===== 템플릿 34: 상텍스트/하이미지 - 흰색/초록 ===== */
+        .template-34 { border-color: #00FF66; }
+        .template-34 .vertical-line-1 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #FFFFFF;
+        }
+        .template-34 .vertical-line-2 {
+            font-family: 'GmarketSansBold', sans-serif;
+            color: #00FF66;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>YouTube 썸네일 템플릿 (34종)</h1>
+
+    <div class="templates-container">
+
+        <!-- 템플릿 1: GmarketSans 빨강 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 1: GmarketSans Bold - 빨강/흰색 (이미지 2개)</div>
+            <div class="thumbnail template-1 thumbnail-preview" id="template1">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">"한국인 발길 뚝 끊겼다"</div>
+                    <div class="bottom-text">독일 자동차의 몰락</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 2: Black Han Sans 주황 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 2: 탕수육체 - 파랑/흰색 (이미지 1개)</div>
+            <div class="thumbnail template-2 thumbnail-preview" id="template2">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">결국 들통났다</div>
+                    <div class="bottom-text">충격적 실체</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 3: SBAggroB 핑크 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 3: SB 어그로체 - 핑크/시안 (이미지 2개)</div>
+            <div class="thumbnail template-3 thumbnail-preview" id="template3">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">전세계가 경악한 이유</div>
+                    <div class="bottom-text">역대급 대참사</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 4: Do Hyeon 초록 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 4: 도현체 - 초록/흰색 (이미지 2개)</div>
+            <div class="thumbnail template-4 thumbnail-preview" id="template4">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">이거 모르면 손해</div>
+                    <div class="bottom-text">돈 버는 비밀</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 5: BMJUA 보라 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 5: 어그로체 - 금색/흰색 (이미지 1개)</div>
+            <div class="thumbnail template-5 thumbnail-preview" id="template5">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">이건 진짜 대박</div>
+                    <div class="bottom-text">돈 복사 비법</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 6: 한줄 - GmarketSans 흰색/빨강 테두리 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 6: 한줄 - GmarketSans 흰색 (빨강 테두리)</div>
+            <div class="thumbnail template-6 thumbnail-preview" id="template6">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="single-line-overlay">
+                    <div class="single-text">충격 실화입니다</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 7: 한줄 - 어그로체 네온 그린 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 7: 한줄 - 어그로체 네온 그린</div>
+            <div class="thumbnail template-7 thumbnail-preview" id="template7">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="single-line-overlay">
+                    <div class="single-text">미쳤다 진짜</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 8: 한줄 - 불꽃 빨강 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 8: 한줄 - 불꽃 빨강</div>
+            <div class="thumbnail template-8 thumbnail-preview" id="template8">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="single-line-overlay">
+                    <div class="single-text">완전 난리남</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 9: 한줄 - 일렉트릭 블루 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 9: 한줄 - 일렉트릭 블루</div>
+            <div class="thumbnail template-9 thumbnail-preview" id="template9">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="single-line-overlay">
+                    <div class="single-text">이게 실화냐</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 10: 한줄 - 골드 프리미엄 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 10: 한줄 - 골드 프리미엄</div>
+            <div class="thumbnail template-10 thumbnail-preview" id="template10">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="single-line-overlay">
+                    <div class="single-text">역대급 레전드</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 11: 한줄 - 퍼플 글로우 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 11: 한줄 - 퍼플 글로우</div>
+            <div class="thumbnail template-11 thumbnail-preview" id="template11">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="single-line-overlay">
+                    <div class="single-text">충격 반전</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 12: 두줄 - 오렌지/흰색 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 12: GmarketSans - 오렌지/흰색 (이미지 2개)</div>
+            <div class="thumbnail template-12 thumbnail-preview" id="template12">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">이건 진짜 미쳤다</div>
+                    <div class="bottom-text">결국 터졌다</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 13: 두줄 - 보라/시안 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 13: 어그로체 - 보라/시안 (이미지 2개)</div>
+            <div class="thumbnail template-13 thumbnail-preview" id="template13">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">충격 고백</div>
+                    <div class="bottom-text">숨겨진 진실</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 14: 두줄 - 노랑/검정 테두리 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 14: 탕수육체 - 노랑/흰색 (이미지 2개)</div>
+            <div class="thumbnail template-14 thumbnail-preview" id="template14">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">이거 보면 놀람</div>
+                    <div class="bottom-text">대반전 스토리</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 15: 두줄 - 네온 핑크/흰색 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 15: GmarketSans - 핑크/흰색 (이미지 2개)</div>
+            <div class="thumbnail template-15 thumbnail-preview" id="template15">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">결국 들켜버림</div>
+                    <div class="bottom-text">충격 결말</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 16: 두줄 - 시안/흰색 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 16: 어그로체 - 시안/흰색 (이미지 2개)</div>
+            <div class="thumbnail template-16 thumbnail-preview" id="template16">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">난리난 현장</div>
+                    <div class="bottom-text">실시간 상황</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 17: 두줄 - 라임/검정 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 17: 탕수육체 - 라임/흰색 (이미지 2개)</div>
+            <div class="thumbnail template-17 thumbnail-preview" id="template17">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">이게 말이 돼?</div>
+                    <div class="bottom-text">역대급 사건</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 18: GmarketSans 빨강 - 빨강 테두리 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 18: GmarketSans - 빨강/흰색 (빨강 테두리)</div>
+            <div class="thumbnail template-18 thumbnail-preview" id="template18">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">충격 폭로</div>
+                    <div class="bottom-text">진실이 밝혀졌다</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 19: GmarketSans 빨강 - 마젠타 테두리 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 19: GmarketSans - 빨강/흰색 (마젠타 테두리)</div>
+            <div class="thumbnail template-19 thumbnail-preview" id="template19">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">믿기 힘든</div>
+                    <div class="bottom-text">대반전 스토리</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 20: GmarketSans 빨강 - 블루 테두리 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 20: GmarketSans - 빨강/흰색 (블루 테두리)</div>
+            <div class="thumbnail template-20 thumbnail-preview" id="template20">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">전문가도 경악</div>
+                    <div class="bottom-text">충격 분석 결과</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 21: GmarketSans 빨강 - 흰색 테두리 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 21: GmarketSans - 빨강/흰색 (흰색 테두리)</div>
+            <div class="thumbnail template-21 thumbnail-preview" id="template21">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">이건 진짜다</div>
+                    <div class="bottom-text">숨겨진 비밀</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 22: GmarketSans 빨강 - 노랑 테두리 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 22: GmarketSans - 빨강/흰색 (노랑 테두리)</div>
+            <div class="thumbnail template-22 thumbnail-preview" id="template22">
+                <div class="image-grid two-images">
+                    <div class="img-cell"><div class="placeholder-img">이미지 1</div></div>
+                    <div class="img-cell"><div class="placeholder-img">이미지 2</div></div>
+                </div>
+                <div class="text-overlay">
+                    <div class="top-text">결국 터졌다</div>
+                    <div class="bottom-text">역대급 대참사</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 23: 다중줄 - 노랑/빨강박스/노랑 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 23: 다중줄 - 노랑/빨강박스/노랑 (이미지 1개)</div>
+            <div class="thumbnail template-23 thumbnail-preview" id="template23">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="multi-line-overlay">
+                    <div class="multi-line-text line-1">여보, 어머님 요양원</div>
+                    <div class="multi-line-text line-2">빨리 보내!</div>
+                    <div class="highlight-box">
+                        <div class="multi-line-text">며느리 몰래 집팔고</div>
+                    </div>
+                    <div class="multi-line-text line-4">크루즈여행 가는 시어머니</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 24: 다중줄 - 흰색/빨강박스/시안 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 24: 다중줄 - 흰색/빨강박스/시안 (이미지 1개)</div>
+            <div class="thumbnail template-24 thumbnail-preview" id="template24">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="multi-line-overlay">
+                    <div class="multi-line-text line-1">충격 고백</div>
+                    <div class="multi-line-text line-2">"이건 비밀인데..."</div>
+                    <div class="highlight-box">
+                        <div class="multi-line-text">10년간 숨겨온</div>
+                    </div>
+                    <div class="multi-line-text line-4">놀라운 진실</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 25: 다중줄 - 노랑/파랑박스/핑크 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 25: 다중줄 - 노랑/파랑박스/핑크 (이미지 1개)</div>
+            <div class="thumbnail template-25 thumbnail-preview" id="template25">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="multi-line-overlay">
+                    <div class="multi-line-text line-1">결국 들통났다</div>
+                    <div class="multi-line-text line-2">"어떻게 알았어?"</div>
+                    <div class="highlight-box">
+                        <div class="multi-line-text">남편 몰래 숨긴</div>
+                    </div>
+                    <div class="multi-line-text line-4">충격적인 비밀</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 26: 다중줄 - 초록/빨강박스/흰색 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 26: 다중줄 - 초록/빨강박스/흰색 (이미지 1개)</div>
+            <div class="thumbnail template-26 thumbnail-preview" id="template26">
+                <div class="image-grid">
+                    <div class="img-cell"><div class="placeholder-img">이미지</div></div>
+                </div>
+                <div class="multi-line-overlay">
+                    <div class="multi-line-text line-1">전문가도 놀란</div>
+                    <div class="multi-line-text line-2">"이게 가능해?"</div>
+                    <div class="highlight-box">
+                        <div class="multi-line-text">아무도 몰랐던</div>
+                    </div>
+                    <div class="multi-line-text line-4">역대급 반전</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 27: 좌텍스트/우이미지 - 노랑/빨강박스 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 27: 좌측텍스트/우측이미지 - 노랑/빨강박스</div>
+            <div class="thumbnail template-27 thumbnail-preview" id="template27">
+                <div class="split-layout">
+                    <div class="split-text-area">
+                        <div class="split-text-line split-line-1">여보, 어머님 요양원</div>
+                        <div class="split-text-line split-line-2">빨리 보내!</div>
+                        <div class="split-highlight-box">
+                            <div class="split-text-line">며느리 몰래 집팔고</div>
+                        </div>
+                        <div class="split-text-line split-line-4">크루즈여행 가는 시어머니</div>
+                    </div>
+                    <div class="split-image-area">
+                        <div class="placeholder-img">이미지</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 28: 좌텍스트/우이미지 - 시안/빨강박스 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 28: 좌측텍스트/우측이미지 - 시안/빨강박스</div>
+            <div class="thumbnail template-28 thumbnail-preview" id="template28">
+                <div class="split-layout">
+                    <div class="split-text-area">
+                        <div class="split-text-line split-line-1">충격 고백</div>
+                        <div class="split-text-line split-line-2">"이건 비밀인데..."</div>
+                        <div class="split-highlight-box">
+                            <div class="split-text-line">10년간 숨겨온</div>
+                        </div>
+                        <div class="split-text-line split-line-4">놀라운 진실</div>
+                    </div>
+                    <div class="split-image-area">
+                        <div class="placeholder-img">이미지</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 29: 좌텍스트/우이미지 - 핑크/파랑박스 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 29: 좌측텍스트/우측이미지 - 핑크/파랑박스</div>
+            <div class="thumbnail template-29 thumbnail-preview" id="template29">
+                <div class="split-layout">
+                    <div class="split-text-area">
+                        <div class="split-text-line split-line-1">결국 들통났다</div>
+                        <div class="split-text-line split-line-2">"어떻게 알았어?"</div>
+                        <div class="split-highlight-box">
+                            <div class="split-text-line">남편 몰래 숨긴</div>
+                        </div>
+                        <div class="split-text-line split-line-4">충격적인 비밀</div>
+                    </div>
+                    <div class="split-image-area">
+                        <div class="placeholder-img">이미지</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 30: 좌텍스트/우이미지 - 초록/빨강박스 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 30: 좌측텍스트/우측이미지 - 초록/빨강박스</div>
+            <div class="thumbnail template-30 thumbnail-preview" id="template30">
+                <div class="split-layout">
+                    <div class="split-text-area">
+                        <div class="split-text-line split-line-1">전문가도 놀란</div>
+                        <div class="split-text-line split-line-2">"이게 가능해?"</div>
+                        <div class="split-highlight-box">
+                            <div class="split-text-line">아무도 몰랐던</div>
+                        </div>
+                        <div class="split-text-line split-line-4">역대급 반전</div>
+                    </div>
+                    <div class="split-image-area">
+                        <div class="placeholder-img">이미지</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 31: 상텍스트/하이미지 - 흰색/빨강 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 31: 상단텍스트/하단이미지 - 흰색/빨강</div>
+            <div class="thumbnail template-31 thumbnail-preview" id="template31">
+                <div class="vertical-layout">
+                    <div class="vertical-text-area">
+                        <div class="vertical-text-line vertical-line-1">"한국인 발길 뚝 끊겼다"</div>
+                        <div class="vertical-text-line vertical-line-2">독일 자동차의 몰락</div>
+                    </div>
+                    <div class="vertical-image-area">
+                        <div class="placeholder-img">이미지</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 32: 상텍스트/하이미지 - 흰색/시안 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 32: 상단텍스트/하단이미지 - 흰색/시안</div>
+            <div class="thumbnail template-32 thumbnail-preview" id="template32">
+                <div class="vertical-layout">
+                    <div class="vertical-text-area">
+                        <div class="vertical-text-line vertical-line-1">결국 들통났다</div>
+                        <div class="vertical-text-line vertical-line-2">충격적 실체</div>
+                    </div>
+                    <div class="vertical-image-area">
+                        <div class="placeholder-img">이미지</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 33: 상텍스트/하이미지 - 흰색/노랑 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 33: 상단텍스트/하단이미지 - 흰색/노랑</div>
+            <div class="thumbnail template-33 thumbnail-preview" id="template33">
+                <div class="vertical-layout">
+                    <div class="vertical-text-area">
+                        <div class="vertical-text-line vertical-line-1">이거 모르면 손해</div>
+                        <div class="vertical-text-line vertical-line-2">돈 버는 비밀</div>
+                    </div>
+                    <div class="vertical-image-area">
+                        <div class="placeholder-img">이미지</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 템플릿 34: 상텍스트/하이미지 - 흰색/초록 -->
+        <div class="template-wrapper">
+            <div class="template-label">템플릿 34: 상단텍스트/하단이미지 - 흰색/초록</div>
+            <div class="thumbnail template-34 thumbnail-preview" id="template34">
+                <div class="vertical-layout">
+                    <div class="vertical-text-area">
+                        <div class="vertical-text-line vertical-line-1">전문가도 놀란</div>
+                        <div class="vertical-text-line vertical-line-2">역대급 반전</div>
+                    </div>
+                    <div class="vertical-image-area">
+                        <div class="placeholder-img">이미지</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- html2canvas for image capture -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script>
+        function setImage(templateId, cellIndex, url) {
+            const t = document.getElementById(templateId);
+            const cells = t.querySelectorAll('.img-cell');
+            if (cells[cellIndex]) {
+                const placeholder = cells[cellIndex].querySelector('.placeholder-img');
+                if (placeholder) placeholder.outerHTML = `<img src="${url}">`;
+            }
+        }
+
+        function setText(templateId, topText, bottomText) {
+            const t = document.getElementById(templateId);
+            if (topText) t.querySelector('.top-text').textContent = topText;
+            if (bottomText) t.querySelector('.bottom-text').textContent = bottomText;
+        }
+
+        function setGridMode(templateId, count) {
+            const t = document.getElementById(templateId);
+            const grid = t.querySelector('.image-grid');
+            grid.classList.toggle('two-images', count === 2);
+        }
+
+        // 다중줄 템플릿용 텍스트 설정
+        function setMultiLineText(templateId, line1, line2, highlightText, line4) {
+            const t = document.getElementById(templateId);
+            if (line1) {
+                const el = t.querySelector('.line-1');
+                if (el) el.textContent = line1;
+            }
+            if (line2) {
+                const el = t.querySelector('.line-2');
+                if (el) el.textContent = line2;
+            }
+            if (highlightText) {
+                const box = t.querySelector('.highlight-box .multi-line-text');
+                if (box) box.textContent = highlightText;
+            }
+            if (line4) {
+                const el = t.querySelector('.line-4');
+                if (el) el.textContent = line4;
+            }
+        }
+
+        // 한줄 템플릿용 텍스트 설정
+        function setSingleText(templateId, text) {
+            const t = document.getElementById(templateId);
+            const singleText = t.querySelector('.single-text');
+            if (singleText && text) singleText.textContent = text;
+        }
+
+        // 좌측텍스트/우측이미지 템플릿용 텍스트 설정
+        function setSplitText(templateId, line1, line2, highlightText, line4) {
+            const t = document.getElementById(templateId);
+            if (line1) {
+                const el = t.querySelector('.split-line-1');
+                if (el) el.textContent = line1;
+            }
+            if (line2) {
+                const el = t.querySelector('.split-line-2');
+                if (el) el.textContent = line2;
+            }
+            if (highlightText) {
+                const box = t.querySelector('.split-highlight-box .split-text-line');
+                if (box) box.textContent = highlightText;
+            }
+            if (line4) {
+                const el = t.querySelector('.split-line-4');
+                if (el) el.textContent = line4;
+            }
+        }
+
+        // 좌측텍스트/우측이미지 템플릿용 이미지 설정
+        function setSplitImage(templateId, url) {
+            const t = document.getElementById(templateId);
+            const imageArea = t.querySelector('.split-image-area');
+            if (imageArea) {
+                const placeholder = imageArea.querySelector('.placeholder-img');
+                if (placeholder) {
+                    placeholder.outerHTML = `<img src="${url}">`;
+                }
+            }
+        }
+
+        // 상단텍스트/하단이미지 템플릿용 텍스트 설정 (2줄)
+        function setVerticalText(templateId, line1, line2) {
+            const t = document.getElementById(templateId);
+            if (line1) {
+                const el = t.querySelector('.vertical-line-1');
+                if (el) el.textContent = line1;
+            }
+            if (line2) {
+                const el = t.querySelector('.vertical-line-2');
+                if (el) el.textContent = line2;
+            }
+        }
+
+        // 상단텍스트/하단이미지 템플릿용 이미지 설정
+        function setVerticalImage(templateId, url) {
+            const t = document.getElementById(templateId);
+            const imageArea = t.querySelector('.vertical-image-area');
+            if (imageArea) {
+                const placeholder = imageArea.querySelector('.placeholder-img');
+                if (placeholder) {
+                    placeholder.outerHTML = `<img src="${url}">`;
+                }
+            }
+        }
+
+        // Generate PNG images for all templates
+        async function generateAllTemplateImages() {
+            const btn = document.getElementById('generateBtn');
+            btn.disabled = true;
+            btn.textContent = '생성 중...';
+
+            const templates = document.querySelectorAll('.thumbnail-preview');
+            const zip = [];
+
+            for (let i = 0; i < templates.length; i++) {
+                const template = templates[i];
+                const id = template.id.replace('template', '');
+                btn.textContent = `생성 중... (${i + 1}/${templates.length})`;
+
+                try {
+                    const canvas = await html2canvas(template, {
+                        scale: 0.25, // 1280x720 -> 320x180
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#111'
+                    });
+
+                    // Download each image
+                    const link = document.createElement('a');
+                    link.download = `template-${id}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+
+                    // Small delay between downloads
+                    await new Promise(r => setTimeout(r, 500));
+                } catch (err) {
+                    console.error(`Template ${id} failed:`, err);
+                }
+            }
+
+            btn.disabled = false;
+            btn.textContent = '모든 템플릿 PNG 생성 (다운로드)';
+            alert('모든 템플릿 이미지가 다운로드되었습니다.\n\npublic/images/templates/ 폴더에 저장해주세요.');
+        }
+    </script>
+
+    <!-- Generate button -->
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+        <button id="generateBtn" onclick="generateAllTemplateImages()" style="padding: 15px 25px; font-size: 16px; background: #3B82F6; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+            모든 템플릿 PNG 생성 (다운로드)
+        </button>
+    </div>
+</body>
+</html>
