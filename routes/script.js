@@ -1,7 +1,6 @@
 import express from 'express';
 
 const router = express.Router();
-const AI_302_CHAT_URL = 'https://api.302.ai/v1/chat/completions';
 
 // POST /api/script/generate - AI로 대본 생성
 router.post('/generate', async (req, res) => {
@@ -24,9 +23,9 @@ router.post('/generate', async (req, res) => {
             cute: '귀여운 애교 (~용, ~당, ~쪄). 응~ 그래용~ 대박이당~ 느낌.'
         };
         const toneHint = toneDescriptions[tone] || toneDescriptions.casual;
-        const apiKey = process.env.AI_302_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            return res.status(500).json({ error: 'AI_302_API_KEY not configured' });
+            return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
         }
 
         const themeDescriptions = {
@@ -118,31 +117,32 @@ JSON 형식으로만 답변:
   "description": "설명 2줄\\n\\n#해시태그 5~7개"
 }`;
 
-        const response = await fetch(AI_302_CHAT_URL, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: 'gemini-2.0-flash',
-                messages: [
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ],
-                temperature: 0.8
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.8,
+                    maxOutputTokens: 1024
+                }
             })
         });
 
         if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`302.AI API error: ${error}`);
+            const errorData = await response.json();
+            throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
         }
 
         const data = await response.json();
-        const content = data.choices[0].message.content.trim();
+
+        if (data.promptFeedback?.blockReason) {
+            throw new Error(`Script blocked by safety filters: ${data.promptFeedback.blockReason}`);
+        }
+
+        const content = data.candidates[0].content.parts[0].text.trim();
 
         // JSON 파싱 시도
         let result;
@@ -167,6 +167,191 @@ JSON 형식으로만 답변:
         console.error('Script generation error:', error);
         res.status(500).json({
             error: '대본 생성 중 오류가 발생했습니다',
+            details: error.message
+        });
+    }
+});
+
+// POST /api/script/generate-batch - 여러 주제로 대본 일괄 생성
+router.post('/generate-batch', async (req, res) => {
+    try {
+        const { topics, count, theme, tone } = req.body;
+
+        if (!topics || !Array.isArray(topics) || topics.length === 0) {
+            return res.status(400).json({ error: '주제를 최소 1개 이상 입력해주세요' });
+        }
+
+        if (topics.length > 3) {
+            return res.status(400).json({ error: '주제는 최대 3개까지 입력 가능합니다' });
+        }
+
+        const generationCount = parseInt(count) || 1;
+        if (generationCount < 1 || generationCount > 10) {
+            return res.status(400).json({ error: '생성 개수는 1~10개 사이여야 합니다' });
+        }
+
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+        }
+
+        // 말투 설정
+        const toneDescriptions = {
+            casual: '친근한 해요체 (~해요, ~예요, ~죠). 부드럽고 친근하게.',
+            formal: '정중한 합니다체 (~합니다, ~습니다). 뉴스 앵커처럼 신뢰감 있게.',
+            info: '정보 전달형. 팩트 중심, 간결하고 명확하게. ~이다, ~한다 체.',
+            hype: '흥분 자극형! 느낌표 많이! 대박! 충격! 미쳤다! 이거 실화냐? 식으로.',
+            community: '커뮤 감성 중립. ~함, ~임 체. 담백하게 정보 전달. ㅋㅋ 적당히.',
+            rough: '거친 직설형. 시비 거는 느낌. 뭐? 이것도 몰라? 진짜? 답답하네.',
+            sarcastic: '냉소적 비꼼. 아~ 그렇구나~ 대단하시네~ 비꼬는 느낌.',
+            cute: '귀여운 애교 (~용, ~당, ~쪄). 응~ 그래용~ 대박이당~ 느낌.'
+        };
+
+        const themeDescriptions = {
+            money: '재테크, 돈 관리, 부자 습관',
+            motivation: '동기부여, 힘이 되는 말',
+            selfdev: '자기계발, 성장',
+            love: '연애, 썸, 관계',
+            horror: '공포, 괴담, 무서운 이야기',
+            tips: '생활 꿀팁, 유용한 정보',
+            facts: '신기한 상식, 몰랐던 사실',
+            health: '건강, 운동, 다이어트',
+            korea: '한국의 장점, 국뽕',
+            international: '국제커플, 국제결혼'
+        };
+
+        const toneHint = toneDescriptions[tone] || toneDescriptions.casual;
+        const themeHint = themeDescriptions[theme] || '';
+
+        const allScripts = [];
+        let totalGenerated = 0;
+        let totalRequested = topics.length * generationCount;
+
+        // 각 주제별로 대본 생성
+        for (const topic of topics) {
+            const topicScripts = [];
+
+            for (let i = 0; i < generationCount; i++) {
+                try {
+                    const prompt = `너는 유튜브 쇼츠 바이럴 대본 작가야.
+
+주제: ${topic}
+${themeHint ? `분위기: ${themeHint}` : ''}
+말투: ${toneHint}
+
+예시 1:
+"일본 여자 꼬시려다 망신당한 한국 남자들.
+첫 번째 카톡으로 고백하다 차임.
+일본은 직접 만나서 고백하는게 예의인데 카톡으로 해서 실패.
+두 번째 술김에 고백하다 거절.
+술먹고 고백하면 진정성 없다고 판단해서 즉시 거절.
+세 번째 공항에서 프로포즈하다 망신.
+공개 프로포즈 부담스러워하는 일본 문화 몰라서 대형 사고.
+네 번째 부모님 먼저 소개하다 이별.
+사귀는 사이도 아닌데 부모 소개해서 부담 줘서 도망.
+다섯 번째 비싼 선물로 마음 사려다 실패.
+돈으로 해결하려는 천박한 남자로 오해받아 차임.
+여섯 번째 일본어 못해서 통역 데려가다 망신.
+데이트에 통역 데려간 한심한 모습에 여자가 떠남.
+일곱 번째 한국이 더 잘산다고 무시하다 이별.
+일본 무시하는 발언해서 즉시 관계 정리당함."
+
+작성 규칙:
+1. 후킹 문장으로 시작 (자극적, 충격적, 궁금증 유발)
+2. "첫 번째", "두 번째" 등 번호 매겨서 5~7개 포인트
+3. 각 포인트는 제목 한줄 + 구체적 설명 한줄 (총 2문장씩)
+4. 비교/대조 형식 적극 활용 (A는 이런데 B는 저럼)
+5. 위에서 지정한 말투를 반드시 일관되게 사용
+6. 숫자/통계 적극 활용 (10만원, 3개월, 100번 등)
+7. 50~60초 분량 (400~500자)
+8. 마지막에 구독/좋아요 유도 또는 다음 영상 암시
+9. 같은 주제라도 매번 다른 각도와 내용으로 작성
+
+JSON 형식으로만 답변:
+{
+  "script": "대본 (줄바꿈은 \\n)",
+  "title": "자극적 제목 15자 이내",
+  "description": "설명 2줄\\n\\n#해시태그 5~7개"
+}`;
+
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                temperature: 0.8 + (i * 0.1), // 다양성을 위해 temperature 조금씩 증가
+                                maxOutputTokens: 1024
+                            }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+                    }
+
+                    const data = await response.json();
+
+                    if (data.promptFeedback?.blockReason) {
+                        throw new Error(`Script blocked by safety filters: ${data.promptFeedback.blockReason}`);
+                    }
+
+                    const content = data.candidates[0].content.parts[0].text.trim();
+
+                    // JSON 파싱
+                    let result;
+                    try {
+                        const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/) ||
+                            content.match(/```\s*([\s\S]*?)\s*```/);
+                        const jsonStr = jsonMatch ? jsonMatch[1] : content;
+                        result = JSON.parse(jsonStr);
+                    } catch (parseError) {
+                        result = {
+                            script: content,
+                            title: topic,
+                            description: `${topic} #쇼츠 #유튜브`
+                        };
+                    }
+
+                    topicScripts.push({
+                        ...result,
+                        topicIndex: topics.indexOf(topic),
+                        scriptIndex: i,
+                        topic: topic
+                    });
+
+                    totalGenerated++;
+
+                } catch (error) {
+                    console.error(`Error generating script for topic "${topic}" (${i + 1}/${generationCount}):`, error);
+                    // 에러가 나도 계속 진행
+                }
+            }
+
+            allScripts.push({
+                topic: topic,
+                scripts: topicScripts
+            });
+        }
+
+        res.json({
+            success: true,
+            data: allScripts,
+            stats: {
+                totalRequested: totalRequested,
+                totalGenerated: totalGenerated,
+                topics: topics.length,
+                countPerTopic: generationCount
+            }
+        });
+
+    } catch (error) {
+        console.error('Batch script generation error:', error);
+        res.status(500).json({
+            error: '대본 일괄 생성 중 오류가 발생했습니다',
             details: error.message
         });
     }

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일괄 대본 생성기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-section h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .topic-input {
+            margin-bottom: 1rem;
+        }
+
+        .topic-input label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .topic-input input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .topic-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .stats {
+            background: #fff3cd;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .script-group {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .script-group h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .script-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #667eea;
+        }
+
+        .script-title {
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .script-content {
+            color: #666;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+            margin: 0.5rem 0;
+        }
+
+        .script-actions {
+            margin-top: 0.75rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn-small:hover {
+            background: #5568d3;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-size: 1.1rem;
+            margin: 2rem 0;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 일괄 대본 생성기</h1>
+        <p class="subtitle">주제 3개 × 생성 개수 = 자동 대본 생성</p>
+
+        <div class="form-section">
+            <h3>1️⃣ 주제 입력 (최대 3개)</h3>
+            <div class="topic-input">
+                <label>주제 1</label>
+                <input type="text" id="topic1" placeholder="예: 돈 버는 습관">
+            </div>
+            <div class="topic-input">
+                <label>주제 2 (선택)</label>
+                <input type="text" id="topic2" placeholder="예: 자기계발 방법">
+            </div>
+            <div class="topic-input">
+                <label>주제 3 (선택)</label>
+                <input type="text" id="topic3" placeholder="예: 연애 꿀팁">
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3>2️⃣ 생성 옵션</h3>
+            <div class="topic-input">
+                <label>각 주제당 생성 개수</label>
+                <select id="count">
+                    <option value="1">1개</option>
+                    <option value="2">2개</option>
+                    <option value="3" selected>3개</option>
+                    <option value="4">4개</option>
+                    <option value="5">5개</option>
+                </select>
+            </div>
+            <div class="topic-input">
+                <label>테마</label>
+                <select id="theme">
+                    <option value="">선택 안 함</option>
+                    <option value="money">💰 재테크/돈</option>
+                    <option value="motivation">🔥 동기부여</option>
+                    <option value="selfdev">📚 자기계발</option>
+                    <option value="love">❤️ 연애/관계</option>
+                    <option value="horror">👻 공포/괴담</option>
+                    <option value="tips" selected>💡 꿀팁</option>
+                    <option value="facts">🤔 신기한 사실</option>
+                    <option value="health">💪 건강/운동</option>
+                    <option value="korea">🇰🇷 한국 문화</option>
+                    <option value="international">🌏 국제커플</option>
+                </select>
+            </div>
+            <div class="topic-input">
+                <label>말투</label>
+                <select id="tone">
+                    <option value="casual" selected>친근한 해요체</option>
+                    <option value="formal">정중한 합니다체</option>
+                    <option value="info">정보 전달형</option>
+                    <option value="hype">흥분 자극형!</option>
+                    <option value="community">커뮤니티 감성</option>
+                    <option value="rough">거친 직설형</option>
+                    <option value="sarcastic">냉소적 비꼼</option>
+                    <option value="cute">귀여운 애교</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="stats" id="stats">
+            총 <strong id="totalCount">0</strong>개 대본이 생성됩니다
+        </div>
+
+        <button class="btn" id="generateBtn" onclick="generateScripts()">
+            ✨ 대본 생성 시작
+        </button>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            대본 생성 중... (<span id="progress">0</span> / <span id="total">0</span>)
+        </div>
+
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        // 총 개수 업데이트
+        function updateStats() {
+            const count = parseInt(document.getElementById('count').value);
+            const topic1 = document.getElementById('topic1').value.trim();
+            const topic2 = document.getElementById('topic2').value.trim();
+            const topic3 = document.getElementById('topic3').value.trim();
+
+            let topicCount = 0;
+            if (topic1) topicCount++;
+            if (topic2) topicCount++;
+            if (topic3) topicCount++;
+
+            const total = topicCount * count;
+            document.getElementById('totalCount').textContent = total;
+        }
+
+        document.getElementById('count').addEventListener('change', updateStats);
+        document.getElementById('topic1').addEventListener('input', updateStats);
+        document.getElementById('topic2').addEventListener('input', updateStats);
+        document.getElementById('topic3').addEventListener('input', updateStats);
+
+        async function generateScripts() {
+            const topic1 = document.getElementById('topic1').value.trim();
+            const topic2 = document.getElementById('topic2').value.trim();
+            const topic3 = document.getElementById('topic3').value.trim();
+
+            const topics = [topic1, topic2, topic3].filter(t => t);
+
+            if (topics.length === 0) {
+                alert('최소 1개 주제를 입력해주세요!');
+                return;
+            }
+
+            const count = parseInt(document.getElementById('count').value);
+            const theme = document.getElementById('theme').value;
+            const tone = document.getElementById('tone').value;
+
+            const btn = document.getElementById('generateBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+
+            btn.disabled = true;
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            results.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/script/generate-batch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        topics: topics,
+                        count: count,
+                        theme: theme,
+                        tone: tone
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data.data, data.stats);
+                } else {
+                    alert('생성 실패: ' + (data.error || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('대본 생성 중 오류가 발생했습니다.');
+            } finally {
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayResults(allScripts, stats) {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+
+            let html = `<h2 style="text-align: center; color: #667eea; margin-bottom: 1.5rem;">
+                ✅ 총 ${stats.totalGenerated}개 대본 생성 완료!
+            </h2>`;
+
+            allScripts.forEach((topicGroup, groupIndex) => {
+                html += `
+                    <div class="script-group">
+                        <h3>📌 주제 ${groupIndex + 1}: ${topicGroup.topic} (${topicGroup.scripts.length}개)</h3>
+                `;
+
+                topicGroup.scripts.forEach((script, scriptIndex) => {
+                    html += `
+                        <div class="script-item">
+                            <div class="script-title">${script.title || `대본 ${scriptIndex + 1}`}</div>
+                            <div class="script-content">${script.script}</div>
+                            <div style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">${script.description || ''}</div>
+                            <div class="script-actions">
+                                <button class="btn-small" onclick="copyScript(${groupIndex}, ${scriptIndex})">📋 복사</button>
+                                <button class="btn-small" onclick="downloadScript(${groupIndex}, ${scriptIndex})">💾 다운로드</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+            });
+
+            results.innerHTML = html;
+            results.style.display = 'block';
+            window.generatedScripts = allScripts; // 저장
+        }
+
+        function copyScript(groupIndex, scriptIndex) {
+            const script = window.generatedScripts[groupIndex].scripts[scriptIndex];
+            const text = `제목: ${script.title}\n\n${script.script}\n\n${script.description}`;
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert('대본이 복사되었습니다!');
+            });
+        }
+
+        function downloadScript(groupIndex, scriptIndex) {
+            const script = window.generatedScripts[groupIndex].scripts[scriptIndex];
+            const text = `제목: ${script.title}\n\n${script.script}\n\n${script.description}`;
+
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${script.title}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 초기 stats 업데이트
+        updateStats();
+    </script>
+</body>
+</html>

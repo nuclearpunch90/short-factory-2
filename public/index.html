@@ -340,6 +340,14 @@
                                     🎭 엔터테인먼트형
                                 </div>
                             </label>
+                            <label style="flex: 1; cursor: pointer;">
+                                <input type="radio" name="scriptMode" value="batch"
+                                    onchange="toggleScriptMode()" style="display: none;">
+                                <div class="script-mode-chip"
+                                    style="padding: 10px; text-align: center; border-radius: 6px; transition: all 0.2s;">
+                                    📝 주제 일괄 생성
+                                </div>
+                            </label>
                         </div>
                         <style>
                             input[name="scriptMode"]:checked+div {
@@ -353,8 +361,32 @@
                                 background: transparent;
                                 color: var(--color-gray-600);
                             }
+
+                            @keyframes slideInRight {
+                                from {
+                                    transform: translateX(100%);
+                                    opacity: 0;
+                                }
+                                to {
+                                    transform: translateX(0);
+                                    opacity: 1;
+                                }
+                            }
+
+                            @keyframes slideOutRight {
+                                from {
+                                    transform: translateX(0);
+                                    opacity: 1;
+                                }
+                                to {
+                                    transform: translateX(100%);
+                                    opacity: 0;
+                                }
+                            }
                         </style>
 
+                        <!-- Business/Entertainment Mode Content -->
+                        <div id="businessModeContent">
                         <div class="form-group" style="margin-bottom: 1rem;">
                             <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
                                 <span id="labelName">🏪 가게 이름</span>
@@ -484,6 +516,98 @@
                             style="width: 100%; padding: 1rem; font-weight: 700;">
                             ✨ 대본 생성 시작
                         </button>
+                        </div><!-- End Business/Entertainment Mode Content -->
+
+                        <!-- Batch Topic Mode Content -->
+                        <div id="batchModeContent" style="display: none;">
+                            <div style="background: var(--color-bg-tertiary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                                <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--color-gray-800);">
+                                    💡 사용 방법
+                                </div>
+                                <div style="font-size: 0.85rem; color: var(--color-gray-700); line-height: 1.5;">
+                                    • 최대 3개 주제 입력 가능<br>
+                                    • 각 주제당 생성 개수 선택<br>
+                                    • 총 (주제 수 × 생성 개수)개 대본 생성<br>
+                                    • 생성된 대본은 자동으로 "여러개 생성"에 추가됨
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 1</label>
+                                <input type="text" id="batchTopic1" class="form-control"
+                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
+                                    placeholder="예: 돈 버는 습관">
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 2 (선택)</label>
+                                <input type="text" id="batchTopic2" class="form-control"
+                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
+                                    placeholder="예: 자기계발 방법">
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 3 (선택)</label>
+                                <input type="text" id="batchTopic3" class="form-control"
+                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
+                                    placeholder="예: 연애 꿀팁">
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">🔢 각 주제당 생성 개수</label>
+                                <select id="batchCount"
+                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
+                                    onchange="updateBatchTotal()">
+                                    <option value="1">1개</option>
+                                    <option value="2">2개</option>
+                                    <option value="3" selected>3개</option>
+                                    <option value="4">4개</option>
+                                    <option value="5">5개</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">🎨 테마</label>
+                                <select id="batchTheme"
+                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;">
+                                    <option value="">선택 안 함</option>
+                                    <option value="money">💰 재테크/돈</option>
+                                    <option value="motivation">🔥 동기부여</option>
+                                    <option value="selfdev">📚 자기계발</option>
+                                    <option value="love">❤️ 연애/관계</option>
+                                    <option value="horror">👻 공포/괴담</option>
+                                    <option value="tips" selected>💡 꿀팁</option>
+                                    <option value="facts">🤔 신기한 사실</option>
+                                    <option value="health">💪 건강/운동</option>
+                                    <option value="korea">🇰🇷 한국 문화</option>
+                                    <option value="international">🌏 국제커플</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">🗣️ 말투</label>
+                                <select id="batchTone"
+                                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;">
+                                    <option value="casual" selected>친근한 해요체</option>
+                                    <option value="formal">정중한 합니다체</option>
+                                    <option value="info">정보 전달형</option>
+                                    <option value="hype">흥분 자극형!</option>
+                                    <option value="community">커뮤니티 감성</option>
+                                    <option value="rough">거친 직설형</option>
+                                    <option value="sarcastic">냉소적 비꼼</option>
+                                    <option value="cute">귀여운 애교</option>
+                                </select>
+                            </div>
+
+                            <div style="background: var(--color-bg-tertiary); padding: 1rem; border-radius: 8px; text-align: center; font-weight: 600; color: var(--color-primary); margin-bottom: 1rem;">
+                                총 <span id="batchTotalCount">0</span>개 대본이 생성됩니다
+                            </div>
+
+                            <button id="generateBatchScriptsBtn" class="btn btn-primary" onclick="generateBatchScripts()"
+                                style="width: 100%; padding: 1rem; font-weight: 700;">
+                                ✨ 일괄 대본 생성 시작
+                            </button>
+                        </div><!-- End Batch Mode Content -->
                     </div>
 
                     <!-- 결과 표시 영역 -->
@@ -3049,6 +3173,8 @@ ${toneDesc}
 
         function toggleScriptMode() {
             const mode = document.querySelector('input[name="scriptMode"]:checked').value;
+            const businessModeContent = document.getElementById('businessModeContent');
+            const batchModeContent = document.getElementById('batchModeContent');
             const labelName = document.getElementById('labelName');
             const labelDesc = document.getElementById('labelDescription');
             const storeNameInput = document.getElementById('storeName');
@@ -3056,30 +3182,151 @@ ${toneDesc}
             const locGroup = document.getElementById('locationGroup');
             const labelDetail = document.getElementById('labelDetailInclude');
 
-            if (mode === 'entertainment') {
-                labelName.textContent = '🎬 주제 / 제목';
-                storeNameInput.placeholder = '예: 웃긴 고양이 모음, 여행 브이로그';
-
-                labelDesc.textContent = '📝 영상 내용 설명';
-                storeDescInput.placeholder = '예: 고양이가 점프하다가 넘어지는 장면, 잠자는 모습 등 귀여운 순간들 모음입니다.';
-
-                if (labelDetail) labelDetail.textContent = '제목';
-                if (locGroup) locGroup.style.display = 'none'; // Hide location
-
-                // Update Styles for Entertainment
-                updateStyleOptions(entertainmentScriptStyles, entertainmentIntroStyles, entertainmentOutroStyles);
+            if (mode === 'batch') {
+                // Show batch mode, hide business mode
+                if (businessModeContent) businessModeContent.style.display = 'none';
+                if (batchModeContent) {
+                    batchModeContent.style.display = 'block';
+                    updateBatchTotal(); // Calculate initial total
+                }
             } else {
-                labelName.textContent = '🏪 가게 이름';
-                storeNameInput.placeholder = '예: 고양시 맛집 할매순대국';
+                // Show business mode, hide batch mode
+                if (businessModeContent) businessModeContent.style.display = 'block';
+                if (batchModeContent) batchModeContent.style.display = 'none';
 
-                labelDesc.textContent = '✏️ 가게 설명 / 특징';
-                storeDescInput.placeholder = '예: 40년 전통의 순대국 전문점입니다. 국물이 진하고 고기가 많아요. 24시간 영업합니다.';
+                if (mode === 'entertainment') {
+                    labelName.textContent = '🎬 주제 / 제목';
+                    storeNameInput.placeholder = '예: 웃긴 고양이 모음, 여행 브이로그';
 
-                if (labelDetail) labelDetail.textContent = '이름';
-                if (locGroup) locGroup.style.display = 'block'; // Show location
+                    labelDesc.textContent = '📝 영상 내용 설명';
+                    storeDescInput.placeholder = '예: 고양이가 점프하다가 넘어지는 장면, 잠자는 모습 등 귀여운 순간들 모음입니다.';
 
-                // Update Styles for Business
-                updateStyleOptions(scriptStyles, introStyles, outroStyles);
+                    if (labelDetail) labelDetail.textContent = '제목';
+                    if (locGroup) locGroup.style.display = 'none'; // Hide location
+
+                    // Update Styles for Entertainment
+                    updateStyleOptions(entertainmentScriptStyles, entertainmentIntroStyles, entertainmentOutroStyles);
+                } else {
+                    labelName.textContent = '🏪 가게 이름';
+                    storeNameInput.placeholder = '예: 고양시 맛집 할매순대국';
+
+                    labelDesc.textContent = '✏️ 가게 설명 / 특징';
+                    storeDescInput.placeholder = '예: 40년 전통의 순대국 전문점입니다. 국물이 진하고 고기가 많아요. 24시간 영업합니다.';
+
+                    if (labelDetail) labelDetail.textContent = '이름';
+                    if (locGroup) locGroup.style.display = 'block'; // Show location
+
+                    // Update Styles for Business
+                    updateStyleOptions(scriptStyles, introStyles, outroStyles);
+                }
+            }
+        }
+
+        // Update batch total count
+        function updateBatchTotal() {
+            const topic1 = document.getElementById('batchTopic1')?.value.trim();
+            const topic2 = document.getElementById('batchTopic2')?.value.trim();
+            const topic3 = document.getElementById('batchTopic3')?.value.trim();
+            const count = parseInt(document.getElementById('batchCount')?.value || 3);
+
+            let topicCount = 0;
+            if (topic1) topicCount++;
+            if (topic2) topicCount++;
+            if (topic3) topicCount++;
+
+            const total = topicCount * count;
+            const totalElement = document.getElementById('batchTotalCount');
+            if (totalElement) {
+                totalElement.textContent = total;
+            }
+        }
+
+        // Generate batch scripts
+        async function generateBatchScripts() {
+            const topic1 = document.getElementById('batchTopic1').value.trim();
+            const topic2 = document.getElementById('batchTopic2').value.trim();
+            const topic3 = document.getElementById('batchTopic3').value.trim();
+
+            const topics = [topic1, topic2, topic3].filter(t => t);
+
+            if (topics.length === 0) {
+                alert('최소 1개 주제를 입력해주세요!');
+                return;
+            }
+
+            const count = parseInt(document.getElementById('batchCount').value);
+            const theme = document.getElementById('batchTheme').value;
+            const tone = document.getElementById('batchTone').value;
+
+            const btn = document.getElementById('generateBatchScriptsBtn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading"></span> 대본 생성 중...';
+
+            try {
+                const response = await fetch('/api/script/generate-batch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        topics: topics,
+                        count: count,
+                        theme: theme,
+                        tone: tone
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Flatten all scripts from all topics
+                    const allScripts = [];
+                    data.data.forEach(topicGroup => {
+                        topicGroup.scripts.forEach(script => {
+                            allScripts.push({
+                                script: script.script,
+                                title: script.title,
+                                description: script.description
+                            });
+                        });
+                    });
+
+                    // Populate batch grid
+                    if (typeof window.populateBatchFromScripts === 'function') {
+                        window.populateBatchFromScripts(allScripts);
+
+                        // Show toast notification
+                        const toast = document.createElement('div');
+                        toast.textContent = `✨ ${data.stats.totalGenerated}개 대본이 "여러개 생성"에 추가되었습니다!`;
+                        toast.style.cssText = "position: fixed; bottom: 20px; right: 20px; background: #22c55e; color: white; padding: 1rem 1.5rem; border-radius: 8px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-weight: 600; animation: slideInRight 0.3s ease-out;";
+                        document.body.appendChild(toast);
+                        setTimeout(() => {
+                            toast.style.animation = 'slideOutRight 0.3s ease-in';
+                            setTimeout(() => toast.remove(), 300);
+                        }, 3000);
+
+                        // Scroll to batch section and expand it
+                        const batchSection = document.getElementById('batchContent');
+                        const batchToggle = document.getElementById('batchToggle');
+                        if (batchSection && batchSection.style.display === 'none' && batchToggle) {
+                            batchToggle.click(); // Expand the section
+                        }
+                        setTimeout(() => {
+                            batchToggle?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 100);
+                    } else {
+                        alert(`✅ ${data.stats.totalGenerated}개 대본 생성 완료!\n\n아래 "여러개 생성" 섹션에서 확인하세요.`);
+                    }
+                } else {
+                    alert('생성 실패: ' + (data.error || '알 수 없는 오류'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('대본 생성 중 오류가 발생했습니다.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
             }
         }
 
@@ -3244,6 +3491,13 @@ ${toneDesc}
                     el.addEventListener('change', saveScriptInputs);
                 });
             }
+
+            // Add event listeners for batch topic inputs
+            const batchTopicInputs = ['batchTopic1', 'batchTopic2', 'batchTopic3'];
+            batchTopicInputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', updateBatchTotal);
+            });
         });
     </script>
 </body>
