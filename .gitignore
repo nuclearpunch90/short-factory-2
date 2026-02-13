@@ -23,6 +23,7 @@ public/audio/
 *.wav
 *.m4a
 *.mp4
+*.webm
 *.srt
 *.ass
 *.zip
@@ -101,6 +102,7 @@ youtube-token*.json
 
 # Large Media Assets - specific locations found
 Input/
+inputs/
 Output/
 인풋/
 output/

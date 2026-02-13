@@ -486,11 +486,17 @@ router.post('/generate-video-only', async (req, res) => {
         const formData = new FormData();
 
         // 더미 이미지 추가 (비디오 생성에 필요)
-        const dummyImagePath = path.join(__dirname, '..', 'data', 'remix-shorts', 'templates', template);
-        formData.append('image', await fs.readFile(dummyImagePath), {
-            filename: 'image.png',
-            contentType: 'image/png'
-        });
+        try {
+            const dummyImagePath = path.join(__dirname, '..', 'data', 'remix-shorts', 'templates', template);
+            formData.append('image', await fs.readFile(dummyImagePath), {
+                filename: 'image.png',
+                contentType: 'image/png'
+            });
+        } catch (e) {
+            console.warn('Failed to load template image, using buffer:', e);
+            const dummyImage = Buffer.from('dummy');
+            formData.append('image', dummyImage, 'dummy.jpg');
+        }
 
         formData.append('useRandomClips', 'true');
         formData.append('audioPath', ttsData.audioPath);
@@ -616,18 +622,18 @@ router.post('/generate-video-from-file', async (req, res) => {
         const formData = new FormData();
 
         // 더미 이미지 추가
-        const dummyImagePath = path.join(__dirname, '..', 'data', 'remix-shorts', 'templates', template);
         try {
+            const dummyImagePath = path.join(__dirname, '..', 'data', 'remix-shorts', 'templates', template);
             formData.append('image', await fs.readFile(dummyImagePath), {
                 filename: 'image.png',
                 contentType: 'image/png'
             });
         } catch (e) {
-            // Template might accept video, handle fallback or error? 
-            // Form-data needs 'image' field generally for /generate-video logic check
-            // Let's assume template exists or use a dummy buffer if needed.
-            formData.append('image', Buffer.from('dummy'), 'dummy.jpg');
+            console.warn('Failed to load template image, using buffer:', e);
+            const dummyImage = Buffer.from('dummy');
+            formData.append('image', dummyImage, 'dummy.jpg');
         }
+
 
         formData.append('useRandomClips', 'true');
         formData.append('audioPath', targetAudioPath); // Copied audio path

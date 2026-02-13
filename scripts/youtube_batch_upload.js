@@ -3,6 +3,7 @@ import path from 'path';
 import readline from 'readline';
 import { google } from 'googleapis';
 import { fileURLToPath } from 'url';
+import AccountManager from './account_manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -217,7 +218,7 @@ async function authorize(credentials) {
 /**
  * Upload a single video (without confirmation prompt)
  */
-async function uploadVideo(auth, videoInfo, privacyStatus, index, total, channelInfo) {
+async function uploadVideo(auth, videoInfo, privacyStatus, index, total, channelInfo, accountSequence) {
     return new Promise((resolve, reject) => {
         const youtube = google.youtube({ version: 'v3', auth });
         const currentAccount = detectCurrentAccount();
@@ -225,6 +226,18 @@ async function uploadVideo(auth, videoInfo, privacyStatus, index, total, channel
         let accountDisplay = currentAccount ? `Account ${currentAccount}` : '알 수 없음';
         if (channelInfo) {
             accountDisplay += ` (${channelInfo.title})`;
+        }
+
+        // Calculate scheduled publish time
+        const status = { privacyStatus: privacyStatus };
+        let scheduleInfo = '즉시 공개';
+
+        if (accountSequence > 1) {
+            const delayHours = (accountSequence - 1) * 2;
+            const publishDate = new Date();
+            publishDate.setHours(publishDate.getHours() + delayHours);
+            status.publishAt = publishDate.toISOString();
+            scheduleInfo = `${delayHours}시간 후 공개 (${publishDate.toLocaleString('ko-KR')})`;
         }
 
         // Display upload progress
@@ -235,6 +248,7 @@ async function uploadVideo(auth, videoInfo, privacyStatus, index, total, channel
         console.log(`폴더: ${videoInfo.folder}`);
         console.log(`비디오: ${path.basename(videoInfo.path)}`);
         console.log(`제목: ${videoInfo.title}`);
+        console.log(`공개 설정: ${scheduleInfo}`);
 
         youtube.videos.insert(
             {
@@ -245,9 +259,7 @@ async function uploadVideo(auth, videoInfo, privacyStatus, index, total, channel
                         description: videoInfo.description,
                         tags: ['shorts', 'api_upload'],
                     },
-                    status: {
-                        privacyStatus: privacyStatus,
-                    },
+                    status: status,
                 },
                 media: {
                     body: fs.createReadStream(videoInfo.path),
@@ -312,6 +324,9 @@ async function batchUpload() {
     let tempStats = { ...stats };
     let lastUsedAccount = null;
 
+    // Load AccountManager for account names
+    const accountManager = new AccountManager();
+
     for (let i = 0; i < videos.length; i++) {
         const bestAccount = findBestAccount(tempStats, lastUsedAccount);
 
@@ -320,10 +335,14 @@ async function batchUpload() {
             return;
         }
 
-        // Get channel info for this account
-        switchAccount(bestAccount);
-        const auth = await authorize(credentials);
-        const channelInfo = await getChannelInfo(auth);
+        // Get account name from AccountManager (no API call during planning)
+        let channelInfo;
+        try {
+            const accountData = accountManager.getAccount(`account${bestAccount}`);
+            channelInfo = { title: accountData.name };
+        } catch (err) {
+            channelInfo = { title: '알 수 없음' };
+        }
 
         uploadPlan.push({
             video: videos[i],
@@ -336,16 +355,46 @@ async function batchUpload() {
         lastUsedAccount = bestAccount;
     }
 
-    // Display upload plan
+    // Display upload plan grouped by account
     console.log('━'.repeat(80));
     console.log(`📋 업로드 계획 (총 ${videos.length}개)`);
     console.log('━'.repeat(80));
 
+    // Group by account and add sequence number
+    const groupedByAccount = {};
     for (const plan of uploadPlan) {
-        const channelName = plan.channelInfo ? plan.channelInfo.title : '알 수 없음';
-        console.log(`\n[${plan.index}/${videos.length}] Account ${plan.accountNumber} (${channelName})`);
-        console.log(`      📁 ${plan.video.folder}`);
-        console.log(`      📹 ${plan.video.title}`);
+        const accountKey = plan.accountNumber;
+        if (!groupedByAccount[accountKey]) {
+            groupedByAccount[accountKey] = [];
+        }
+        groupedByAccount[accountKey].push(plan);
+    }
+
+    // Add account sequence number to each plan
+    for (const accountNum in groupedByAccount) {
+        const plans = groupedByAccount[accountNum];
+        for (let i = 0; i < plans.length; i++) {
+            plans[i].accountSequence = i + 1;
+        }
+    }
+
+    // Display grouped
+    for (let accountNum = 1; accountNum <= 8; accountNum++) {
+        const plans = groupedByAccount[accountNum];
+        if (!plans || plans.length === 0) continue;
+
+        const channelName = plans[0].channelInfo ? plans[0].channelInfo.title : '알 수 없음';
+        console.log(`\n📺 Account ${accountNum} (${channelName}) - ${plans.length}개`);
+        console.log('   ' + '─'.repeat(75));
+
+        for (let i = 0; i < plans.length; i++) {
+            const plan = plans[i];
+            const delayHours = i * 2;
+            const scheduleInfo = i === 0 ? '즉시 공개' : `+${delayHours}시간 후 공개`;
+            console.log(`   [${i + 1}] ${plan.video.title}`);
+            console.log(`       📁 ${plan.video.folder}`);
+            console.log(`       ⏰ ${scheduleInfo}`);
+        }
     }
 
     console.log('\n' + '━'.repeat(80));
@@ -395,7 +444,8 @@ async function batchUpload() {
             privacyStatus,
             plan.index,
             videos.length,
-            plan.channelInfo
+            plan.channelInfo,
+            plan.accountSequence
         );
 
         if (result.success) {

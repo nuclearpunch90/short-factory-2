@@ -511,11 +511,29 @@ function parseTimeToSeconds(timeStr) {
 async function extractClipsByScript(inputsDir, outputDir, duration, script, srtContent, segmentDurations, selectedFiles = []) {
     try {
         // inputs 폴더의 모든 비디오 파일 가져오기
-        const files = await fs.readdir(inputsDir);
+        // inputs 폴더의 모든 비디오 파일 가져오기 (70% 소스 - Root Inputs 강제)
+        const rootInputsDir = path.join(__dirname, '..', 'inputs');
+        const files = await fs.readdir(rootInputsDir);
         let videoFiles = files.filter(file => {
             const ext = path.extname(file).toLowerCase();
             return ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(ext);
         });
+
+        // Street inputs 폴더 확인 및 파일 가져오기 (30% 확률로 사용)
+        const streetInputsDir = path.join(__dirname, '..', 'inputs', 'street');
+        let streetVideoFiles = [];
+        try {
+            if (fsSync.existsSync(streetInputsDir)) {
+                const sFiles = await fs.readdir(streetInputsDir);
+                streetVideoFiles = sFiles.filter(file => {
+                    const ext = path.extname(file).toLowerCase();
+                    return ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(ext);
+                });
+                console.log(`Found ${streetVideoFiles.length} street video files in inputs/street`);
+            }
+        } catch (e) {
+            console.warn('Failed to read street inputs directory:', e);
+        }
 
         // Parse selectedVideoFiles if it's a string
         if (typeof selectedFiles === 'string') {
@@ -534,54 +552,14 @@ async function extractClipsByScript(inputsDir, outputDir, duration, script, srtC
 
         console.log(`Found ${videoFiles.length} video files in inputs folder for script extraction`);
 
-        // Stratified Sampling Implementation
-        // 1. Group files by Source Image Index (prefix "N-M_")
-        const groups = {};
-        const noPrefixFiles = [];
-
-        videoFiles.forEach(file => {
-            const match = file.match(/^(\d+)-(\d+)_/);
-            if (match) {
-                const imageIndex = match[1];
-                if (!groups[imageIndex]) groups[imageIndex] = [];
-                groups[imageIndex].push(file);
-            } else {
-                noPrefixFiles.push(file);
-            }
-        });
-
-        // 2. Prepare for shuffling
-        let groupKeys = Object.keys(groups);
-
-        // If no groups found, treat all files as one group
-        if (groupKeys.length === 0 && noPrefixFiles.length > 0) {
-            groups['default'] = [...noPrefixFiles];
-            groupKeys = ['default'];
-        } else if (noPrefixFiles.length > 0) {
-            groups['unknown'] = [...noPrefixFiles];
-            groupKeys.push('unknown');
-        }
-
-        console.log(`[Remix] Found ${groupKeys.length} distinct image source groups.`);
-
-        // 3. Initialize shuffled decks for each group
-        const groupDecks = {};
-        groupKeys.forEach(key => {
-            const files = [...groups[key]];
-            for (let i = files.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [files[i], files[j]] = [files[j], files[i]];
-            }
-            groupDecks[key] = files;
-        });
-
-        // Initial shuffle of groups
-        for (let i = groupKeys.length - 1; i > 0; i--) {
+        // Shuffle all video files for random selection
+        const shuffledVideos = [...videoFiles];
+        for (let i = shuffledVideos.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [groupKeys[i], groupKeys[j]] = [groupKeys[j], groupKeys[i]];
+            [shuffledVideos[i], shuffledVideos[j]] = [shuffledVideos[j], shuffledVideos[i]];
         }
 
-        let currentGroupIndex = 0;
+        let videoIndex = 0;
 
 
         // 스크립트 줄바꿈 기준으로 세그먼트 나누기
@@ -652,95 +630,60 @@ async function extractClipsByScript(inputsDir, outputDir, duration, script, srtC
         for (let i = 0; i < segments.length; i++) {
             const segment = segments[i];
 
-            // 랜덤 비디오 선택 (Stratified Logic) - Initial selection
-            // Get current group key
-            let groupKey = groupKeys[currentGroupIndex];
-            let deck = groupDecks[groupKey];
-
-            if (deck.length === 0) {
-                // Refill
-                const files = [...groups[groupKey]];
-                for (let k = files.length - 1; k > 0; k--) {
-                    const l = Math.floor(Math.random() * (k + 1));
-                    [files[k], files[l]] = [files[l], files[k]];
-                }
-                groupDecks[groupKey] = files;
-                deck = groupDecks[groupKey];
-            }
-
-            const randomVideo = deck.pop();
-            currentGroupIndex = (currentGroupIndex + 1) % groupKeys.length;
-
-            const videoPath = path.join(inputsDir, randomVideo);
-
-            // 비디오 길이 가져오기
-            // 비디오 길이 가져오기
-            // 비디오 길이 가져오기
-            // const ffmpeg = (await import('fluent-ffmpeg')).default;
-            // const ffmpegStatic = (await import('ffmpeg-static')).default;
-            // const ffprobeStatic = (await import('ffprobe-static')).default;
-
-            // Path already set globally, no need to set again here
-
-            const videoDuration = await new Promise((resolve, reject) => {
-                ffmpeg.ffprobe(videoPath, (err, metadata) => {
-                    if (err) reject(err);
-                    else resolve(metadata.format.duration);
-                });
-            });
-
             // 세그먼트 길이를 채우기 위해 여러 개의 짧은 클립 생성
             let remainingDuration = segment.duration;
             let clipIndex = 0;
 
             while (remainingDuration > 0.1) {
-                // 각 반복마다 새로운 랜덤 비디오 선택 (Stratified Logic)
-                // Reuse current video for the first chunk? 
-                // The loop logic below:
-                // If it's the *first* iteration of while loop (clipIndex 0), we want to use 'randomVideo' derived above?
-                // But the loop is `while (remainingDuration > 0.1)`.
-                // Original code picked `randomVideo` before loop, then picked `currentVideo` inside loop.
-                // Wait, original code picked `randomVideo` before loop (line 326) but seemingly DID NOT USE IT for the first clip?
-                // Let's check original code:
-                // Line 326: const randomVideo = ...
-                // Line 338: remainingDuration...
-                // Line 341: while...
-                // Line 343: const currentVideo = ...
-                // Line 362: path: currentVideoPath
+                let currentVideoPath;
+                let isStreetVideo = false;
 
-                // Oops, the original code initialized `randomVideo` at line 326 but seemingly blocked inside the loop it re-picks?
-                // Actually, if the segment is long, it picks multiple videos.
-                // WE SHOULD PICK INSIDE THE LOOP.
+                // 30% Chance to pick from 'street' inputs if available
+                if (streetVideoFiles.length > 0 && Math.random() < 0.3) {
+                    const randomStreetVideo = streetVideoFiles[Math.floor(Math.random() * streetVideoFiles.length)];
+                    currentVideoPath = path.join(streetInputsDir, randomStreetVideo);
+                    isStreetVideo = true;
+                    console.log(`[Mix] Selected STREET video: ${randomStreetVideo}`);
+                } else {
+                    // Normal Selection (Stratified) from ROOT Inputs
 
-                // Get current group key
-                groupKey = groupKeys[currentGroupIndex];
-                deck = groupDecks[groupKey];
+                    // If no root files available, try street fallback
+                    if (videoFiles.length === 0) {
+                        if (streetVideoFiles.length > 0) {
+                            const randomStreetVideo = streetVideoFiles[Math.floor(Math.random() * streetVideoFiles.length)];
+                            currentVideoPath = path.join(streetInputsDir, randomStreetVideo);
+                            isStreetVideo = true;
+                            console.log(`[Mix] Fallback to STREET video (no root files): ${randomStreetVideo}`);
+                        } else {
+                            console.error('No video files available at all!');
+                            break;
+                        }
+                    } else {
+                        // Select next video from shuffled list
+                        const currentVideo = shuffledVideos[videoIndex % shuffledVideos.length];
+                        videoIndex++;
 
-                if (deck.length === 0) {
-                    // Refill
-                    const files = [...groups[groupKey]];
-                    for (let k = files.length - 1; k > 0; k--) {
-                        const l = Math.floor(Math.random() * (k + 1));
-                        [files[k], files[l]] = [files[l], files[k]];
+                        currentVideoPath = path.join(rootInputsDir, currentVideo);
+                        isStreetVideo = false;
                     }
-                    groupDecks[groupKey] = files;
-                    deck = groupDecks[groupKey];
                 }
 
-                const currentVideo = deck.pop();
-                currentGroupIndex = (currentGroupIndex + 1) % groupKeys.length;
-
-                const currentVideoPath = path.join(inputsDir, currentVideo);
-
                 // 현재 비디오 길이 가져오기
-                const currentVideoDuration = await new Promise((resolve, reject) => {
-                    ffmpeg.ffprobe(currentVideoPath, (err, metadata) => {
-                        if (err) reject(err);
-                        else resolve(metadata.format.duration);
+                let currentVideoDuration = 0;
+                try {
+                    currentVideoDuration = await new Promise((resolve, reject) => {
+                        ffmpeg.ffprobe(currentVideoPath, (err, metadata) => {
+                            if (err) reject(err);
+                            else resolve(metadata.format.duration);
+                        });
                     });
-                });
+                } catch (err) {
+                    console.error(`Error probing video ${currentVideoPath}:`, err);
+                    continue; // Skip bad file
+                }
 
                 // 클립 길이: 남은 시간과 비디오 길이 중 작은 값 (최대 2초)
+                // Street video logic also uses 2s max duration automatically here
                 const clipDuration = Math.min(remainingDuration, currentVideoDuration, 2);
 
                 if (clipDuration > 0.1) {
@@ -755,7 +698,7 @@ async function extractClipsByScript(inputsDir, outputDir, duration, script, srtC
                         scriptLine: segment.text
                     });
 
-                    console.log(`Clip ${i + 1}-${clipIndex + 1}: ${currentVideo} (${startTime.toFixed(2)}s - ${(startTime + clipDuration).toFixed(2)}s) duration: ${clipDuration.toFixed(2)}s`);
+                    console.log(`Clip ${i + 1}-${clipIndex + 1}: ${path.basename(currentVideoPath)} (${startTime.toFixed(2)}s - ${(startTime + clipDuration).toFixed(2)}s) duration: ${clipDuration.toFixed(2)}s [Start: ${startTime.toFixed(2)}] ${isStreetVideo ? '[STREET]' : ''}`);
 
                     remainingDuration -= clipDuration;
                     clipIndex++;
@@ -775,12 +718,29 @@ async function extractClipsByScript(inputsDir, outputDir, duration, script, srtC
 // inputs 폴더에서 랜덤 클립 추출 함수 (구버전 - 스크립트 없을 때용)
 async function extractRandomClips(inputsDir, outputDir, duration, selectedFiles = []) {
     try {
-        // inputs 폴더의 모든 비디오 파일 가져오기
-        const files = await fs.readdir(inputsDir);
+        // inputs 폴더의 모든 비디오 파일 가져오기 (70% 소스 - Root Inputs 강제)
+        const rootInputsDir = path.join(__dirname, '..', 'inputs');
+        const files = await fs.readdir(rootInputsDir);
         let videoFiles = files.filter(file => {
             const ext = path.extname(file).toLowerCase();
             return ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(ext);
         });
+
+        // Street inputs 폴더 확인 및 파일 가져오기 (30% 확률로 사용)
+        const streetInputsDir = path.join(__dirname, '..', 'inputs', 'street');
+        let streetVideoFiles = [];
+        try {
+            if (fsSync.existsSync(streetInputsDir)) {
+                const sFiles = await fs.readdir(streetInputsDir);
+                streetVideoFiles = sFiles.filter(file => {
+                    const ext = path.extname(file).toLowerCase();
+                    return ['.mp4', '.avi', '.mov', '.mkv', '.webm'].includes(ext);
+                });
+                console.log(`Found ${streetVideoFiles.length} street video files in inputs/street`);
+            }
+        } catch (e) {
+            console.warn('Failed to read street inputs directory:', e);
+        }
 
         // Parse selectedVideoFiles if it's a string
         if (typeof selectedFiles === 'string') {
@@ -805,100 +765,60 @@ async function extractRandomClips(inputsDir, outputDir, duration, selectedFiles 
         const targetDuration = duration || 30; // 기본 30초
         const maxClips = 50; // 최대 50개까지 허용 (짧은 클립으로도 시간을 채울 수 있도록)
 
-        // Stratified Sampling Implementation
-        // 1. Group files by Source Image Index (prefix "N-M_")
-        const groups = {};
-        const noPrefixFiles = [];
-
-        videoFiles.forEach(file => {
-            const match = file.match(/^(\d+)-(\d+)_/);
-            if (match) {
-                const imageIndex = match[1];
-                if (!groups[imageIndex]) groups[imageIndex] = [];
-                groups[imageIndex].push(file);
-            } else {
-                noPrefixFiles.push(file);
-            }
-        });
-
-        // 2. Prepare for shuffling
-        let groupKeys = Object.keys(groups);
-
-        // If no groups found, treat all files as one group (fallback to simple shuffle)
-        if (groupKeys.length === 0 && noPrefixFiles.length > 0) {
-            groups['default'] = [...noPrefixFiles];
-            groupKeys = ['default'];
-        } else if (noPrefixFiles.length > 0) {
-            // Add non-prefixed files as a separate group? Or distribute?
-            // Let's treat them as a separate "Unknown Source" group
-            groups['unknown'] = [...noPrefixFiles];
-            groupKeys.push('unknown');
-        }
-
-        console.log(`[Remix] Found ${groupKeys.length} distinct image source groups.`);
-
-        // 3. Shuffle & Consume Loop
-        let currentGroupIndex = 0;
-        // Initial shuffle of groups to ensure random start order
-        // Fisher-Yates shuffle for groups
-        for (let i = groupKeys.length - 1; i > 0; i--) {
+        // Shuffle all video files for random selection
+        const shuffledVideos2 = [...videoFiles];
+        for (let i = shuffledVideos2.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [groupKeys[i], groupKeys[j]] = [groupKeys[j], groupKeys[i]];
+            [shuffledVideos2[i], shuffledVideos2[j]] = [shuffledVideos2[j], shuffledVideos2[i]];
         }
 
-        // Initialize shuffled decks for each group
-        const groupDecks = {};
-        groupKeys.forEach(key => {
-            // Create a shuffled copy of files for each group
-            const files = [...groups[key]];
-            for (let i = files.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [files[i], files[j]] = [files[j], files[i]];
-            }
-            groupDecks[key] = files;
-        });
-
-        // Debug log
-        console.log(`[Remix] Group Decks initialized. Available groups: ${groupKeys.join(', ')}`);
-        console.log(`[Remix] Group Keys Order: ${JSON.stringify(groupKeys)}`);
+        let videoIndex2 = 0;
 
         while (totalDuration < targetDuration && clips.length < maxClips) {
-            // Get current group key
-            const groupKey = groupKeys[currentGroupIndex];
-            console.log(`[Remix] Iteration ${clips.length + 1}: Index=${currentGroupIndex}, Group=${groupKey}`);
+            let videoPath;
+            let isStreetVideo = false;
 
-            // Get valid deck for this group
-            let deck = groupDecks[groupKey];
-
-            // If deck is empty, refill and reshuffle
-            if (deck.length === 0) {
-                console.log(`[Remix] Group ${groupKey} exhausted. Refilling...`);
-                const files = [...groups[groupKey]];
-                for (let i = files.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [files[i], files[j]] = [files[j], files[i]];
+            // 30% Chance to pick from 'street' inputs if available
+            if (streetVideoFiles.length > 0 && Math.random() < 0.3) {
+                const randomStreetVideo = streetVideoFiles[Math.floor(Math.random() * streetVideoFiles.length)];
+                videoPath = path.join(streetInputsDir, randomStreetVideo);
+                isStreetVideo = true;
+                console.log(`[Mix] Selected STREET video: ${randomStreetVideo}`);
+            } else {
+                // If no root files available, try street fallback
+                if (videoFiles.length === 0) {
+                    if (streetVideoFiles.length > 0) {
+                        const randomStreetVideo = streetVideoFiles[Math.floor(Math.random() * streetVideoFiles.length)];
+                        videoPath = path.join(streetInputsDir, randomStreetVideo);
+                        isStreetVideo = true;
+                        console.log(`[Mix] Fallback to STREET video (no root files): ${randomStreetVideo}`);
+                    } else {
+                        console.error('No video files available at all!');
+                        break;
+                    }
+                } else {
+                    // Select next video from shuffled list
+                    const randomVideo = shuffledVideos2[videoIndex2 % shuffledVideos2.length];
+                    videoIndex2++;
+                    videoPath = path.join(rootInputsDir, randomVideo);
+                    isStreetVideo = false;
                 }
-                groupDecks[groupKey] = files;
-                deck = groupDecks[groupKey];
             }
 
-            // Pick a unique video from this group (Consume)
-            const randomVideo = deck.pop();
-            const videoPath = path.join(inputsDir, randomVideo);
-
-            // Move to next group for next iteration
-            currentGroupIndex = (currentGroupIndex + 1) % groupKeys.length;
-
-            // If we completed a full cycle of groups, re-shuffle group order for variety?
-            // Optional, but simple cycling is often enough. Let's stick to cycling.
-
             // 비디오 길이 가져오기
-            const videoDuration = await new Promise((resolve, reject) => {
-                ffmpeg.ffprobe(videoPath, (err, metadata) => {
-                    if (err) reject(err);
-                    else resolve(metadata.format.duration);
+            let videoDuration = 0;
+            try {
+                videoDuration = await new Promise((resolve, reject) => {
+                    ffmpeg.ffprobe(videoPath, (err, metadata) => {
+                        if (err) reject(err);
+                        else resolve(metadata.format.duration);
+                    });
                 });
-            });
+            } catch (err) {
+                console.error(`Error probing video ${videoPath}:`, err);
+                continue;
+            }
+
 
             // 각 클립 2초로 고정
             const clipDuration = 2; // 2초 고정
@@ -917,6 +837,7 @@ async function extractRandomClips(inputsDir, outputDir, duration, selectedFiles 
                 duration: actualClipDuration,
                 index: clips.length
             });
+            console.log(`Clip ${clips.length}: ${path.basename(videoPath)} (${startTime.toFixed(2)}s - ${(startTime + actualClipDuration).toFixed(2)}s) duration: ${actualClipDuration.toFixed(2)}s [Start: ${startTime.toFixed(2)}] ${isStreetVideo ? '[STREET]' : ''}`);
 
             totalDuration += actualClipDuration;
         }
@@ -969,13 +890,26 @@ async function concatenateClips(clips, outputPath, audioPath, srtPath, title, te
             ffmpegCommand.input(audioPath);
         }
 
+        // 배너 추가 (있는 경우)
+        const bannerPath = path.join(__dirname, '..', 'data', 'common', 'ads', 'banner.png');
+        const hasBanner = fsSync.existsSync(bannerPath);
+        if (hasBanner) {
+            ffmpegCommand.input(bannerPath).inputOptions(['-loop', '1']);
+        }
+
         // 필터 컴플렉스 생성
         let filterComplex = [];
         const hasTemplate = fsSync.existsSync(templatePath);
         const videoStartIndex = hasTemplate ? 1 : 0;
         const videoCount = clips.length;
         const hasAudio = !!audioPath;
-        const audioIndex = hasTemplate ? videoCount + 1 : videoCount;
+        let audioIndex = hasTemplate ? videoCount + 1 : videoCount;
+        let bannerIndex = audioIndex;
+        if (hasAudio) {
+            bannerIndex = audioIndex + 1;
+        } else if (hasBanner) {
+            audioIndex = bannerIndex;
+        }
 
         // 템플릿이 있는 경우, 템플릿을 1080x1920로 스케일 (꽉 채우기)
         if (hasTemplate) {
@@ -1065,19 +999,36 @@ async function concatenateClips(clips, outputPath, audioPath, srtPath, title, te
         }
 
         // 그 다음 자막 추가 (화면 하단에)
-        let finalVideo = videoWithTitle;
+        let videoWithSubtitles = videoWithTitle;
         if (srtPath && fsSync.existsSync(srtPath)) {
             const normalizedSrtPath = srtPath.replace(/\\/g, '/').replace(/:/g, '\\:');
             const fontsDir = path.join(__dirname, '..', 'data', 'common', 'fonts');
             const normalizedFontsDir = fontsDir.replace(/\\/g, '/').replace(/:/g, '\\:');
 
             filterComplex.push(
-                `[${videoWithTitle}]subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H00000000,BorderStyle=1,Outline=0,Shadow=0.5,Alignment=10,MarginV=30,MarginL=10,MarginR=10,Bold=1'[final]`
+                `[${videoWithTitle}]subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H00000000,BorderStyle=1,Outline=0,Shadow=0.5,Alignment=10,MarginV=30,MarginL=10,MarginR=10,Bold=1'[withsubtitles]`
+            );
+            videoWithSubtitles = 'withsubtitles';
+        }
+
+        // 최상단 배너 오버레이 추가
+        let finalVideo = videoWithSubtitles;
+
+        if (hasBanner) {
+            console.log('Adding top banner overlay:', bannerPath);
+
+            // 배너를 비디오 너비(702px)에 맞게 스케일링하고 최상단(y=0)에 오버레이
+            filterComplex.push(
+                `[${bannerIndex}:v]scale=702:-1[banner]`
+            );
+            filterComplex.push(
+                `[${videoWithSubtitles}][banner]overlay=x=0:y=0:shortest=1[final]`
             );
             finalVideo = 'final';
         } else {
-            // 자막이 없으면 제목만 있는 비디오를 최종으로
-            filterComplex.push(`[${videoWithTitle}]copy[final]`);
+            console.log('Banner not found, skipping overlay');
+            filterComplex.push(`[${videoWithSubtitles}]copy[final]`);
+            finalVideo = 'final';
         }
 
         ffmpegCommand.complexFilter(filterComplex);
@@ -1313,13 +1264,24 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
             const videoPath = path.join(outputDir, videoFilename);
 
             // inputs 폴더 경로 (inputFolder가 지정되면 해당 하위폴더 사용)
+            // inputs 폴더 경로 (inputFolder가 지정되면 해당 하위폴더 사용)
             let inputsDir = path.join(__dirname, '..', 'inputs');
+
             // Check if folder exists in Output directory first (e.g., ai-videos, ai-shorts, etc.)
-            const possibleOutputDir = path.join(__dirname, '..', 'Output', inputFolder);
-            if (inputFolder && inputFolder !== 'all' && fsSync.existsSync(possibleOutputDir)) {
+            // inputFolder가 있을 때만 path.join 실행
+            // inputFolder 유효성 검사 및 Output 폴더 확인
+            let outputDirExists = false;
+            let possibleOutputDir = '';
+
+            if (inputFolder && inputFolder !== 'undefined' && inputFolder !== 'all') {
+                possibleOutputDir = path.join(__dirname, '..', 'Output', inputFolder);
+                outputDirExists = fsSync.existsSync(possibleOutputDir);
+            }
+
+            if (outputDirExists) {
                 inputsDir = possibleOutputDir;
                 console.log(`Using folder from Output directory: ${inputsDir}`);
-            } else if (inputFolder && inputFolder !== 'all') {
+            } else if (inputFolder && inputFolder !== 'undefined' && inputFolder !== 'all') {
                 // Check if this folder is in folder-paths.json
                 const pathsFile = path.join(__dirname, '..', 'folder-paths.json');
                 try {
@@ -1427,14 +1389,21 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
 
                 // 전체 폴더 랜덤 선택 처리
                 if (musicFolder === '__ALL_RANDOM__' || backgroundMusic === '__RANDOM__') {
+                    console.log('[Video DEBUG] Attempting __ALL_RANDOM__ or __RANDOM__ music selection');
                     try {
                         const rootPath = path.join(__dirname, '..', 'background music');
+                        console.log('[Video DEBUG] Root path:', rootPath, 'exists:', fsSync.existsSync(rootPath));
                         if (fsSync.existsSync(rootPath)) {
                             const result = await getFairRandomMusicFromAllFolders(rootPath);
+                            console.log('[Video DEBUG] getFairRandomMusicFromAllFolders result:', result);
                             if (result) {
                                 musicPath = result.path;
                                 console.log(`[Video] Fair Random music selected from all folders: ${result.folder}/${result.filename}`);
+                            } else {
+                                console.log('[Video DEBUG] No music file selected (result is null)');
                             }
+                        } else {
+                            console.log('[Video DEBUG] Root path does not exist');
                         }
                     } catch (e) { console.error('Fair Random music selection from all folders failed:', e); }
                 } else if (musicFolder) {
