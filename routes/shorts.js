@@ -9,12 +9,20 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// Define allowed voices for random selection (Same as ai-video.js)
+// Define allowed voices for random selection
 const PRESET_VOICES = [
-    'mYk0rAapHek2oTw18z8x', // Voice 1
-    '4JJwo477JUAx3HV0T7n7', // Voice 2
-    'QPFsEL6IBxlT15xfiD6C', // Voice 3
-    'uyVNoMrnUku1dZyVEXwD'  // Voice 4
+    'mYk0rAapHek2oTw18z8x', // Voice 1 (ElevenLabs)
+    '4JJwo477JUAx3HV0T7n7', // Voice 2 (ElevenLabs)
+    'QPFsEL6IBxlT15xfiD6C', // Voice 3 (ElevenLabs)
+    'uyVNoMrnUku1dZyVEXwD'  // Voice 4 (ElevenLabs)
+];
+
+// 302.AI TTS voice options (MiniMax Korean only)
+const AI_302_VOICES = [
+    'Korean_energetic_marketer_v1',   // 활기찬 마케터 (기본)
+    'Korean_SweetGirl',               // 달콤한 여성
+    'Korean_CheerfulBoyfriend',       // 쾌활한 남자친구
+    'Korean_BraveYouth'               // 용감한 청년
 ];
 
 // Helper to get local base URL dynamically from request
@@ -77,11 +85,11 @@ router.post('/generate', async (req, res) => {
         const tempDir = path.join(projectDir, 'temp');
         await fs.mkdir(tempDir, { recursive: true });
 
-        // 일관된 목소리를 위해 미리 랜덤 보이스 선정 (또는 지정된 보이스 사용)
+        // 일관된 목소리를 위해 미리 랜덤 보이스 선정 (302.AI TTS)
         let selectedVoiceId = emotion;
-        if (!selectedVoiceId || ['random', 'neutral', 'surprise'].includes(selectedVoiceId)) {
-            selectedVoiceId = PRESET_VOICES[Math.floor(Math.random() * PRESET_VOICES.length)];
-            console.log(`[Shorts] Random voice selected for initial consistency: ${selectedVoiceId}`);
+        if (!selectedVoiceId || !AI_302_VOICES.includes(selectedVoiceId) || ['random', 'neutral', 'surprise'].includes(selectedVoiceId)) {
+            selectedVoiceId = AI_302_VOICES[Math.floor(Math.random() * AI_302_VOICES.length)];
+            console.log(`[Shorts] Random 302.AI voice selected for consistency: ${selectedVoiceId}`);
         }
 
         // 각 세그먼트별로 TTS 생성 (temp 폴더에 저장)
@@ -91,14 +99,13 @@ router.post('/generate', async (req, res) => {
 
             console.log(`Generating TTS for segment ${i + 1}: "${segment.substring(0, 30)}..."`);
 
-            // Use Azure TTS via ai-video endpoint
-            const ttsResponse = await axios.post(`${getBaseUrl(req)}/api/ai-video/generate-tts`, {
+            // Use 302.AI TTS via minimax endpoint
+            const ttsResponse = await axios.post(`${getBaseUrl(req)}/api/minimax/generate-tts`, {
                 title: `${title}_segment_${i + 1}`,
-                text: segment,
-                provider: 'Azure',
-                language: 'Korean',
-                storeName: title,
-                voiceId: selectedVoiceId // Use the pre-selected consistent voice ID
+                content: segment,
+                voiceId: selectedVoiceId, // Use the pre-selected consistent voice ID
+                speed: 1.5, // 1.5x speed
+                projectFolder: title
             }, {
                 headers: {
                     'Authorization': authHeader
@@ -349,11 +356,11 @@ router.post('/generate-tts', async (req, res) => {
         const tempDir = path.join(projectDir, 'temp');
         await fs.mkdir(tempDir, { recursive: true });
 
-        // 일관된 목소리를 위해 미리 랜덤 보이스 선정 (또는 지정된 보이스 사용)
+        // 일관된 목소리를 위해 미리 랜덤 보이스 선정 (302.AI TTS)
         let selectedVoiceId = emotion;
-        if (!selectedVoiceId || ['random', 'neutral', 'surprise'].includes(selectedVoiceId)) {
-            selectedVoiceId = PRESET_VOICES[Math.floor(Math.random() * PRESET_VOICES.length)];
-            console.log(`[Shorts] Random voice selected for consistency: ${selectedVoiceId}`);
+        if (!selectedVoiceId || !AI_302_VOICES.includes(selectedVoiceId) || ['random', 'neutral', 'surprise'].includes(selectedVoiceId)) {
+            selectedVoiceId = AI_302_VOICES[Math.floor(Math.random() * AI_302_VOICES.length)];
+            console.log(`[Shorts] Random 302.AI voice selected for consistency: ${selectedVoiceId}`);
         }
 
         // 각 세그먼트별로 TTS 생성 (temp 폴더에 저장)
@@ -363,14 +370,13 @@ router.post('/generate-tts', async (req, res) => {
 
             console.log(`Generating TTS for segment ${i + 1}: "${segment.substring(0, 30)}..."`);
 
-            // Use Azure TTS via ai-video endpoint
-            const ttsResponse = await axios.post(`${getBaseUrl(req)}/api/ai-video/generate-tts`, {
+            // Use 302.AI TTS via minimax endpoint
+            const ttsResponse = await axios.post(`${getBaseUrl(req)}/api/minimax/generate-tts`, {
                 title: `${title}_segment_${i + 1}`,
-                text: segment,
-                provider: 'Azure',
-                language: 'Korean',
-                storeName: title,
-                voiceId: selectedVoiceId // Use the pre-selected consistent voice ID
+                content: segment,
+                voiceId: selectedVoiceId, // Use the pre-selected consistent voice ID
+                speed: 1.5, // 1.5x speed
+                projectFolder: title
             }, {
                 headers: {
                     'Authorization': authHeader

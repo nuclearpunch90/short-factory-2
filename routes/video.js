@@ -1006,7 +1006,7 @@ async function concatenateClips(clips, outputPath, audioPath, srtPath, title, te
             const normalizedFontsDir = fontsDir.replace(/\\/g, '/').replace(/:/g, '\\:');
 
             filterComplex.push(
-                `[${videoWithTitle}]subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H00000000,BorderStyle=1,Outline=0,Shadow=0.5,Alignment=10,MarginV=30,MarginL=10,MarginR=10,Bold=1'[withsubtitles]`
+                `[${videoWithTitle}]subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H40000000,BorderStyle=1,Outline=1,Shadow=0,Alignment=10,MarginV=30,MarginL=10,MarginR=10,Bold=1'[withsubtitles]`
             );
             videoWithSubtitles = 'withsubtitles';
         }
@@ -1465,7 +1465,7 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
                             .input(audioPath)
                             .input(musicPath)
                             .complexFilter([
-                                `[0:a]volume=1.7,atempo=1.1[tts]`,  // TTS 볼륨 1.7배 증폭, 속도 1.1배
+                                `[0:a]volume=1.7[tts]`,  // TTS 볼륨 1.7배 증폭
                                 `[1:a]volume=0.15,atempo=1.0,aloop=loop=-1:size=2e+09[bg]`,  // 배경음악 볼륨 15%로 감소
                                 `[bg][tts]amix=inputs=2:duration=first:dropout_transition=0[mixed]`
                             ])
@@ -1682,7 +1682,7 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
                     .input(musicPath)
                     .complexFilter([
                         // TTS 볼륨 증폭, 백그라운드 음악 볼륨 감소
-                        `[0:a]volume=1.7,atempo=1.1[tts]`,  // TTS 볼륨 1.7배 증폭, 속도 1.1배
+                        `[0:a]volume=1.7[tts]`,  // TTS 볼륨 1.7배 증폭
                         `[1:a]volume=0.15,atempo=1.0,aloop=loop=-1:size=2e+09[bg]`,  // 배경음악 볼륨 15%로 감소
                         `[bg][tts]amix=inputs=2:duration=first:dropout_transition=0[mixed]`
                     ])
@@ -1742,7 +1742,7 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
 
                 const filterComplex = [
                     `[0:v]format=yuv420p${mainVideoFilter}[base]`,
-                    `[base]subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H00000000,BorderStyle=1,Outline=0,Shadow=0.5,Alignment=10,MarginV=20,MarginL=10,MarginR=10,Bold=1'[subtitled]`,
+                    `[base]subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H40000000,BorderStyle=1,Outline=1,Shadow=0,Alignment=10,MarginV=20,MarginL=10,MarginR=10,Bold=1'[subtitled]`,
                     `movie='${normalizedLogoPath}',scale=180:-1,format=rgba,colorchannelmixer=aa=0.95[logo]`,
                     `[subtitled][logo]overlay=(W-w)/2:H-h-200`
                 ];
@@ -1763,7 +1763,7 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
                 const fontsDir = path.join(__dirname, '..', 'data', 'common', 'fonts');
                 const normalizedFontsDir = fontsDir.replace(/\\/g, '/').replace(/:/g, '\\:');
 
-                const subtitlesFilter = `${mainVideoFilter ? 'format=yuv420p' + mainVideoFilter + ',' : ''}subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H00000000,BorderStyle=1,Outline=0,Shadow=0.5,Alignment=10,MarginV=20,MarginL=10,MarginR=10,Bold=1'`;
+                const subtitlesFilter = `${mainVideoFilter ? 'format=yuv420p' + mainVideoFilter + ',' : ''}subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H40000000,BorderStyle=1,Outline=1,Shadow=0,Alignment=10,MarginV=20,MarginL=10,MarginR=10,Bold=1'`;
 
                 ffmpegCommand.outputOptions([
                     '-c:v libx264',
@@ -2026,7 +2026,7 @@ router.post('/generate-batch-videos', upload.array('images', 9), async (req, res
                             .input(musicPath)
                             .complexFilter([
                                 // 백그라운드 음악을 TTS 길이에 맞춰 자르거나 반복하고 볼륨 조절
-                                `[0:a]volume=1.7,atempo=1.1[tts]`,  // TTS 볼륨 1.7배 증폭, 속도 1.1배
+                                `[0:a]volume=1.7[tts]`,  // TTS 볼륨 1.7배 증폭
                                 `[1:a]volume=0.15,atempo=1.0,aloop=loop=-1:size=2e+09[bg]`,  // 배경음악 볼륨 15%로 감소
                                 `[bg][tts]amix=inputs=2:duration=first:dropout_transition=0[mixed]`
                             ])
@@ -2070,7 +2070,7 @@ router.post('/generate-batch-videos', upload.array('images', 9), async (req, res
                         // 자막과 로고 모두 있는 경우
                         const normalizedBatchSrtPath = batchSrtPath.replace(/\\/g, '/').replace(/:/g, '\\:');
                         const batchFilterComplex = [
-                            `[0:v]subtitles='${normalizedBatchSrtPath}':force_style='Fontsize=14,PrimaryColour=&Hffffff,BackColour=&H000000,BorderStyle=4,Outline=0,Shadow=0,Alignment=6,MarginV=20,MarginL=10,MarginR=10,Bold=1,BorderRadius=8'[subtitled]`,
+                            `[0:v]subtitles='${normalizedBatchSrtPath}':force_style='Fontsize=14,PrimaryColour=&Hffffff,BackColour=&H000000,BorderStyle=4,Outline=1,Shadow=0,Alignment=6,MarginV=20,MarginL=10,MarginR=10,Bold=1,BorderRadius=8'[subtitled]`,
                             `movie='${normalizedBatchLogoPath}',scale=180:-1,format=rgba,colorchannelmixer=aa=0.95[logo]`,
                             `[subtitled][logo]overlay=(W-w)/2:H-h-200`
                         ];
@@ -2088,7 +2088,7 @@ router.post('/generate-batch-videos', upload.array('images', 9), async (req, res
                     } else if (batchHasSrt) {
                         // 자막만 있는 경우
                         const normalizedBatchSrtPath = batchSrtPath.replace(/\\/g, '/').replace(/:/g, '\\:');
-                        const batchSubtitlesFilter = `subtitles='${normalizedBatchSrtPath}':force_style='Fontsize=14,PrimaryColour=&Hffffff,BackColour=&H000000,BorderStyle=4,Outline=0,Shadow=0,Alignment=6,MarginV=20,MarginL=10,MarginR=10,Bold=1,BorderRadius=8'`;
+                        const batchSubtitlesFilter = `subtitles='${normalizedBatchSrtPath}':force_style='Fontsize=14,PrimaryColour=&Hffffff,BackColour=&H000000,BorderStyle=4,Outline=1,Shadow=0,Alignment=6,MarginV=20,MarginL=10,MarginR=10,Bold=1,BorderRadius=8'`;
                         ffmpegCommand.outputOptions([
                             '-c:v libx264',
                             '-c:a aac',

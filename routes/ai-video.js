@@ -1198,75 +1198,145 @@ router.post('/generate-tts', async (req, res) => {
                 localPath: filePath
             });
 
-        } else if (provider === 'Azure') {
+        } else if (provider === 'MiniMax') {
             await ensureAudioDir();
 
-            // Checks for Azure keys
-            const speechKey = process.env.AZURE_SPEECH_KEY;
-            const serviceRegion = process.env.AZURE_SPEECH_REGION;
+            // MiniMax API 키 확인
+            const apiKey = process.env.MINIMAX_API_KEY;
+            const groupId = process.env.MINIMAX_GROUP_ID;
 
-            if (!speechKey || !serviceRegion) {
+            if (!apiKey) {
                 return res.status(400).json({
                     success: false,
-                    error: "Azure API Key or Region is missing. Please configure them in Settings."
+                    error: "MiniMax API Key is missing. Please configure MINIMAX_API_KEY in .env file."
                 });
             }
 
-            const speechConfig = sdk.SpeechConfig.fromSubscription(speechKey, serviceRegion);
+            if (!groupId) {
+                return res.status(400).json({
+                    success: false,
+                    error: "⚠️ MiniMax Group ID is REQUIRED! Please configure MINIMAX_GROUP_ID in .env file. Find it at https://platform.minimax.io → Dashboard or API Keys page."
+                });
+            }
 
-            // Set voice based on language
-            // Using 'Hyunsu' for Korean and 'Andrew Multilingual' for English
-            let rate;
-            if (language === 'Korean') {
-                speechConfig.speechSynthesisVoiceName = "ko-KR-HyunsuNeural";
-                rate = "1.5"; // Korean 1.5x
+            // MiniMax Korean voice options
+            const MINIMAX_KOREAN_VOICES = [
+                'Korean_SweetGirl',               // 달콤한 여성 (기본)
+                'Korean_CheerfulBoyfriend',       // 쾌활한 남자친구
+                'Korean_BraveYouth',              // 용감한 청년
+                'Korean_CharmingElderSister',     // 매력적인 언니
+                'Korean_OptimisticYouth'          // 낙천적인 청년
+            ];
+
+            // 목소리 선택
+            let voiceId = req.body.voiceId || 'Korean_SweetGirl';
+
+            // voiceId가 제공되지 않았거나 리스트에 없으면 기본값 사용
+            if (!voiceId || !MINIMAX_KOREAN_VOICES.includes(voiceId)) {
+                voiceId = 'Korean_SweetGirl';
+                console.log(`[MiniMax] Using default Korean voice: ${voiceId}`);
             } else {
-                speechConfig.speechSynthesisVoiceName = "en-US-AndrewMultilingualNeural";
-                rate = "1.3"; // English 1.3x
+                console.log(`[MiniMax] Using specified Korean voice: ${voiceId}`);
             }
 
             const filePath = path.join(AUDIO_OUTPUT_PATH, ttsFileName);
 
-            // Synthesize to file
-            const audioConfig = sdk.AudioConfig.fromAudioFileOutput(filePath);
-            const synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
-
-            // SSML for speaking rate adjustment
-            // Azure SDK doesn't have a direct 'speakingRate' property on SpeechConfig like Google.
-            // We use SSML to adjust speed.
-            const ssml = `
-                <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="${language === 'Korean' ? 'ko-KR' : 'en-US'}">
-                    <voice name="${speechConfig.speechSynthesisVoiceName}">
-                        <prosody rate="${rate}">
-                            ${text}
-                        </prosody>
-                    </voice>
-                </speak>
-            `;
-
-            synthesizer.speakSsmlAsync(ssml,
-                result => {
-                    if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-                        synthesizer.close();
-                        res.json({
-                            success: true,
-                            audioPath: `/audio/${ttsFileName}`,
-                            localPath: filePath
-                        });
-                    } else {
-                        synthesizer.close();
-                        res.status(500).json({
-                            success: false,
-                            error: `Azure TTS Generation Failed: ${result.errorDetails}`
-                        });
+            try {
+                // 요청 바디 생성 (MiniMax API 공식 구조)
+                const requestBody = {
+                    group_id: groupId,
+                    model: 'speech-01-turbo',
+                    text: text,
+                    voice_setting: {
+                        voice_id: voiceId,
+                        speed: 1.5,  // 1.5배속
+                        vol: 1.0,
+                        pitch: 0
+                    },
+                    audio_setting: {
+                        sample_rate: 24000,
+                        bitrate: 128000,
+                        format: 'mp3',
+                        channel: 1
                     }
-                },
-                error => {
-                    synthesizer.close();
-                    console.error('Azure TTS Error:', error);
-                    res.status(500).json({ success: false, error: error });
+                };
+
+                // 디버그: 요청 내용 확인
+                console.log('[MiniMax] Request Body:', JSON.stringify(requestBody, null, 2));
+                console.log('[MiniMax] API Key exists:', !!apiKey);
+                console.log('[MiniMax] Group ID:', groupId);
+
+                // MiniMax 공식 TTS API 호출 (t2a_v2)
+                const response = await fetch('https://api.minimax.io/v1/t2a_v2', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`MiniMax TTS API Error: ${response.status} ${response.statusText} - ${errorText}`);
                 }
-            );
+
+                const result = await response.json();
+
+                // 응답 구조 확인을 위한 로그
+                console.log('[MiniMax] API Response:', JSON.stringify(result, null, 2));
+
+                // MiniMax API 에러 체크
+                if (result.base_resp && result.base_resp.status_code !== 0) {
+                    const errorCode = result.base_resp.status_code;
+                    const errorMsg = result.base_resp.status_msg;
+
+                    // 특정 에러 코드에 대한 명확한 메시지
+                    if (errorCode === 1008) {
+                        throw new Error(`⚠️ MiniMax 계정 잔액 부족! 크레딧을 충전해주세요. (https://platform.minimax.io)`);
+                    } else if (errorCode === 2013) {
+                        throw new Error(`❌ MiniMax API 파라미터 오류: ${errorMsg}`);
+                    } else {
+                        throw new Error(`MiniMax API Error (${errorCode}): ${errorMsg}`);
+                    }
+                }
+
+                // MiniMax API는 hex-encoded 또는 URL로 오디오를 반환
+                let audioBuffer;
+
+                // MiniMax 공식 응답 형식 처리
+                if (result.data?.audio) {
+                    // hex-encoded 형식 (기본값)
+                    console.log('[MiniMax] Using data.audio (hex-encoded)');
+                    audioBuffer = Buffer.from(result.data.audio, 'hex');
+                } else if (result.data?.audio_url) {
+                    // URL 형식인 경우 다운로드
+                    console.log('[MiniMax] Using data.audio_url');
+                    const audioResponse = await fetch(result.data.audio_url);
+                    const arrayBuffer = await audioResponse.arrayBuffer();
+                    audioBuffer = Buffer.from(arrayBuffer);
+                } else {
+                    console.error('[MiniMax] Unknown response format. Available keys:', Object.keys(result));
+                    if (result.data) console.error('[MiniMax] Data keys:', Object.keys(result.data));
+                    throw new Error('MiniMax API returned no audio data. Check logs for response structure.');
+                }
+
+                await fs.writeFile(filePath, audioBuffer);
+
+                res.json({
+                    success: true,
+                    audioPath: `/audio/${ttsFileName}`,
+                    localPath: filePath
+                });
+
+            } catch (error) {
+                console.error('MiniMax TTS Error:', error);
+                res.status(500).json({
+                    success: false,
+                    error: 'MiniMax TTS 생성 중 오류가 발생했습니다.',
+                    details: error.message
+                });
+            }
 
         } else if (provider === 'ElevenLabs') {
             await ensureAudioDir();
