@@ -19,10 +19,12 @@ const PRESET_VOICES = [
 
 // 302.AI TTS voice options (MiniMax Korean only)
 const AI_302_VOICES = [
-    'Korean_energetic_marketer_v1',   // 활기찬 마케터 (기본)
     'Korean_SweetGirl',               // 달콤한 여성
     'Korean_CheerfulBoyfriend',       // 쾌활한 남자친구
-    'Korean_BraveYouth'               // 용감한 청년
+    'Korean_BraveYouth',              // 용감한 청년
+    'Korean_CharmingElderSister',     // 매력적인 언니
+    'Korean_OptimisticYouth',         // 낙천적인 청년
+    'Korean_energetic_marketer_v1'    // 활기찬 마케터
 ];
 
 // Helper to get local base URL dynamically from request

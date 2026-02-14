@@ -2,6 +2,43 @@ import express from 'express';
 
 const router = express.Router();
 
+// 이모지 제거 함수 (더 포괄적)
+function removeEmojis(text) {
+    if (!text) return text;
+
+    // 이모지와 특수 기호를 제거하는 정규식 (더 포괄적)
+    return text
+        // 이모지 기본 범위 (😀-🫿)
+        .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
+        // 기호 및 픽토그램 (☀-⛿)
+        .replace(/[\u{2600}-\u{26FF}]/gu, '')
+        // 잡다한 기호 (✂-⯿)
+        .replace(/[\u{2702}-\u{27BF}]/gu, '')
+        // 추가 기호 범위 (⌀-⏿)
+        .replace(/[\u{2300}-\u{23FF}]/gu, '')
+        // 별표 및 기타 (⭐-⭕)
+        .replace(/[\u{2B50}-\u{2B55}]/gu, '')
+        // 이모지 확장 범위
+        .replace(/[\u{1F000}-\u{1F02F}]/gu, '')
+        .replace(/[\u{1F0A0}-\u{1F0FF}]/gu, '')
+        .replace(/[\u{1F100}-\u{1F64F}]/gu, '')
+        .replace(/[\u{1F680}-\u{1F6FF}]/gu, '')
+        .replace(/[\u{1F900}-\u{1F9FF}]/gu, '')
+        .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '')
+        .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '')
+        // 변형 선택자 (이모지 스타일 변경)
+        .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
+        // 국기 이모지 (🇦-🇿)
+        .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, '')
+        // 기타 특수문자 (❤, ✨, ✅, ❌ 등)
+        .replace(/[\u{2000}-\u{2BFF}]/gu, '')
+        // Zero Width Joiner (피부톤 조합용)
+        .replace(/\u200D/g, '')
+        // 연속된 공백을 하나로
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 // POST /api/script/generate - AI로 대본 생성
 router.post('/generate', async (req, res) => {
     try {
@@ -109,13 +146,17 @@ ${themeHint ? `분위기: ${themeHint}` : ''}
 6. 숫자/통계 적극 활용 (10만원, 3개월, 100번 등)
 7. **40~59초 분량 (350~450자) - 절대 59초 초과 금지**
 8. 마지막에 구독/좋아요 유도 또는 다음 영상 암시
-9. **이모지 사용 절대 금지** (😱❌⭕💸 등 모든 이모지 사용 불가, TTS가 읽을 수 없음)
+9. **이모지 절대 사용하지 마세요!** (😱❌⭕💸 등 모든 이모지, 특수문자, 그림 기호 금지)
+10. **순수한 한글, 영어, 숫자, 문장부호만 사용**
+11. **느낌표, 물음표는 사용 가능하지만 이모지 절대 불가**
 
-JSON 형식으로만 답변:
+CRITICAL: 이모지를 단 하나라도 사용하면 TTS가 읽을 수 없어서 영상 제작이 불가능합니다!
+
+JSON 형식으로만 답변 (이모지 없이):
 {
-  "script": "대본 (줄바꿈은 \\n)",
-  "title": "자극적 제목 15자 이내",
-  "description": "설명 2줄\\n\\n#해시태그 5~7개"
+  "script": "대본 (줄바꿈은 \\n, 이모지 없이 순수 텍스트만)",
+  "title": "자극적 제목 15자 이내 (이모지 없이)",
+  "description": "설명 2줄\\n\\n#해시태그 5~7개 (이모지 없이)"
 }`;
 
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
@@ -161,6 +202,11 @@ JSON 형식으로만 답변:
                 description: `${topic} #쇼츠 #유튜브`
             };
         }
+
+        // 이모지 제거
+        if (result.script) result.script = removeEmojis(result.script);
+        if (result.title) result.title = removeEmojis(result.title);
+        if (result.description) result.description = removeEmojis(result.description);
 
         res.json({ success: true, data: result });
 
@@ -267,13 +313,17 @@ ${themeHint ? `분위기: ${themeHint}` : ''}
 7. **40~59초 분량 (350~450자) - 절대 59초 초과 금지**
 8. 마지막에 구독/좋아요 유도 또는 다음 영상 암시
 9. 같은 주제라도 매번 다른 각도와 내용으로 작성
-10. **이모지 사용 절대 금지** (😱❌⭕💸 등 모든 이모지 사용 불가, TTS가 읽을 수 없음)
+10. **이모지 절대 사용하지 마세요!** (😱❌⭕💸 등 모든 이모지, 특수문자, 그림 기호 금지)
+11. **순수한 한글, 영어, 숫자, 문장부호만 사용**
+12. **느낌표, 물음표는 사용 가능하지만 이모지 절대 불가**
 
-JSON 형식으로만 답변:
+CRITICAL: 이모지를 단 하나라도 사용하면 TTS가 읽을 수 없어서 영상 제작이 불가능합니다!
+
+JSON 형식으로만 답변 (이모지 없이):
 {
-  "script": "대본 (줄바꿈은 \\n)",
-  "title": "자극적 제목 15자 이내",
-  "description": "설명 2줄\\n\\n#해시태그 5~7개"
+  "script": "대본 (줄바꿈은 \\n, 이모지 없이 순수 텍스트만)",
+  "title": "자극적 제목 15자 이내 (이모지 없이)",
+  "description": "설명 2줄\\n\\n#해시태그 5~7개 (이모지 없이)"
 }`;
 
                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
@@ -317,6 +367,11 @@ JSON 형식으로만 답변:
                             description: `${topic} #쇼츠 #유튜브`
                         };
                     }
+
+                    // 이모지 제거
+                    if (result.script) result.script = removeEmojis(result.script);
+                    if (result.title) result.title = removeEmojis(result.title);
+                    if (result.description) result.description = removeEmojis(result.description);
 
                     topicScripts.push({
                         ...result,

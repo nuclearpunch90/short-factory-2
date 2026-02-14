@@ -33,8 +33,8 @@ function loadUploadStats() {
         console.warn('⚠️  통계 파일 로드 실패, 초기화합니다.');
     }
 
-    // Ensure all accounts 1-10 exist in stats (add missing accounts with 0)
-    for (let i = 1; i <= 10; i++) {
+    // Ensure all accounts 1-4 exist in stats (add missing accounts with 0)
+    for (let i = 1; i <= 4; i++) {
         if (stats[i] === undefined) {
             stats[i] = 0;
         }
@@ -61,7 +61,7 @@ function findBestAccount(stats, lastUsedAccount) {
     let bestAccount = null;
     let minUploads = Infinity;
 
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 4; i++) {
         // Skip last used account to prevent consecutive uploads
         if (i === lastUsedAccount) continue;
 
@@ -100,7 +100,7 @@ function detectCurrentAccount() {
     try {
         const currentToken = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf8'));
 
-        for (let i = 1; i <= 10; i++) {
+        for (let i = 1; i <= 4; i++) {
             const accountTokenPath = path.join(PROJECT_ROOT, `youtube-token-account${i}.json`);
             if (fs.existsSync(accountTokenPath)) {
                 const accountToken = JSON.parse(fs.readFileSync(accountTokenPath, 'utf8'));
@@ -337,13 +337,75 @@ async function batchUpload() {
     });
     console.log('');
 
+    // 우선순위 중복 제거: 각 우선순위당 최대 4개 (계정 수만큼) 선택
+    const MAX_ACCOUNTS = 4;
+    const priorityGroups = new Map();
+    const filteredVideos = [];
+    const skippedVideos = [];
+
+    // 우선순위별로 그룹화
+    videos.forEach(video => {
+        if (video.priority && video.priority < 999) {
+            if (!priorityGroups.has(video.priority)) {
+                priorityGroups.set(video.priority, []);
+            }
+            priorityGroups.get(video.priority).push(video);
+        } else {
+            // 우선순위 없음 (999) - 나중에 추가
+            priorityGroups.set(999, priorityGroups.get(999) || []);
+            priorityGroups.get(999).push(video);
+        }
+    });
+
+    // 우선순위 순서대로 정렬
+    const sortedPriorities = Array.from(priorityGroups.keys()).sort((a, b) => a - b);
+
+    // 각 우선순위별로 최대 4개씩 선택
+    sortedPriorities.forEach(priority => {
+        const videosInGroup = priorityGroups.get(priority);
+
+        if (priority === 999) {
+            // 우선순위 없음 - 모두 포함
+            filteredVideos.push(...videosInGroup);
+        } else {
+            // 우선순위 설정된 경우 - 최대 4개만 선택
+            const selectedCount = Math.min(videosInGroup.length, MAX_ACCOUNTS);
+            filteredVideos.push(...videosInGroup.slice(0, selectedCount));
+
+            // 나머지는 건너뜀
+            if (videosInGroup.length > selectedCount) {
+                videosInGroup.slice(selectedCount).forEach(video => {
+                    skippedVideos.push({ video, reason: `우선순위 ${priority} (최대 ${MAX_ACCOUNTS}개 초과)` });
+                });
+            }
+        }
+    });
+
+    // 건너뛴 비디오가 있으면 알림
+    if (skippedVideos.length > 0) {
+        console.log('⚠️  우선순위 중복으로 건너뛴 비디오:');
+        skippedVideos.forEach(({ video, reason }) => {
+            console.log(`   ❌ ${video.title} (${reason})`);
+        });
+        console.log('');
+    }
+
+    // 필터링된 비디오로 교체
+    const originalCount = videos.length;
+    videos.length = 0;
+    videos.push(...filteredVideos);
+
+    if (videos.length < originalCount) {
+        console.log(`📊 ${originalCount}개 중 ${videos.length}개 비디오 선택됨 (중복 제거)\n`);
+    }
+
     // Load credentials
     const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
 
     // Load upload statistics
     let stats = loadUploadStats();
     console.log('📊 현재 업로드 통계:');
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 4; i++) {
         const tokenPath = path.join(PROJECT_ROOT, `youtube-token-account${i}.json`);
         if (fs.existsSync(tokenPath)) {
             console.log(`   Account ${i}: ${stats[i] || 0}개`);
@@ -412,7 +474,7 @@ async function batchUpload() {
     }
 
     // Display grouped
-    for (let accountNum = 1; accountNum <= 10; accountNum++) {
+    for (let accountNum = 1; accountNum <= 4; accountNum++) {
         const plans = groupedByAccount[accountNum];
         if (!plans || plans.length === 0) continue;
 
@@ -519,7 +581,7 @@ async function batchUpload() {
     console.log(`📝 전체: ${videos.length}개`);
     console.log('━'.repeat(80));
     console.log('📈 최종 업로드 통계:');
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= 4; i++) {
         const tokenPath = path.join(PROJECT_ROOT, `youtube-token-account${i}.json`);
         if (fs.existsSync(tokenPath)) {
             console.log(`   Account ${i}: ${stats[i] || 0}개`);

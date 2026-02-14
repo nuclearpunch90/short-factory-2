@@ -1,0 +1,46 @@
+{
+  "clicks": [
+    {
+      "index": 0,
+      "x": 615,
+      "y": 604,
+      "target": "BUTTON"
+    },
+    {
+      "index": 1,
+      "x": 323,
+      "y": 781,
+      "target": "svg"
+    },
+    {
+      "index": 2,
+      "x": 353,
+      "y": 681,
+      "target": "DIV"
+    },
+    {
+      "index": 3,
+      "x": 945,
+      "y": 111,
+      "target": "DIV"
+    },
+    {
+      "index": 4,
+      "x": 1110,
+      "y": 109,
+      "target": "DIV"
+    },
+    {
+      "index": 5,
+      "x": 1105,
+      "y": 115,
+      "target": "DIV"
+    }
+  ],
+  "recordedAt": "2026-02-14T09:37:42.180Z",
+  "screenSize": {
+    "width": 1280,
+    "height": 900
+  },
+  "totalClicks": 6
+}

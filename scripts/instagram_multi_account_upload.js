@@ -96,6 +96,7 @@ function findAllVideos() {
                 let hashtags = '';
 
                 // Read info.txt for metadata
+                let priority = 999;
                 if (fs.existsSync(infoPath)) {
                     try {
                         const infoContent = fs.readFileSync(infoPath, 'utf8');
@@ -106,6 +107,8 @@ function findAllVideos() {
                                 title = line.replace('제목:', '').trim();
                             } else if (line.startsWith('설명:')) {
                                 description = line.replace('설명:', '').trim();
+                            } else if (line.startsWith('우선순위:')) {
+                                priority = parseInt(line.replace('우선순위:', '').trim()) || 999;
                             } else if (line.startsWith('#')) {
                                 hashtags += line.trim() + ' ';
                             }
@@ -122,7 +125,8 @@ function findAllVideos() {
                     path: videoPath,
                     folder: folder,
                     title: title,
-                    caption: caption
+                    caption: caption,
+                    priority: priority
                 });
             }
         }
@@ -254,437 +258,154 @@ async function uploadToInstagram(page, video, accountName, index, total) {
         await fileInput.uploadFile(video.path);
         await delay(5000);
 
-        // Check for "동영상이 릴스로 공유됩니다" popup and click "확인"
-        console.log('📋 릴스 안내 팝업 확인 중...');
+        // Check for popups and close them
+        console.log('📋 팝업 확인 및 닫기...');
         try {
+            // Strategy 1: Click "확인" button for Reels info popup
             const confirmButtons = await page.$$('button');
             for (const button of confirmButtons) {
                 const buttonText = await page.evaluate(el => el.textContent, button);
                 if (buttonText && buttonText.includes('확인')) {
-                    console.log('✓ 릴스 안내 팝업 확인 버튼 클릭');
+                    console.log('  ✓ 릴스 안내 팝업 "확인" 클릭');
                     await button.click();
                     await delay(2000);
                     break;
                 }
             }
+
+            // Strategy 2: Click back arrow or close buttons
+            const allButtons = await page.$$('button, div[role="button"], svg');
+            for (const button of allButtons) {
+                const ariaLabel = await page.evaluate(el => el.getAttribute('aria-label'), button);
+                const buttonText = await page.evaluate(el => el.textContent, button);
+
+                // Back button, Close button, or Not now
+                if (ariaLabel && (ariaLabel.includes('Close') || ariaLabel.includes('닫기') || ariaLabel.includes('Back') || ariaLabel.includes('뒤로'))) {
+                    console.log(`  ✓ 팝업 닫기 버튼 클릭: "${ariaLabel}"`);
+                    await button.click();
+                    await delay(2000);
+                    break;
+                }
+                if (buttonText && (buttonText.includes('Not now') || buttonText.includes('나중에') || buttonText.includes('취소'))) {
+                    console.log('  ✓ "Not now" 버튼 클릭');
+                    await button.click();
+                    await delay(2000);
+                    break;
+                }
+            }
+
+            // Strategy 3: Press ESC key to close popup
+            console.log('  📋 ESC 키로 팝업 닫기 시도...');
+            await page.keyboard.press('Escape');
+            await delay(1500);
+
+            // Strategy 4: Click outside popup area (center-left of screen)
+            console.log('  📋 팝업 바깥쪽 클릭 시도...');
+            await page.mouse.click(100, 450); // Left side, middle height
+            await delay(1500);
+
         } catch (e) {
-            console.log('  (팝업 없음, 계속 진행)');
+            console.log('  (팝업 처리 완료)');
         }
 
         // Set aspect ratio to vertical (9:16) for Reels - REQUIRED!
         console.log('📐 세로 비율(9:16) 설정 중... (필수!)');
 
-        // Wait for crop screen to load
-        await delay(3000);
-
-        // Take screenshot for debugging
-        await page.screenshot({ path: `instagram-crop-screen-before-${Date.now()}.png` });
-        console.log('  📸 자르기 화면 스크린샷 저장 (비율 변경 전)');
-
-        // STEP 1: Click aspect ratio button (bottom-left corner)
-        console.log('  🎯 단계 1: 좌측 하단 비율 변경 버튼 클릭...');
-
-        const ratioMenuOpened = await page.evaluate(() => {
-            const windowHeight = window.innerHeight;
-            const windowWidth = window.innerWidth;
-
-            console.log(`Window size: ${windowWidth}x${windowHeight}`);
-
-            // Strategy 1: Find SVG icons in bottom-left corner
-            const allSVGs = Array.from(document.querySelectorAll('svg'));
-
-            // Filter SVGs in bottom-left corner
-            const bottomLeftSVGs = allSVGs.filter(svg => {
-                const rect = svg.getBoundingClientRect();
-                if (rect.width === 0 || rect.height === 0) return false;
-
-                // Very bottom of screen (last 150px), left side (first 400px)
-                const isBottomCorner = rect.bottom > windowHeight - 150;
-                const isLeftSide = rect.left < 400;
-
-                return isBottomCorner && isLeftSide;
-            });
-
-            console.log(`Found ${bottomLeftSVGs.length} SVG icons in bottom-left corner`);
-
-            if (bottomLeftSVGs.length > 0) {
-                // Sort by bottom position (lowest first), then leftmost
-                bottomLeftSVGs.sort((a, b) => {
-                    const rectA = a.getBoundingClientRect();
-                    const rectB = b.getBoundingClientRect();
-
-                    const bottomDiff = rectB.bottom - rectA.bottom;
-                    if (Math.abs(bottomDiff) < 20) {
-                        return rectA.left - rectB.left; // If similar bottom position, prefer leftmost
-                    }
-                    return bottomDiff; // Otherwise prefer lowest
-                });
-
-                // Get the first (lowest, leftmost) SVG
-                const svg = bottomLeftSVGs[0];
-                const rect = svg.getBoundingClientRect();
-
-                console.log(`Found ratio button SVG at (${Math.round(rect.left)}, ${Math.round(rect.top)}), bottom: ${Math.round(rect.bottom)}`);
-
-                // Try to find button parent and click it
-                let parent = svg.parentElement;
-                let clicked = false;
-
-                // Search for button parent
-                while (parent && parent !== document.body) {
-                    if (parent.tagName === 'BUTTON' || parent.getAttribute('role') === 'button') {
-                        console.log('Found button parent, clicking it');
-                        parent.click();
-                        clicked = true;
-                        break;
-                    }
-                    parent = parent.parentElement;
-                }
-
-                // If no button parent found, dispatch click event on SVG
-                if (!clicked) {
-                    console.log('No button parent found, dispatching click event on SVG');
-                    const clickEvent = new MouseEvent('click', {
-                        view: window,
-                        bubbles: true,
-                        cancelable: true
-                    });
-                    svg.dispatchEvent(clickEvent);
-                    clicked = true;
-                }
-
-                return {
-                    success: clicked,
-                    position: `(${Math.round(rect.left)}, ${Math.round(rect.top)})`,
-                    bottom: Math.round(rect.bottom),
-                    x: Math.round(rect.left + rect.width / 2),
-                    y: Math.round(rect.top + rect.height / 2)
-                };
-            }
-
-            // Strategy 2: Find buttons in absolute bottom-left corner
-            console.log('Strategy 2: Looking for buttons in bottom-left corner...');
-            const allButtons = Array.from(document.querySelectorAll('button, div[role="button"]'));
-            const bottomLeftButtons = [];
-
-            for (const btn of allButtons) {
-                const rect = btn.getBoundingClientRect();
-
-                if (rect.width === 0 || rect.height === 0) continue;
-
-                // Absolute bottom (last 100px), left side (first 400px)
-                const isBottom = rect.bottom > windowHeight - 100;
-                const isLeft = rect.left < 400;
-
-                if (isBottom && isLeft) {
-                    bottomLeftButtons.push({
-                        element: btn,
-                        left: rect.left,
-                        bottom: rect.bottom
-                    });
-                }
-            }
-
-            console.log(`Found ${bottomLeftButtons.length} buttons in bottom-left corner`);
-
-            if (bottomLeftButtons.length > 0) {
-                // Sort by bottom (lowest first), then left (leftmost first)
-                bottomLeftButtons.sort((a, b) => {
-                    const bottomDiff = b.bottom - a.bottom;
-                    if (Math.abs(bottomDiff) < 20) {
-                        return a.left - b.left;
-                    }
-                    return bottomDiff;
-                });
-
-                const target = bottomLeftButtons[0];
-                console.log(`Clicking button at (${Math.round(target.left)}, ${Math.round(target.bottom)})`);
-                target.element.click();
-
-                return {
-                    success: true,
-                    position: `(${Math.round(target.left)}, ${Math.round(target.bottom)})`
-                };
-            }
-
-            return { success: false };
-        });
-
-        if (!ratioMenuOpened.success) {
-            const screenshot = `instagram-no-ratio-button-${Date.now()}.png`;
-            await page.screenshot({ path: screenshot });
-            throw new Error('❌ 좌측 하단에서 비율 변경 버튼을 찾을 수 없습니다!');
-        }
-
-        console.log(`  ✅ 비율 메뉴 열기 성공: ${ratioMenuOpened.position}`);
-
-        // Enable console log from browser to see debug info
-        page.on('console', msg => console.log('  [Browser]', msg.text()));
-
-        // Wait SHORT time and try to find 9:16 option quickly
-        console.log('  ⏳ 메뉴 로딩 대기 중... (짧은 대기)');
-        await delay(1000); // Reduced from 3000 to 1000
-
-        // STEP 2: Select 9:16 from the menu QUICKLY
-        console.log('  🎯 단계 2: 9:16 비율 선택 (빠른 시도)...');
-
-        let ratio916Selected = false;
-
-        // Try finding and clicking 9:16 button
-        const ratio916Clicked = await page.evaluate(() => {
-            const windowHeight = window.innerHeight;
-            const windowWidth = window.innerWidth;
-
-            console.log(`=== DEBUG: Window ${windowWidth}x${windowHeight} ===`);
-
-            // First, let's see ALL elements on left side with any text
-            const leftElements = Array.from(document.querySelectorAll('*'));
-            let leftCount = 0;
-            let textElements = [];
-
-            for (const el of leftElements) {
-                const rect = el.getBoundingClientRect();
-                if (rect.width === 0 || rect.height === 0) continue;
-                if (rect.left >= 600) continue; // Only left side
-
-                const text = el.textContent?.trim() || '';
-                if (text.length > 0 && text.length < 50 && rect.width < 300 && rect.height < 200) {
-                    leftCount++;
-                    if (leftCount <= 20) { // Log first 20
-                        textElements.push(`  ${leftCount}. "${text}" at (${Math.round(rect.left)}, ${Math.round(rect.top)}) [${Math.round(rect.width)}x${Math.round(rect.height)}]`);
-                    }
-                }
-            }
-
-            console.log(`Found ${leftCount} text elements on left side (showing first 20):`);
-            textElements.forEach(msg => console.log(msg));
-
-            // Strategy 1: Find all elements with "9:16" text in LEFT area
-            const allElements = Array.from(document.querySelectorAll('*'));
-            const ratio916Elements = [];
-
-            for (const el of allElements) {
-                const text = el.textContent || '';
-                const rect = el.getBoundingClientRect();
-
-                if (rect.width === 0 || rect.height === 0) continue;
-
-                // Must be in left side of screen and contain "9:16"
-                const isLeftSide = rect.left < 600; // Increased from 500
-                const has916Text = text.includes('9:16') || text.includes('9 : 16') || text.match(/9\s*:\s*16/);
-
-                if (isLeftSide && has916Text) {
-                    // Relaxed size constraint
-                    if (rect.width < 300 && rect.height < 200) {
-                        ratio916Elements.push({
-                            element: el,
-                            text: text.trim(),
-                            left: rect.left,
-                            top: rect.top,
-                            width: rect.width,
-                            height: rect.height
-                        });
-                    }
-                }
-            }
-
-            console.log(`Found ${ratio916Elements.length} elements with "9:16" text`);
-
-            if (ratio916Elements.length > 0) {
-                // Sort by size (prefer smaller, more specific elements)
-                ratio916Elements.sort((a, b) => {
-                    const areaA = a.width * a.height;
-                    const areaB = b.width * b.height;
-                    return areaA - areaB; // Smaller first
-                });
-
-                for (const item of ratio916Elements) {
-                    console.log(`  - Element at (${Math.round(item.left)}, ${Math.round(item.top)}): "${item.text}" (${Math.round(item.width)}x${Math.round(item.height)})`);
-                }
-
-                // Try clicking each element until one works
-                for (const item of ratio916Elements) {
-                    const el = item.element;
-
-                    // Try to find clickable parent (button or div with role="button")
-                    let clickTarget = el;
-                    let parent = el.parentElement;
-
-                    while (parent && parent !== document.body) {
-                        if (parent.tagName === 'BUTTON' || parent.getAttribute('role') === 'button') {
-                            clickTarget = parent;
-                            console.log(`Found clickable parent for "9:16"`);
-                            break;
-                        }
-                        parent = parent.parentElement;
-                    }
-
-                    // Click it
-                    console.log(`Clicking 9:16 element/button`);
-                    clickTarget.click();
-
-                    return { success: true, text: '9:16' };
-                }
-            }
-
-            // Strategy 2: Find buttons in left side menu area (STRICT filtering)
-            console.log('Strategy 2: Looking for buttons in left menu area...');
-            const allButtons = Array.from(document.querySelectorAll('button, div[role="button"]'));
-
-            const leftMenuButtons = allButtons.filter(btn => {
-                const rect = btn.getBoundingClientRect();
-                if (rect.width === 0 || rect.height === 0) return false;
-
-                const text = btn.textContent?.trim() || '';
-
-                // STRICT: Exclude common non-menu buttons
-                const excludedTexts = ['팔로우', 'Follow', '제주', '조회수', '좋아요', 'Like', 'Share', '공유'];
-                if (excludedTexts.some(excluded => text.includes(excluded))) {
-                    return false;
-                }
-
-                // Left side, vertically centered area
-                const isLeftSide = rect.left < 500 && rect.left > 250; // Between 250-500 (not too far left)
-                const isMiddleArea = rect.top > windowHeight * 0.3 && rect.top < windowHeight * 0.7; // More centered
-
-                return isLeftSide && isMiddleArea;
-            });
-
-            console.log(`Found ${leftMenuButtons.length} buttons in left menu area`);
-
-            if (leftMenuButtons.length > 0) {
-                // Sort from top to bottom
-                leftMenuButtons.sort((a, b) => {
-                    const rectA = a.getBoundingClientRect();
-                    const rectB = b.getBoundingClientRect();
-                    return rectA.top - rectB.top;
-                });
-
-                // Log all buttons for debugging
-                for (let i = 0; i < Math.min(leftMenuButtons.length, 5); i++) {
-                    const btn = leftMenuButtons[i];
-                    const rect = btn.getBoundingClientRect();
-                    const text = btn.textContent?.trim() || '';
-                    console.log(`  [${i}] Button at (${Math.round(rect.left)}, ${Math.round(rect.top)}): "${text.substring(0, 20)}"`);
-                }
-
-                // The 3rd button from top is usually 9:16 (0=원본, 1=1:1, 2=9:16, 3=16:9)
-                if (leftMenuButtons.length >= 3) {
-                    const button = leftMenuButtons[2];
-                    const text = button.textContent || '';
-                    console.log(`Clicking 3rd menu button (index 2, should be 9:16): "${text.trim()}"`);
-                    button.click();
-                    return { success: true, text: text.trim() };
-                }
-
-                // If less than 3 buttons, try clicking the last one
-                if (leftMenuButtons.length > 0) {
-                    const button = leftMenuButtons[leftMenuButtons.length - 1];
-                    const text = button.textContent || '';
-                    console.log(`Less than 3 buttons, clicking last button: "${text.trim()}"`);
-                    button.click();
-                    return { success: true, text: text.trim() };
-                }
-            }
-
-            return { success: false };
-        });
-
-        if (ratio916Clicked.success) {
-            console.log(`  ✅ 9:16 버튼 클릭 성공: "${ratio916Clicked.text}"`);
-            ratio916Selected = true;
-            await delay(2000);
-        }
-
-        // Take final screenshot
-        await page.screenshot({ path: `instagram-after-916-${Date.now()}.png` });
-        console.log('  📸 9:16 선택 후 스크린샷 저장');
-
-        // Verify selection
-        if (!ratio916Selected) {
-            const screenshot = `instagram-failed-916-${Date.now()}.png`;
-            await page.screenshot({ path: screenshot });
-            console.log(`  📸 실패 스크린샷 저장: ${screenshot}`);
-
-            throw new Error('❌ 9:16 비율을 선택할 수 없습니다. Instagram Reels는 9:16 비율이 필수입니다!');
-        }
-
-        console.log('  ✅ 9:16 세로 비율 설정 완료!');
-
-        // Click "Next" button (crop page) - try multiple methods
-        console.log('➡️  자르기 화면 - 다음 버튼 클릭...');
-        let cropNextClicked = await clickNextButtonSmart(page, '자르기');
-        if (!cropNextClicked) {
-            throw new Error('자르기 화면에서 다음 버튼을 찾을 수 없습니다');
-        }
-        await delay(5000); // Wait for transition
-
-        // Click "Next" button again (filters page)
-        console.log('➡️  필터 화면 - 다음 버튼 클릭...');
-        let filterNextClicked = await clickNextButtonSmart(page, '필터');
-        if (!filterNextClicked) {
-            throw new Error('필터 화면에서 다음 버튼을 찾을 수 없습니다');
-        }
-        await delay(5000); // Wait for caption page to load
-
-        // Add caption
-        console.log('✍️  캡션 입력...');
-
-        let captionAdded = false;
-
-        // Try to find caption input by clicking on any textarea or contenteditable
+        // Wait for crop screen to load (wait for "자르기" text or video preview)
+        console.log('  ⏳ 자르기 화면 로딩 대기 중...');
         try {
-            // First try: find by aria-label
-            let captionInput = await page.$('[aria-label*="캡션"]');
-
-            // Second try: find contenteditable div
-            if (!captionInput) {
-                captionInput = await page.$('div[contenteditable="true"]');
-            }
-
-            // Third try: find any textarea
-            if (!captionInput) {
-                captionInput = await page.$('textarea');
-            }
-
-            if (captionInput) {
-                console.log('✓ 캡션 입력란 발견');
-                await captionInput.click();
-                await delay(500);
-
-                // Clear any existing text
-                await page.keyboard.down('Control');
-                await page.keyboard.press('a');
-                await page.keyboard.up('Control');
-                await page.keyboard.press('Backspace');
-
-                // Type caption
-                await page.keyboard.type(video.caption);
-                captionAdded = true;
-                console.log('✓ 캡션 입력 완료');
-            } else {
-                console.log('⚠️  캡션 입력란을 찾지 못했습니다 (선택사항이므로 계속 진행)');
-            }
+            // Wait for the crop screen header with "자르기" text
+            await page.waitForFunction(() => {
+                const allText = Array.from(document.querySelectorAll('*'))
+                    .map(el => el.textContent?.trim())
+                    .filter(text => text && text.length < 20);
+                return allText.some(text => text === '자르기' || text.includes('Crop'));
+            }, { timeout: 15000 });
+            console.log('  ✅ 자르기 화면 로드 완료!');
         } catch (e) {
-            console.log('⚠️  캡션 입력 중 오류 (선택사항이므로 계속 진행)');
+            console.log('  ⚠️ 자르기 화면 감지 실패, 계속 진행...');
         }
 
+        // Additional wait for UI to stabilize
         await delay(2000);
 
-        // Take screenshot before clicking share
-        await page.screenshot({ path: `instagram-before-share-${Date.now()}.png` });
-        console.log('📸 공유 전 스크린샷 저장');
+        // Load recorded click coordinates
+        const coordsFile = path.join(PROJECT_ROOT, 'instagram-click-coords.json');
+        let coords = null;
 
-        // Click "Share" button with smart detection
-        console.log('🚀 게시 중...');
-        const shareClicked = await clickShareButtonSmart(page);
-
-        if (!shareClicked) {
-            // Take screenshot if share button not found
-            await page.screenshot({ path: `instagram-share-not-found-${Date.now()}.png` });
-            console.log('📸 공유 버튼을 찾지 못해 스크린샷 저장');
-            throw new Error('공유하기 버튼을 찾을 수 없습니다');
+        if (fs.existsSync(coordsFile)) {
+            try {
+                coords = JSON.parse(fs.readFileSync(coordsFile, 'utf8'));
+                console.log('  ✅ 녹화된 클릭 좌표 로드 완료');
+                console.log(`  📍 총 ${coords.totalClicks || coords.clicks?.length || 0}개의 클릭 좌표`);
+            } catch (e) {
+                console.log('  ⚠️ 좌표 파일 읽기 실패');
+                coords = null;
+            }
+        } else {
+            console.log('  ⚠️ 좌표 파일 없음');
+            console.log('  💡 먼저 "node scripts/setup_instagram_clicks.js" 실행하세요');
         }
+
+        // Use recorded coordinates if available, otherwise fail
+        if (!coords || !coords.clicks || coords.clicks.length === 0) {
+            const screenshot = `instagram-no-coords-${Date.now()}.png`;
+            await page.screenshot({ path: screenshot });
+            throw new Error('❌ 좌표 파일이 없습니다. "node scripts/setup_instagram_clicks.js" 먼저 실행하세요!');
+        }
+
+        // Replay recorded clicks with caption insertion
+        console.log('  🎯 녹화된 클릭 재생 중...');
+        for (let i = 0; i < coords.clicks.length; i++) {
+            const click = coords.clicks[i];
+
+            // Special handling: After click 5 (index 4), add caption before click 6
+            if (i === 5) {
+                console.log('');
+                console.log('✍️  캡션 입력 중...');
+
+                // Wait for caption textarea to be ready
+                await delay(2000);
+
+                try {
+                    // Try multiple selectors for caption field
+                    const captionField = await page.$('textarea[aria-label*="caption"], textarea[aria-label*="캡션"], textarea[placeholder*="Write"], div[contenteditable="true"][role="textbox"]');
+
+                    if (captionField) {
+                        await captionField.click();
+                        await delay(500);
+
+                        // Type caption
+                        await captionField.type(video.caption, { delay: 50 });
+                        console.log('  ✅ 캡션 입력 완료');
+
+                        await delay(1000);
+                    } else {
+                        console.log('  ⚠️  캡션 입력 필드를 찾을 수 없습니다');
+                    }
+                } catch (e) {
+                    console.log('  ⚠️  캡션 입력 실패:', e.message);
+                }
+
+                console.log('');
+            }
+
+            // Click the coordinate
+            console.log(`  ${i + 1}/${coords.clicks.length}: (${click.x}, ${click.y}) 클릭`);
+            await page.mouse.click(click.x, click.y);
+
+            // Wait between clicks (adjust timing as needed)
+            if (i === 0) {
+                // After first click (ratio button), wait for menu
+                await delay(1000);
+            } else if (i < coords.clicks.length - 1) {
+                // Between other clicks
+                await delay(2000);
+            }
+        }
+
+        console.log('  ✅ 모든 녹화된 클릭 재생 완료!');
+        console.log('  ✅ 업로드 완료! (녹화된 순서: 비율 변경 → 9:16 → 다음들 → 캡션 → 공유)');
 
         console.log('⏳ 업로드 처리 대기 중...');
 
@@ -711,8 +432,8 @@ async function uploadToInstagram(page, video, accountName, index, total) {
 
                 // Check if we're back on home page or profile
                 const onHomePage = window.location.pathname === '/' ||
-                                  window.location.pathname.startsWith('/p/') ||
-                                  !window.location.pathname.includes('create');
+                    window.location.pathname.startsWith('/p/') ||
+                    !window.location.pathname.includes('create');
 
                 // Check if upload dialog is closed
                 const hasUploadDialog = document.querySelector('[role="dialog"]') !== null;
@@ -1407,6 +1128,9 @@ async function batchUpload() {
         if (args[i] === '--setup') setupOnly = true;
     }
 
+    // Sort videos by priority (ascending, lower number = higher priority)
+    videos.sort((a, b) => a.priority - b.priority);
+
     const videosToUpload = videos.slice(0, limit);
 
     // Distribute videos across accounts
@@ -1431,16 +1155,44 @@ async function batchUpload() {
     }
 
     for (let i = 1; i <= 8; i++) {
-        const count = accountGroups[i] ? accountGroups[i].length : 0;
+        const accountVideos = accountGroups[i] || [];
+        const count = accountVideos.length;
         const accountName = accounts[`account${i}`]?.name || `account${i}`;
         const currentCount = stats[i] || 0;
         console.log(`   계정 ${i} (${accountName}): ${count}개 업로드 예정 (현재 총 ${currentCount}개)`);
+
+        // List video titles
+        for (let j = 0; j < accountVideos.length; j++) {
+            console.log(`      ${j + 1}. ${accountVideos[j].title}`);
+        }
+        if (count > 0) console.log(''); // Add spacing between accounts
     }
 
     console.log('━'.repeat(80));
     console.log(`🖥️  Headless 모드: ${headless ? 'ON' : 'OFF'}`);
     console.log('━'.repeat(80));
     console.log('');
+
+    // Ask for confirmation before proceeding
+    if (!setupOnly) {
+        console.log('━'.repeat(80));
+        console.log('⚠️  위 분배 계획으로 업로드를 진행하시겠습니까?');
+        console.log('━'.repeat(80));
+        process.stdout.write('계속하려면 "y" 입력 후 Enter (취소: 다른 키): ');
+
+        const answer = await new Promise(resolve => {
+            process.stdin.once('data', data => {
+                resolve(data.toString().trim().toLowerCase());
+            });
+        });
+
+        if (answer !== 'y') {
+            console.log('\n❌ 업로드 취소됨');
+            return;
+        }
+
+        console.log('\n✅ 업로드를 시작합니다!\n');
+    }
 
     // Setup mode: just ensure all accounts are logged in
     if (setupOnly) {

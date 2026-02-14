@@ -162,10 +162,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <label>AI 목소리</label>
                         <select class="emotion-select">
                             <option value="random">Random (Default)</option>
-                            <option value="mYk0rAapHek2oTw18z8x">Voice 1</option>
-                            <option value="4JJwo477JUAx3HV0T7n7">Voice 2</option>
-                            <option value="QPFsEL6IBxlT15xfiD6C">Voice 3</option>
-                            <option value="uyVNoMrnUku1dZyVEXwD">Voice 4</option>
+                            <option value="Korean_SweetGirl">Korean_SweetGirl (달콤한 여성)</option>
+                            <option value="Korean_CheerfulBoyfriend">Korean_CheerfulBoyfriend (쾌활한 남자친구)</option>
+                            <option value="Korean_BraveYouth">Korean_BraveYouth (용감한 청년)</option>
+                            <option value="Korean_CharmingElderSister">Korean_CharmingElderSister (매력적인 언니)</option>
+                            <option value="Korean_OptimisticYouth">Korean_OptimisticYouth (낙천적인 청년)</option>
+                            <option value="Korean_energetic_marketer_v1">Korean_energetic_marketer_v1 (활기찬 마케터)</option>
                         </select>
                     </div>
 
