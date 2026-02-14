@@ -22,19 +22,24 @@ const STATS_PATH = path.join(PROJECT_ROOT, 'youtube-upload-stats.json');
  * Load upload statistics from file
  */
 function loadUploadStats() {
+    let stats = {};
+
+    // Try to load existing stats
     try {
         if (fs.existsSync(STATS_PATH)) {
-            return JSON.parse(fs.readFileSync(STATS_PATH, 'utf8'));
+            stats = JSON.parse(fs.readFileSync(STATS_PATH, 'utf8'));
         }
     } catch (error) {
         console.warn('⚠️  통계 파일 로드 실패, 초기화합니다.');
     }
 
-    // Initialize stats for accounts 1-8
-    const stats = {};
-    for (let i = 1; i <= 8; i++) {
-        stats[i] = 0;
+    // Ensure all accounts 1-10 exist in stats (add missing accounts with 0)
+    for (let i = 1; i <= 10; i++) {
+        if (stats[i] === undefined) {
+            stats[i] = 0;
+        }
     }
+
     return stats;
 }
 
@@ -56,7 +61,7 @@ function findBestAccount(stats, lastUsedAccount) {
     let bestAccount = null;
     let minUploads = Infinity;
 
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 10; i++) {
         // Skip last used account to prevent consecutive uploads
         if (i === lastUsedAccount) continue;
 
@@ -95,7 +100,7 @@ function detectCurrentAccount() {
     try {
         const currentToken = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf8'));
 
-        for (let i = 1; i <= 8; i++) {
+        for (let i = 1; i <= 10; i++) {
             const accountTokenPath = path.join(PROJECT_ROOT, `youtube-token-account${i}.json`);
             if (fs.existsSync(accountTokenPath)) {
                 const accountToken = JSON.parse(fs.readFileSync(accountTokenPath, 'utf8'));
@@ -166,8 +171,9 @@ function findAllVideos() {
 
                 let title = path.basename(file, '.mp4');
                 let description = ''; // 항상 빈 상태로 업로드
+                let priority = 999; // 기본값: 우선순위 없음 (맨 뒤)
 
-                // Try to read info.txt (제목만 읽기)
+                // Try to read info.txt (제목과 우선순위 읽기)
                 if (fs.existsSync(infoPath)) {
                     try {
                         const infoContent = fs.readFileSync(infoPath, 'utf8');
@@ -176,6 +182,13 @@ function findAllVideos() {
                         for (const line of lines) {
                             if (line.startsWith('제목:')) {
                                 title = line.replace('제목:', '').trim();
+                            }
+                            if (line.startsWith('우선순위:')) {
+                                const priorityStr = line.replace('우선순위:', '').trim();
+                                const parsedPriority = parseInt(priorityStr);
+                                if (!isNaN(parsedPriority)) {
+                                    priority = parsedPriority;
+                                }
                             }
                             // 설명은 읽지 않음 - 항상 빈 상태로 업로드
                         }
@@ -189,11 +202,15 @@ function findAllVideos() {
                     title: title,
                     description: description,
                     folder: folder,
-                    folderPath: folderPath
+                    folderPath: folderPath,
+                    priority: priority
                 });
             }
         }
     }
+
+    // 우선순위 순서대로 정렬 (1 -> 2 -> 3 -> 999)
+    videos.sort((a, b) => a.priority - b.priority);
 
     return videos;
 }
@@ -229,15 +246,23 @@ async function uploadVideo(auth, videoInfo, privacyStatus, index, total, channel
         }
 
         // Calculate scheduled publish time
-        const status = { privacyStatus: privacyStatus };
-        let scheduleInfo = '즉시 공개';
+        let status;
+        let scheduleInfo;
 
-        if (accountSequence > 1) {
+        if (accountSequence === 1) {
+            // First video: immediately public
+            status = { privacyStatus: 'public' };
+            scheduleInfo = '즉시 공개 (public)';
+        } else {
+            // Rest: private with scheduled publish time
             const delayHours = (accountSequence - 1) * 2;
             const publishDate = new Date();
             publishDate.setHours(publishDate.getHours() + delayHours);
-            status.publishAt = publishDate.toISOString();
-            scheduleInfo = `${delayHours}시간 후 공개 (${publishDate.toLocaleString('ko-KR')})`;
+            status = {
+                privacyStatus: 'private',
+                publishAt: publishDate.toISOString()
+            };
+            scheduleInfo = `${delayHours}시간 후 자동 공개 (${publishDate.toLocaleString('ko-KR')})`;
         }
 
         // Display upload progress
@@ -304,13 +329,21 @@ async function batchUpload() {
 
     console.log(`✅ ${videos.length}개의 비디오를 찾았습니다.\n`);
 
+    // Display priority-sorted video list
+    console.log('📋 우선순위 정렬 순서:');
+    videos.forEach((video, idx) => {
+        const priorityTag = video.priority && video.priority < 999 ? `[우선순위 ${video.priority}]` : '[우선순위 없음]';
+        console.log(`   ${idx + 1}. ${priorityTag} ${video.title}`);
+    });
+    console.log('');
+
     // Load credentials
     const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
 
     // Load upload statistics
     let stats = loadUploadStats();
     console.log('📊 현재 업로드 통계:');
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 10; i++) {
         const tokenPath = path.join(PROJECT_ROOT, `youtube-token-account${i}.json`);
         if (fs.existsSync(tokenPath)) {
             console.log(`   Account ${i}: ${stats[i] || 0}개`);
@@ -379,7 +412,7 @@ async function batchUpload() {
     }
 
     // Display grouped
-    for (let accountNum = 1; accountNum <= 8; accountNum++) {
+    for (let accountNum = 1; accountNum <= 10; accountNum++) {
         const plans = groupedByAccount[accountNum];
         if (!plans || plans.length === 0) continue;
 
@@ -390,15 +423,16 @@ async function batchUpload() {
         for (let i = 0; i < plans.length; i++) {
             const plan = plans[i];
             const delayHours = i * 2;
-            const scheduleInfo = i === 0 ? '즉시 공개' : `+${delayHours}시간 후 공개`;
-            console.log(`   [${i + 1}] ${plan.video.title}`);
+            const scheduleInfo = i === 0 ? '즉시 공개 (public)' : `+${delayHours}시간 후 자동 공개 (private → public)`;
+            const priorityTag = plan.video.priority && plan.video.priority < 999 ? ` [우선순위 ${plan.video.priority}]` : '';
+            console.log(`   [${i + 1}] ${plan.video.title}${priorityTag}`);
             console.log(`       📁 ${plan.video.folder}`);
             console.log(`       ⏰ ${scheduleInfo}`);
         }
     }
 
     console.log('\n' + '━'.repeat(80));
-    console.log(`🔒 공개 설정: ${privacyStatus}`);
+    console.log('🔒 공개 설정: 첫 번째 비디오는 즉시 public, 나머지는 2시간 간격으로 자동 공개');
     console.log('━'.repeat(80));
 
     // Get user confirmation
@@ -485,7 +519,7 @@ async function batchUpload() {
     console.log(`📝 전체: ${videos.length}개`);
     console.log('━'.repeat(80));
     console.log('📈 최종 업로드 통계:');
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 10; i++) {
         const tokenPath = path.join(PROJECT_ROOT, `youtube-token-account${i}.json`);
         if (fs.existsSync(tokenPath)) {
             console.log(`   Account ${i}: ${stats[i] || 0}개`);

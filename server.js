@@ -36,6 +36,13 @@ const app = express();
 const PORT = process.env.PORT || 4567;
 app.set('port', PORT);
 
+// 타임아웃 설정 (10분 = 600초)
+app.use((req, res, next) => {
+  req.setTimeout(600000); // 10분
+  res.setTimeout(600000); // 10분
+  next();
+});
+
 // JSON 응답 UTF-8 설정
 app.set('json spaces', 2);
 app.set('json escape', false);
@@ -115,10 +122,16 @@ const startServer = async () => {
   try {
     await createDirectories();
     console.log('Starting HTTP server...');
-    app.listen(PORT, '0.0.0.0', () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${PORT}`);
       console.log(`Network access: http://192.168.0.8:${PORT}`);
     });
+
+    // 서버 타임아웃 설정 (10분)
+    server.timeout = 600000;
+    server.keepAliveTimeout = 610000; // timeout보다 약간 길게
+    server.headersTimeout = 620000; // keepAliveTimeout보다 길게
+    console.log('Server timeout configured: 10 minutes');
   } catch (err) {
     console.error('Failed to start server:', err);
   }

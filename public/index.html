@@ -525,10 +525,11 @@
                                     💡 사용 방법
                                 </div>
                                 <div style="font-size: 0.85rem; color: var(--color-gray-700); line-height: 1.5;">
-                                    • 최대 3개 주제 입력 가능<br>
-                                    • 각 주제당 생성 개수 선택<br>
+                                    • 최대 3개 주제 입력 가능 (각 주제당 최대 10개)<br>
+                                    • 각 주제당 우선순위 자동 부여 (주제1=우선1, 주제2=우선2, 주제3=우선3)<br>
                                     • 총 (주제 수 × 생성 개수)개 대본 생성<br>
-                                    • 생성된 대본은 자동으로 "여러개 생성"에 추가됨
+                                    • 생성된 대본은 자동으로 "여러개 생성"에 추가됨<br>
+                                    • 업로드 시 우선순위 순서대로 처리 (1 → 2 → 3)
                                 </div>
                             </div>
 
@@ -563,6 +564,11 @@
                                     <option value="3" selected>3개</option>
                                     <option value="4">4개</option>
                                     <option value="5">5개</option>
+                                    <option value="6">6개</option>
+                                    <option value="7">7개</option>
+                                    <option value="8">8개</option>
+                                    <option value="9">9개</option>
+                                    <option value="10">10개</option>
                                 </select>
                             </div>
 
@@ -3222,6 +3228,52 @@ ${toneDesc}
             }
         }
 
+        // Save batch topics to localStorage
+        function saveBatchTopics() {
+            const batchData = {
+                topic1: document.getElementById('batchTopic1')?.value || '',
+                topic2: document.getElementById('batchTopic2')?.value || '',
+                topic3: document.getElementById('batchTopic3')?.value || '',
+                count: document.getElementById('batchCount')?.value || '3',
+                theme: document.getElementById('batchTheme')?.value || '',
+                tone: document.getElementById('batchTone')?.value || 'casual'
+            };
+            localStorage.setItem('batchTopicsCache', JSON.stringify(batchData));
+            console.log('💾 주제 저장됨:', batchData);
+        }
+
+        // Load batch topics from localStorage
+        function loadBatchTopics() {
+            try {
+                const cached = localStorage.getItem('batchTopicsCache');
+                if (cached) {
+                    const batchData = JSON.parse(cached);
+                    console.log('📂 캐시 불러옴:', batchData);
+
+                    const topic1El = document.getElementById('batchTopic1');
+                    const topic2El = document.getElementById('batchTopic2');
+                    const topic3El = document.getElementById('batchTopic3');
+                    const countEl = document.getElementById('batchCount');
+                    const themeEl = document.getElementById('batchTheme');
+                    const toneEl = document.getElementById('batchTone');
+
+                    if (topic1El) topic1El.value = batchData.topic1 || '';
+                    if (topic2El) topic2El.value = batchData.topic2 || '';
+                    if (topic3El) topic3El.value = batchData.topic3 || '';
+                    if (countEl) countEl.value = batchData.count || '3';
+                    if (themeEl) themeEl.value = batchData.theme || '';
+                    if (toneEl) toneEl.value = batchData.tone || 'casual';
+
+                    updateBatchTotal();
+                    console.log('✅ 주제 복원 완료');
+                } else {
+                    console.log('ℹ️  저장된 주제 없음');
+                }
+            } catch (e) {
+                console.error('❌ 캐시 불러오기 실패:', e);
+            }
+        }
+
         // Update batch total count
         function updateBatchTotal() {
             const topic1 = document.getElementById('batchTopic1')?.value.trim();
@@ -3280,16 +3332,26 @@ ${toneDesc}
                 const data = await response.json();
 
                 if (data.success) {
-                    // Flatten all scripts from all topics
+                    // Flatten all scripts from all topics with priority tags
                     const allScripts = [];
-                    data.data.forEach(topicGroup => {
+                    data.data.forEach((topicGroup, topicIndex) => {
                         topicGroup.scripts.forEach(script => {
                             allScripts.push({
                                 script: script.script,
                                 title: script.title,
-                                description: script.description
+                                description: script.description,
+                                priority: script.topicIndex + 1 // 주제1=우선순위1, 주제2=우선순위2, 주제3=우선순위3
                             });
                         });
+                    });
+
+                    // Sort by priority (1 -> 2 -> 3)
+                    allScripts.sort((a, b) => a.priority - b.priority);
+
+                    // 콘솔에 우선순위별 정렬 결과 출력
+                    console.log('✅ 대본 생성 완료 - 우선순위별 정렬됨:');
+                    allScripts.forEach((script, idx) => {
+                        console.log(`  ${idx + 1}. [우선순위 ${script.priority}] ${script.title}`);
                     });
 
                     // Populate batch grid
@@ -3496,8 +3558,27 @@ ${toneDesc}
             const batchTopicInputs = ['batchTopic1', 'batchTopic2', 'batchTopic3'];
             batchTopicInputs.forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.addEventListener('input', updateBatchTotal);
+                if (el) {
+                    el.addEventListener('input', () => {
+                        updateBatchTotal();
+                        saveBatchTopics();
+                    });
+                }
             });
+
+            // Add event listeners for batch selectors (count, theme, tone)
+            const batchSelectors = ['batchCount', 'batchTheme', 'batchTone'];
+            batchSelectors.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('change', saveBatchTopics);
+                }
+            });
+
+            // Load cached batch topics on page load (with delay to ensure DOM is ready)
+            setTimeout(() => {
+                loadBatchTopics();
+            }, 100);
         });
     </script>
 </body>

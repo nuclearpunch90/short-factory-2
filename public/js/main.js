@@ -179,12 +179,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
                             <select class="music-folder-select" style="flex: 1;" onchange="updateBatchMusicFiles(this)">
                                 <option value="">폴더 선택...</option>
-                                <option value="__ALL_RANDOM__">🎲 전체 폴더 (랜덤)</option>
+                                <option value="__ALL_RANDOM__" selected>🎲 전체 폴더 (랜덤)</option>
                             </select>
                         </div>
                         <select class="music-select">
-                            <option value="">음악 선택...</option>
-                            <option value="__RANDOM__">🎲 랜덤 선택</option>
+                            <option value="__RANDOM__" selected>🎲 랜덤 선택</option>
                         </select>
                     </div>
 
@@ -218,6 +217,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.populateBatchFromScripts = function (scripts) {
         if (!scripts || !Array.isArray(scripts) || scripts.length === 0) return;
 
+        console.log('📋 배치 스크립트 추가:', scripts.length, '개');
+        scripts.forEach((s, i) => {
+            console.log(`  [${i + 1}] 우선순위: ${s.priority || '없음'}, 제목: ${s.title}`);
+        });
+
         // 1. 필요한 개수만큼 생성
         createBatchItems(scripts.length);
 
@@ -227,12 +231,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (i >= items.length) return;
             const item = items[i];
             const textarea = item.querySelector('.batch-json');
+            const header = item.querySelector('.batch-item-header h4');
 
             const jsonData = {
                 script: data.script,
                 title: data.title,
-                description: data.description
+                description: data.description,
+                priority: data.priority || 0  // 우선순위 태그 (1, 2, 3)
             };
+
+            // 우선순위 배지 추가
+            if (data.priority && data.priority > 0) {
+                const priorityColors = {
+                    1: '#FFD700',  // 금색
+                    2: '#C0C0C0',  // 은색
+                    3: '#CD7F32'   // 동색
+                };
+                const color = priorityColors[data.priority] || '#666';
+                const priorityBadge = `<span style="background: ${color}; color: #000; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 8px; font-weight: 700;">우선순위 ${data.priority}</span>`;
+                header.innerHTML = `작업 ${i + 1} ${priorityBadge} <span class="status-indicator pending">대기</span>`;
+            }
 
             textarea.value = JSON.stringify(jsonData, null, 2);
 
@@ -1329,6 +1347,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             outro,
                             videoCount,
                             includeTitle,
+                            priority: jsonData.priority || 0,  // 우선순위 태그
                             status: 'pending'
                         });
                     }
@@ -1336,6 +1355,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error(`Invalid JSON in item ${index + 1}:`, e);
                 }
             }
+        });
+
+        // 우선순위 순서대로 정렬 (1 -> 2 -> 3, 0은 맨 뒤)
+        items.sort((a, b) => {
+            const aPriority = a.priority || 999;  // priority 없으면 맨 뒤로
+            const bPriority = b.priority || 999;
+            return aPriority - bPriority;
+        });
+
+        // 콘솔에 우선순위 순서 출력
+        console.log('🎬 비디오 생성 순서 (우선순위별 정렬):');
+        items.forEach((item, idx) => {
+            const priorityTag = item.priority ? `[우선순위 ${item.priority}]` : '[우선순위 없음]';
+            console.log(`  ${idx + 1}. ${priorityTag} ${item.jsonData.title}`);
         });
 
         return items;
@@ -1496,6 +1529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
             try {
+                console.log(`=== [배치 ${i + 1}/${items.length}] 시작: "${item.jsonData.title}" ===`);
                 addStatusMessage(`[${i + 1}/${items.length}] "${item.jsonData.title}" 처리 중...`, 'info');
 
                 // 개별 항목 처리 대기 (Wait for completion)
@@ -1503,15 +1537,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 batchData.push(result);
                 successCount++;
+                console.log(`=== [배치 ${i + 1}/${items.length}] 완료 ===`);
                 addStatusMessage(`[${i + 1}/${items.length}] 완료`, 'success');
 
+                // API 레이트 리미팅 방지를 위한 딜레이 (마지막 아이템은 제외)
+                if (i < items.length - 1) {
+                    console.log(`⏳ 다음 작업 전 2초 대기... (레이트 리미팅 방지)`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+
             } catch (error) {
-                console.error(`Item ${i + 1} failed:`, error);
+                console.error(`=== [배치 ${i + 1}/${items.length}] 실패 ===`);
+                console.error('에러 상세:', error);
+                console.error('에러 스택:', error.stack);
                 failCount++;
                 updateBatchItemStatus(item.index, 'error');
                 addStatusMessage(`[${i + 1}/${items.length}] 실패: ${error.message}`, 'error');
+
+                // 에러 발생 후에도 2초 대기 (서버 안정화)
+                if (i < items.length - 1) {
+                    console.log(`⏳ 에러 후 다음 작업 전 2초 대기...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
             }
         }
+
+        console.log(`=== 전체 배치 완료: 성공 ${successCount}, 실패 ${failCount} ===`);
 
         addStatusMessage(`전체 작업 완료! 성공: ${successCount}, 실패: ${failCount}`,
             successCount > 0 ? 'success' : 'error');
@@ -1529,6 +1580,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateBatchItemStatus(item.index, 'processing');
 
         try {
+            console.log(`  🎤 TTS 생성 시작: "${item.jsonData.title}"`);
             // 1. TTS 생성
             const ttsResponse = await authFetch('/api/shorts/generate-tts', {
                 method: 'POST',
@@ -1541,10 +1593,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!ttsResponse.ok) {
                 const err = await ttsResponse.text();
+                console.error(`  ❌ TTS API 응답 실패:`, err);
                 throw new Error(`TTS 생성 실패: ${err}`);
             }
 
             const ttsData = await ttsResponse.json();
+            console.log(`  ✅ TTS 생성 완료`);
+            console.log(`  🎥 비디오 생성 시작...`);
 
             // 2. 비디오 생성 (TTS 데이터 사용)
             // 선택된 배경음악
@@ -1587,10 +1642,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!videoResponse.ok) {
                 const err = await videoResponse.text();
+                console.error(`  ❌ 비디오 API 응답 실패:`, err);
                 throw new Error(`비디오 생성 실패: ${err}`);
             }
 
             const shortsData = await videoResponse.json();
+            console.log(`  ✅ 비디오 생성 완료`);
 
             updateBatchItemStatus(item.index, 'completed');
 

@@ -1465,7 +1465,7 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
                             .input(audioPath)
                             .input(musicPath)
                             .complexFilter([
-                                `[0:a]volume=1.7[tts]`,  // TTS 볼륨 1.7배 증폭
+                                `[0:a]volume=1.7,atempo=1.1[tts]`,  // TTS 볼륨 1.7배 증폭, 속도 1.1배
                                 `[1:a]volume=0.15,atempo=1.0,aloop=loop=-1:size=2e+09[bg]`,  // 배경음악 볼륨 15%로 감소
                                 `[bg][tts]amix=inputs=2:duration=first:dropout_transition=0[mixed]`
                             ])
@@ -1682,9 +1682,9 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
                     .input(musicPath)
                     .complexFilter([
                         // TTS 볼륨 증폭, 백그라운드 음악 볼륨 감소
-                        `[0:a]volume=1.7[tts]`,  // TTS 볼륨 1.7배 증폭
+                        `[0:a]volume=1.7,atempo=1.1[tts]`,  // TTS 볼륨 1.7배 증폭, 속도 1.1배
                         `[1:a]volume=0.15,atempo=1.0,aloop=loop=-1:size=2e+09[bg]`,  // 배경음악 볼륨 15%로 감소
-                        `[bg][tts]amix=inputs=2:duration=shortest:dropout_transition=0[mixed]`
+                        `[bg][tts]amix=inputs=2:duration=first:dropout_transition=0[mixed]`
                     ])
                     .outputOptions([
                         '-map [mixed]',
@@ -2026,9 +2026,9 @@ router.post('/generate-batch-videos', upload.array('images', 9), async (req, res
                             .input(musicPath)
                             .complexFilter([
                                 // 백그라운드 음악을 TTS 길이에 맞춰 자르거나 반복하고 볼륨 조절
-                                `[0:a]volume=1.7[tts]`,  // TTS 볼륨 1.7배 증폭
+                                `[0:a]volume=1.7,atempo=1.1[tts]`,  // TTS 볼륨 1.7배 증폭, 속도 1.1배
                                 `[1:a]volume=0.15,atempo=1.0,aloop=loop=-1:size=2e+09[bg]`,  // 배경음악 볼륨 15%로 감소
-                                `[bg][tts]amix=inputs=2:duration=shortest:dropout_transition=0[mixed]`
+                                `[bg][tts]amix=inputs=2:duration=first:dropout_transition=0[mixed]`
                             ])
                             .outputOptions([
                                 '-map [mixed]',

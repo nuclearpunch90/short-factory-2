@@ -102,7 +102,8 @@ router.post('/generate', async (req, res) => {
             }, {
                 headers: {
                     'Authorization': authHeader
-                }
+                },
+                timeout: 60000 // 1분 타임아웃 (TTS 생성)
             });
 
             if (!ttsResponse.data.success) {
@@ -222,7 +223,10 @@ router.post('/generate', async (req, res) => {
             headers: {
                 ...formData.getHeaders(),
                 'Authorization': authHeader
-            }
+            },
+            timeout: 300000, // 5분 타임아웃
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
         });
 
         const videoData = videoResponse.data.success ? videoResponse.data : null;
@@ -258,7 +262,9 @@ router.post('/generate', async (req, res) => {
         const infoPath = path.join(projectDir, 'info.txt');
         // UTF-8 BOM 추가하여 Windows에서 한글 인코딩 문제 해결
         const BOM = '\ufeff';
-        const infoContent = `${BOM}제목: ${title}\n\n설명: ${description}`;
+        // 기본 해시태그 추가 (Instagram/TikTok용)
+        const defaultHashtags = '#shorts #reels #viral';
+        const infoContent = `${BOM}제목: ${title}\n\n설명: ${description}\n\n${defaultHashtags}`;
         await fs.writeFile(infoPath, infoContent, { encoding: 'utf8' });
 
         console.log(`Shorts generation completed for project: ${projectFolder}`);
@@ -312,7 +318,7 @@ router.post('/generate-tts', async (req, res) => {
         return res.status(400).json({ error: 'JSON 형식이 올바르지 않습니다.' });
     }
 
-    let { script, title, description } = parsedData;
+    let { script, title, description, priority } = parsedData;
 
     // 싱크 개선을 위한 스크립트 전처리: 문장 부호 뒤에 줄바꿈 추가
     if (script) {
@@ -368,7 +374,8 @@ router.post('/generate-tts', async (req, res) => {
             }, {
                 headers: {
                     'Authorization': authHeader
-                }
+                },
+                timeout: 60000 // 1분 타임아웃 (TTS 생성)
             });
 
             if (!ttsResponse.data.success) {
@@ -431,9 +438,14 @@ router.post('/generate-tts', async (req, res) => {
                 .mergeToFile(mergedAudioPath, tempDir);
         });
 
-        // info.txt 파일 생성 (title과 description 통합)
+        // info.txt 파일 생성 (title, description, priority, hashtags 통합)
         const infoFile = path.join(projectDir, 'info.txt');
-        const infoContent = `제목: ${title}\n\n설명: ${description}`;
+        const defaultHashtags = '#shorts #reels #viral';
+        let infoContent = `제목: ${title}\n\n설명: ${description}`;
+        if (priority) {
+            infoContent += `\n\n우선순위: ${priority}`;
+        }
+        infoContent += `\n\n${defaultHashtags}`;
         await fs.writeFile(infoFile, infoContent, 'utf8');
 
         res.json({
@@ -538,7 +550,10 @@ router.post('/generate-video-only', async (req, res) => {
             headers: {
                 ...formData.getHeaders(),
                 'Authorization': authHeader
-            }
+            },
+            timeout: 300000, // 5분 타임아웃
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
         });
 
         const videoData = videoResponse.data.success ? videoResponse.data : null;
@@ -676,7 +691,10 @@ router.post('/generate-video-from-file', async (req, res) => {
             headers: {
                 ...formData.getHeaders(),
                 'Authorization': authHeader
-            }
+            },
+            timeout: 300000, // 5분 타임아웃
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity
         });
 
         const videoData = videoResponse.data.success ? videoResponse.data : null;
