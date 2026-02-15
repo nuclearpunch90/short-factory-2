@@ -228,8 +228,8 @@ router.post('/generate-batch', async (req, res) => {
             return res.status(400).json({ error: '주제를 최소 1개 이상 입력해주세요' });
         }
 
-        if (topics.length > 3) {
-            return res.status(400).json({ error: '주제는 최대 3개까지 입력 가능합니다' });
+        if (topics.length > 10) {
+            return res.status(400).json({ error: '주제는 최대 10개까지 입력 가능합니다' });
         }
 
         const generationCount = parseInt(count) || 1;

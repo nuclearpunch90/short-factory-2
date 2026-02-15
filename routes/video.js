@@ -984,7 +984,7 @@ async function concatenateClips(clips, outputPath, audioPath, srtPath, title, te
                 .replace(/\)/g, '\\)');   // 괄호
 
             // 폰트 경로 설정
-            const fontPath = path.join(__dirname, '..', 'data', 'common', 'fonts', 'NanumMyeongjo.ttf');
+            const fontPath = path.join(__dirname, '..', 'data', 'common', 'fonts', 'BMDOHYEON_ttf.ttf');
             const normalizedFontPath = fontPath.replace(/\\/g, '/').replace(/:/g, '\\:');
 
             console.log('Processed title:', normalizedTitle);
@@ -1011,8 +1011,27 @@ async function concatenateClips(clips, outputPath, audioPath, srtPath, title, te
             videoWithSubtitles = 'withsubtitles';
         }
 
+        // 제목 텍스트 오버레이 추가 (자막 위에 표시)
+        let videoWithTitleText = videoWithSubtitles;
+        if (title) {
+            const fontPath = path.join(__dirname, '..', 'data', 'common', 'fonts', 'BMDOHYEON_ttf.ttf');
+            const normalizedFontPath = fontPath.replace(/\\/g, '/').replace(/:/g, '\\:');
+            // FFmpeg drawtext에서 특수문자 escape
+            const escapedTitle = title
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/:/g, '\\:')
+                .replace(/\[/g, '\\[')
+                .replace(/\]/g, '\\]');
+
+            filterComplex.push(
+                `[${videoWithSubtitles}]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=35:bordercolor=black:borderw=2:x=(w-text_w)/2:y=h*0.3[withtitletext]`
+            );
+            videoWithTitleText = 'withtitletext';
+        }
+
         // 최상단 배너 오버레이 추가
-        let finalVideo = videoWithSubtitles;
+        let finalVideo = videoWithTitleText;
 
         if (hasBanner) {
             console.log('Adding top banner overlay:', bannerPath);
@@ -1022,12 +1041,12 @@ async function concatenateClips(clips, outputPath, audioPath, srtPath, title, te
                 `[${bannerIndex}:v]scale=702:-1[banner]`
             );
             filterComplex.push(
-                `[${videoWithSubtitles}][banner]overlay=x=0:y=0:shortest=1[final]`
+                `[${videoWithTitleText}][banner]overlay=x=0:y=0:shortest=1[final]`
             );
             finalVideo = 'final';
         } else {
             console.log('Banner not found, skipping overlay');
-            filterComplex.push(`[${videoWithSubtitles}]copy[final]`);
+            filterComplex.push(`[${videoWithTitleText}]copy[final]`);
             finalVideo = 'final';
         }
 
@@ -1742,10 +1761,32 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
 
                 const filterComplex = [
                     `[0:v]format=yuv420p${mainVideoFilter}[base]`,
-                    `[base]subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H40000000,BorderStyle=1,Outline=0.5,Shadow=0,Alignment=10,MarginV=20,MarginL=10,MarginR=10,Bold=1'[subtitled]`,
-                    `movie='${normalizedLogoPath}',scale=180:-1,format=rgba,colorchannelmixer=aa=0.95[logo]`,
-                    `[subtitled][logo]overlay=(W-w)/2:H-h-200`
+                    `[base]subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H40000000,BorderStyle=1,Outline=0.5,Shadow=0,Alignment=10,MarginV=20,MarginL=10,MarginR=10,Bold=1'[subtitled]`
                 ];
+
+                // 제목 오버레이 추가
+                let videoWithTitle = 'subtitled';
+                if (title) {
+                    const fontPath = path.join(__dirname, '..', 'data', 'common', 'fonts', 'BMDOHYEON_ttf.ttf');
+                    const normalizedFontPath = fontPath.replace(/\\/g, '/').replace(/:/g, '\\:');
+                    const escapedTitle = title
+                        .replace(/\\/g, '\\\\')
+                        .replace(/'/g, "\\'")
+                        .replace(/:/g, '\\:')
+                        .replace(/\[/g, '\\[')
+                        .replace(/\]/g, '\\]');
+                    filterComplex.push(
+                        `[${videoWithTitle}]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=35:bordercolor=black:borderw=2:x=(w-text_w)/2:y=h*0.3[withtitle]`
+                    );
+                    videoWithTitle = 'withtitle';
+                }
+
+                // 로고 오버레이 추가
+                filterComplex.push(
+                    `movie='${normalizedLogoPath}',scale=180:-1,format=rgba,colorchannelmixer=aa=0.95[logo]`,
+                    `[${videoWithTitle}][logo]overlay=(W-w)/2:H-h-200`
+                );
+
                 ffmpegCommand.complexFilter(filterComplex);
                 ffmpegCommand.outputOptions([
                     '-c:v libx264',
@@ -1763,7 +1804,28 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
                 const fontsDir = path.join(__dirname, '..', 'data', 'common', 'fonts');
                 const normalizedFontsDir = fontsDir.replace(/\\/g, '/').replace(/:/g, '\\:');
 
-                const subtitlesFilter = `${mainVideoFilter ? 'format=yuv420p' + mainVideoFilter + ',' : ''}subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H40000000,BorderStyle=1,Outline=0.5,Shadow=0,Alignment=10,MarginV=20,MarginL=10,MarginR=10,Bold=1'`;
+                if (title) {
+                    // 제목이 있으면 complex filter 사용
+                    const fontPath = path.join(__dirname, '..', 'data', 'common', 'fonts', 'BMDOHYEON_ttf.ttf');
+                    const normalizedFontPath = fontPath.replace(/\\/g, '/').replace(/:/g, '\\:');
+                    const escapedTitle = title
+                        .replace(/\\/g, '\\\\')
+                        .replace(/'/g, "\\'")
+                        .replace(/:/g, '\\:')
+                        .replace(/\[/g, '\\[')
+                        .replace(/\]/g, '\\]');
+
+                    const filterComplex = [
+                        `[0:v]format=yuv420p${mainVideoFilter}[base]`,
+                        `[base]subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H40000000,BorderStyle=1,Outline=0.5,Shadow=0,Alignment=10,MarginV=20,MarginL=10,MarginR=10,Bold=1'[subtitled]`,
+                        `[subtitled]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=35:bordercolor=black:borderw=2:x=(w-text_w)/2:y=h*0.3`
+                    ];
+                    ffmpegCommand.complexFilter(filterComplex);
+                } else {
+                    // 제목이 없으면 기존 방식
+                    const subtitlesFilter = `${mainVideoFilter ? 'format=yuv420p' + mainVideoFilter + ',' : ''}subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H40000000,BorderStyle=1,Outline=0.5,Shadow=0,Alignment=10,MarginV=20,MarginL=10,MarginR=10,Bold=1'`;
+                    ffmpegCommand.outputOptions(['-vf', subtitlesFilter]);
+                }
 
                 ffmpegCommand.outputOptions([
                     '-c:v libx264',
@@ -1772,7 +1834,6 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
                     '-r 30',
                     `-s ${imageSize.width}x${imageSize.height}`,
                     '-pix_fmt yuv420p',
-                    `-vf ${subtitlesFilter}`,
                     '-shortest'
                 ]);
                 console.log('Adding subtitles only');
@@ -2070,10 +2131,32 @@ router.post('/generate-batch-videos', upload.array('images', 9), async (req, res
                         // 자막과 로고 모두 있는 경우
                         const normalizedBatchSrtPath = batchSrtPath.replace(/\\/g, '/').replace(/:/g, '\\:');
                         const batchFilterComplex = [
-                            `[0:v]subtitles='${normalizedBatchSrtPath}':force_style='Fontsize=14,PrimaryColour=&Hffffff,BackColour=&H000000,BorderStyle=4,Outline=0.5,Shadow=0,Alignment=6,MarginV=20,MarginL=10,MarginR=10,Bold=1,BorderRadius=8'[subtitled]`,
-                            `movie='${normalizedBatchLogoPath}',scale=180:-1,format=rgba,colorchannelmixer=aa=0.95[logo]`,
-                            `[subtitled][logo]overlay=(W-w)/2:H-h-200`
+                            `[0:v]subtitles='${normalizedBatchSrtPath}':force_style='Fontsize=14,PrimaryColour=&Hffffff,BackColour=&H000000,BorderStyle=4,Outline=0.5,Shadow=0,Alignment=6,MarginV=20,MarginL=10,MarginR=10,Bold=1,BorderRadius=8'[subtitled]`
                         ];
+
+                        // 제목 오버레이 추가
+                        let batchVideoWithTitle = 'subtitled';
+                        if (title) {
+                            const fontPath = path.join(__dirname, '..', 'data', 'common', 'fonts', 'BMDOHYEON_ttf.ttf');
+                            const normalizedFontPath = fontPath.replace(/\\/g, '/').replace(/:/g, '\\:');
+                            const escapedTitle = title
+                                .replace(/\\/g, '\\\\')
+                                .replace(/'/g, "\\'")
+                                .replace(/:/g, '\\:')
+                                .replace(/\[/g, '\\[')
+                                .replace(/\]/g, '\\]');
+                            batchFilterComplex.push(
+                                `[${batchVideoWithTitle}]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=35:bordercolor=black:borderw=2:x=(w-text_w)/2:y=h*0.3[batchtitle]`
+                            );
+                            batchVideoWithTitle = 'batchtitle';
+                        }
+
+                        // 로고 오버레이 추가
+                        batchFilterComplex.push(
+                            `movie='${normalizedBatchLogoPath}',scale=180:-1,format=rgba,colorchannelmixer=aa=0.95[logo]`,
+                            `[${batchVideoWithTitle}][logo]overlay=(W-w)/2:H-h-200`
+                        );
+
                         ffmpegCommand.complexFilter(batchFilterComplex);
                         ffmpegCommand.outputOptions([
                             '-c:v libx264',
@@ -2088,7 +2171,29 @@ router.post('/generate-batch-videos', upload.array('images', 9), async (req, res
                     } else if (batchHasSrt) {
                         // 자막만 있는 경우
                         const normalizedBatchSrtPath = batchSrtPath.replace(/\\/g, '/').replace(/:/g, '\\:');
-                        const batchSubtitlesFilter = `subtitles='${normalizedBatchSrtPath}':force_style='Fontsize=14,PrimaryColour=&Hffffff,BackColour=&H000000,BorderStyle=4,Outline=0.5,Shadow=0,Alignment=6,MarginV=20,MarginL=10,MarginR=10,Bold=1,BorderRadius=8'`;
+
+                        if (title) {
+                            // 제목이 있으면 complex filter 사용
+                            const fontPath = path.join(__dirname, '..', 'data', 'common', 'fonts', 'BMDOHYEON_ttf.ttf');
+                            const normalizedFontPath = fontPath.replace(/\\/g, '/').replace(/:/g, '\\:');
+                            const escapedTitle = title
+                                .replace(/\\/g, '\\\\')
+                                .replace(/'/g, "\\'")
+                                .replace(/:/g, '\\:')
+                                .replace(/\[/g, '\\[')
+                                .replace(/\]/g, '\\]');
+
+                            const batchFilterComplex = [
+                                `[0:v]subtitles='${normalizedBatchSrtPath}':force_style='Fontsize=14,PrimaryColour=&Hffffff,BackColour=&H000000,BorderStyle=4,Outline=0.5,Shadow=0,Alignment=6,MarginV=20,MarginL=10,MarginR=10,Bold=1,BorderRadius=8'[subtitled]`,
+                                `[subtitled]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=35:bordercolor=black:borderw=2:x=(w-text_w)/2:y=h*0.3`
+                            ];
+                            ffmpegCommand.complexFilter(batchFilterComplex);
+                        } else {
+                            // 제목이 없으면 기존 방식
+                            const batchSubtitlesFilter = `subtitles='${normalizedBatchSrtPath}':force_style='Fontsize=14,PrimaryColour=&Hffffff,BackColour=&H000000,BorderStyle=4,Outline=0.5,Shadow=0,Alignment=6,MarginV=20,MarginL=10,MarginR=10,Bold=1,BorderRadius=8'`;
+                            ffmpegCommand.outputOptions(['-vf', batchSubtitlesFilter]);
+                        }
+
                         ffmpegCommand.outputOptions([
                             '-c:v libx264',
                             '-c:a aac',
@@ -2096,7 +2201,6 @@ router.post('/generate-batch-videos', upload.array('images', 9), async (req, res
                             '-r 30',
                             `-s ${imageSize.width}x${imageSize.height}`,
                             '-pix_fmt yuv420p',
-                            `-vf ${batchSubtitlesFilter}`,
                             '-shortest'
                         ]);
                         console.log(`Batch video ${index + 1}: Adding subtitles only`);

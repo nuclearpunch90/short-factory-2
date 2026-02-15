@@ -552,16 +552,16 @@ async function batchUpload() {
             saveUploadStats(stats);
             console.log(`📈 Account ${plan.accountNumber} 누적: ${stats[plan.accountNumber]}개`);
 
-            // 업로드 성공 시 폴더 삭제
-            if (result.folderPath && !deletedFolders.has(result.folderPath)) {
-                try {
-                    fs.rmSync(result.folderPath, { recursive: true, force: true });
-                    console.log(`🗑️  폴더 삭제: ${path.basename(result.folderPath)}`);
-                    deletedFolders.add(result.folderPath);
-                } catch (err) {
-                    console.error(`⚠️  폴더 삭제 실패: ${err.message}`);
-                }
-            }
+            // 업로드 성공 시 폴더 삭제 (비활성화됨)
+            // if (result.folderPath && !deletedFolders.has(result.folderPath)) {
+            //     try {
+            //         fs.rmSync(result.folderPath, { recursive: true, force: true });
+            //         console.log(`🗑️  폴더 삭제: ${path.basename(result.folderPath)}`);
+            //         deletedFolders.add(result.folderPath);
+            //     } catch (err) {
+            //         console.error(`⚠️  폴더 삭제 실패: ${err.message}`);
+            //     }
+            // }
         } else if (result.error) {
             errorCount++;
         }

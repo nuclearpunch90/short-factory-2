@@ -1161,9 +1161,13 @@ async function batchUpload() {
         const currentCount = stats[i] || 0;
         console.log(`   계정 ${i} (${accountName}): ${count}개 업로드 예정 (현재 총 ${currentCount}개)`);
 
-        // List video titles
+        // List video titles with priority
         for (let j = 0; j < accountVideos.length; j++) {
-            console.log(`      ${j + 1}. ${accountVideos[j].title}`);
+            const video = accountVideos[j];
+            const priorityTag = video.priority && video.priority < 999
+                ? ` [우선순위 ${video.priority}]`
+                : '';
+            console.log(`      ${j + 1}. ${video.title}${priorityTag}`);
         }
         if (count > 0) console.log(''); // Add spacing between accounts
     }
