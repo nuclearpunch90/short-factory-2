@@ -360,15 +360,22 @@ async function batchUpload() {
     // 우선순위 순서대로 정렬
     const sortedPriorities = Array.from(priorityGroups.keys()).sort((a, b) => a - b);
 
-    // 각 우선순위별로 최대 4개씩 선택
+    // 각 우선순위별로 최대 4개씩 선택 (우선순위 1-3만)
     sortedPriorities.forEach(priority => {
         const videosInGroup = priorityGroups.get(priority);
 
         if (priority === 999) {
-            // 우선순위 없음 - 모두 포함
-            filteredVideos.push(...videosInGroup);
+            // 우선순위 없음 - 건너뜀
+            videosInGroup.forEach(video => {
+                skippedVideos.push({ video, reason: '우선순위 없음 (업로드 제외)' });
+            });
+        } else if (priority > 3) {
+            // 우선순위 4 이상 - 건너뜀
+            videosInGroup.forEach(video => {
+                skippedVideos.push({ video, reason: `우선순위 ${priority} (3 초과, 업로드 제외)` });
+            });
         } else {
-            // 우선순위 설정된 경우 - 최대 4개만 선택
+            // 우선순위 1-3만 업로드 - 최대 4개만 선택
             const selectedCount = Math.min(videosInGroup.length, MAX_ACCOUNTS);
             filteredVideos.push(...videosInGroup.slice(0, selectedCount));
 

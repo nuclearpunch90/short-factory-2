@@ -44,7 +44,10 @@ router.post('/generate', async (req, res) => {
     try {
         const { theme, topic, tone } = req.body;
 
+        console.log(`[Script] Generation request received - Topic: "${topic}", Theme: "${theme}", Tone: "${tone}"`);
+
         if (!topic) {
+            console.warn('[Script] Missing topic in request');
             return res.status(400).json({ error: '주제를 입력해주세요' });
         }
 
@@ -62,6 +65,7 @@ router.post('/generate', async (req, res) => {
         const toneHint = toneDescriptions[tone] || toneDescriptions.casual;
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
+            console.error('[Script] GEMINI_API_KEY is missing');
             return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
         }
 
@@ -80,6 +84,7 @@ router.post('/generate', async (req, res) => {
 
         const themeHint = themeDescriptions[theme] || '';
 
+        console.log('[Script] Constructing prompt for Gemini...');
         const prompt = `너는 유튜브 쇼츠 바이럴 대본 작가야.
 
 주제: ${topic}
@@ -135,7 +140,7 @@ ${themeHint ? `분위기: ${themeHint}` : ''}
 여섯 번째 한국어 존댓말 너무 어려움.
 일본보다 복잡한 존댓말 때문에 스트레스.
 일곱 번째 그래도 한국 남자 때문에 버팀.
-힘들어도 사랑하는 남자 있어서 행복하다고."
+힘들어 사랑하는 남자 있어서 행복하다고."
 
 작성 규칙:
 1. 후킹 문장으로 시작 (자극적, 충격적, 궁금증 유발)
@@ -159,6 +164,8 @@ JSON 형식으로만 답변 (이모지 없이):
   "description": "설명 2줄\\n\\n#해시태그 5~7개 (이모지 없이)"
 }`;
 
+        console.log('[Script] Sending request to Gemini API...');
+        // apiKey is already declared above
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: {
@@ -175,16 +182,20 @@ JSON 형식으로만 답변 (이모지 없이):
 
         if (!response.ok) {
             const errorData = await response.json();
+            console.error('[Script] Gemini API responded with error:', errorData);
             throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
         }
 
         const data = await response.json();
+        console.log('[Script] Received response from Gemini API');
 
         if (data.promptFeedback?.blockReason) {
+            console.warn(`[Script] Content blocked: ${data.promptFeedback.blockReason}`);
             throw new Error(`Script blocked by safety filters: ${data.promptFeedback.blockReason}`);
         }
 
         const content = data.candidates[0].content.parts[0].text.trim();
+        console.log('[Script] Generated content length:', content.length);
 
         // JSON 파싱 시도
         let result;
@@ -195,6 +206,7 @@ JSON 형식으로만 답변 (이모지 없이):
             const jsonStr = jsonMatch ? jsonMatch[1] : content;
             result = JSON.parse(jsonStr);
         } catch (parseError) {
+            console.warn('[Script] JSON parse failed, using raw content');
             // JSON 파싱 실패 시 원본 텍스트를 script로 사용
             result = {
                 script: content,
@@ -208,10 +220,11 @@ JSON 형식으로만 답변 (이모지 없이):
         if (result.title) result.title = removeEmojis(result.title);
         if (result.description) result.description = removeEmojis(result.description);
 
+        console.log('[Script] Successfully generated and processed script');
         res.json({ success: true, data: result });
 
     } catch (error) {
-        console.error('Script generation error:', error);
+        console.error('[Script] Generation error:', error);
         res.status(500).json({
             error: '대본 생성 중 오류가 발생했습니다',
             details: error.message
@@ -224,7 +237,10 @@ router.post('/generate-batch', async (req, res) => {
     try {
         const { topics, count, theme, tone } = req.body;
 
+        console.log(`[Script Batch] Request received - Topics: ${topics?.length}, Count per topic: ${count}, Theme: ${theme}, Tone: ${tone}`);
+
         if (!topics || !Array.isArray(topics) || topics.length === 0) {
+            console.warn('[Script Batch] No topics provided');
             return res.status(400).json({ error: '주제를 최소 1개 이상 입력해주세요' });
         }
 
@@ -239,6 +255,7 @@ router.post('/generate-batch', async (req, res) => {
 
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
+            console.error('[Script Batch] GEMINI_API_KEY is missing');
             return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
         }
 
@@ -274,9 +291,12 @@ router.post('/generate-batch', async (req, res) => {
         let totalGenerated = 0;
         let totalRequested = topics.length * generationCount;
 
+        console.log(`[Script Batch] Starting generation of ${totalRequested} scripts total...`);
+
         // 각 주제별로 대본 생성
         for (const topic of topics) {
             const topicScripts = [];
+            console.log(`[Script Batch] Processing topic: "${topic}"`);
 
             for (let i = 0; i < generationCount; i++) {
                 try {
@@ -326,6 +346,8 @@ JSON 형식으로만 답변 (이모지 없이):
   "description": "설명 2줄\\n\\n#해시태그 5~7개 (이모지 없이)"
 }`;
 
+                    console.log(`[Script Batch] Generating script ${i + 1}/${generationCount} for topic "${topic}"...`);
+                    // apiKey is already declared above
                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: {
@@ -342,16 +364,19 @@ JSON 형식으로만 답변 (이모지 없이):
 
                     if (!response.ok) {
                         const errorData = await response.json();
+                        console.error(`[Script Batch] Gemini API error for topic "${topic}":`, errorData);
                         throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
                     }
 
                     const data = await response.json();
 
                     if (data.promptFeedback?.blockReason) {
+                        console.warn(`[Script Batch] Content blocked: ${data.promptFeedback.blockReason}`);
                         throw new Error(`Script blocked by safety filters: ${data.promptFeedback.blockReason}`);
                     }
 
                     const content = data.candidates[0].content.parts[0].text.trim();
+                    console.log(`[Script Batch] Generated content length: ${content.length}`);
 
                     // JSON 파싱
                     let result;
@@ -361,6 +386,7 @@ JSON 형식으로만 답변 (이모지 없이):
                         const jsonStr = jsonMatch ? jsonMatch[1] : content;
                         result = JSON.parse(jsonStr);
                     } catch (parseError) {
+                        console.warn(`[Script Batch] JSON parse failed, using raw content`);
                         result = {
                             script: content,
                             title: topic,
@@ -383,7 +409,7 @@ JSON 형식으로만 답변 (이모지 없이):
                     totalGenerated++;
 
                 } catch (error) {
-                    console.error(`Error generating script for topic "${topic}" (${i + 1}/${generationCount}):`, error);
+                    console.error(`[Script Batch] Error generating script for topic "${topic}" (${i + 1}/${generationCount}):`, error);
                     // 에러가 나도 계속 진행
                 }
             }
@@ -393,6 +419,8 @@ JSON 형식으로만 답변 (이모지 없이):
                 scripts: topicScripts
             });
         }
+
+        console.log(`[Script Batch] Completed. Generated ${totalGenerated}/${totalRequested}`);
 
         res.json({
             success: true,
@@ -406,7 +434,7 @@ JSON 형식으로만 답변 (이모지 없이):
         });
 
     } catch (error) {
-        console.error('Batch script generation error:', error);
+        console.error('[Script Batch] Global error:', error);
         res.status(500).json({
             error: '대본 일괄 생성 중 오류가 발생했습니다',
             details: error.message

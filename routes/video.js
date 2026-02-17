@@ -638,8 +638,8 @@ async function extractClipsByScript(inputsDir, outputDir, duration, script, srtC
                 let currentVideoPath;
                 let isStreetVideo = false;
 
-                // 30% Chance to pick from 'street' inputs if available
-                if (streetVideoFiles.length > 0 && Math.random() < 0.3) {
+                // 70% Chance to pick from 'street' inputs if available
+                if (streetVideoFiles.length > 0 && Math.random() < 0.7) {
                     const randomStreetVideo = streetVideoFiles[Math.floor(Math.random() * streetVideoFiles.length)];
                     currentVideoPath = path.join(streetInputsDir, randomStreetVideo);
                     isStreetVideo = true;
@@ -1025,7 +1025,7 @@ async function concatenateClips(clips, outputPath, audioPath, srtPath, title, te
                 .replace(/\]/g, '\\]');
 
             filterComplex.push(
-                `[${videoWithSubtitles}]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=35:bordercolor=black:borderw=2:x=(w-text_w)/2:y=h*0.3[withtitletext]`
+                `[${videoWithSubtitles}]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=60:bordercolor=black:borderw=4:x=(w-text_w)/2:y=h*0.3[withtitletext]`
             );
             videoWithTitleText = 'withtitletext';
         }
@@ -1776,7 +1776,7 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
                         .replace(/\[/g, '\\[')
                         .replace(/\]/g, '\\]');
                     filterComplex.push(
-                        `[${videoWithTitle}]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=35:bordercolor=black:borderw=2:x=(w-text_w)/2:y=h*0.3[withtitle]`
+                        `[${videoWithTitle}]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=60:bordercolor=black:borderw=4:x=(w-text_w)/2:y=h*0.3[withtitle]`
                     );
                     videoWithTitle = 'withtitle';
                 }
@@ -1818,7 +1818,7 @@ router.post('/generate-video', upload.single('image'), async (req, res) => {
                     const filterComplex = [
                         `[0:v]format=yuv420p${mainVideoFilter}[base]`,
                         `[base]subtitles='${normalizedSrtPath}':fontsdir='${normalizedFontsDir}':force_style='Fontname=NanumMyeongjo,Fontsize=8,PrimaryColour=&Hffffff,BackColour=&H40000000,BorderStyle=1,Outline=0.5,Shadow=0,Alignment=10,MarginV=20,MarginL=10,MarginR=10,Bold=1'[subtitled]`,
-                        `[subtitled]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=35:bordercolor=black:borderw=2:x=(w-text_w)/2:y=h*0.3`
+                        `[subtitled]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=60:bordercolor=black:borderw=4:x=(w-text_w)/2:y=h*0.3`
                     ];
                     ffmpegCommand.complexFilter(filterComplex);
                 } else {
@@ -2146,7 +2146,7 @@ router.post('/generate-batch-videos', upload.array('images', 9), async (req, res
                                 .replace(/\[/g, '\\[')
                                 .replace(/\]/g, '\\]');
                             batchFilterComplex.push(
-                                `[${batchVideoWithTitle}]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=35:bordercolor=black:borderw=2:x=(w-text_w)/2:y=h*0.3[batchtitle]`
+                                `[${batchVideoWithTitle}]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=60:bordercolor=black:borderw=4:x=(w-text_w)/2:y=h*0.3[batchtitle]`
                             );
                             batchVideoWithTitle = 'batchtitle';
                         }
@@ -2185,7 +2185,7 @@ router.post('/generate-batch-videos', upload.array('images', 9), async (req, res
 
                             const batchFilterComplex = [
                                 `[0:v]subtitles='${normalizedBatchSrtPath}':force_style='Fontsize=14,PrimaryColour=&Hffffff,BackColour=&H000000,BorderStyle=4,Outline=0.5,Shadow=0,Alignment=6,MarginV=20,MarginL=10,MarginR=10,Bold=1,BorderRadius=8'[subtitled]`,
-                                `[subtitled]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=35:bordercolor=black:borderw=2:x=(w-text_w)/2:y=h*0.3`
+                                `[subtitled]drawtext=fontfile='${normalizedFontPath}':text='${escapedTitle}':fontcolor=white:fontsize=60:bordercolor=black:borderw=4:x=(w-text_w)/2:y=h*0.3`
                             ];
                             ffmpegCommand.complexFilter(batchFilterComplex);
                         } else {
