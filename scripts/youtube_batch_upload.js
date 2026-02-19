@@ -357,10 +357,10 @@ async function batchUpload() {
         }
     });
 
-    // 우선순위 순서대로 정렬
-    const sortedPriorities = Array.from(priorityGroups.keys()).sort((a, b) => a - b);
+    // 우선순위 역순 정렬 (3→2→1 순서로 업로드)
+    const sortedPriorities = Array.from(priorityGroups.keys()).sort((a, b) => b - a);
 
-    // 각 우선순위별로 최대 4개씩 선택 (우선순위 1-3만)
+    // 각 우선순위별로 최대 4개씩 선택 (우선순위 1-10)
     sortedPriorities.forEach(priority => {
         const videosInGroup = priorityGroups.get(priority);
 
@@ -369,13 +369,13 @@ async function batchUpload() {
             videosInGroup.forEach(video => {
                 skippedVideos.push({ video, reason: '우선순위 없음 (업로드 제외)' });
             });
-        } else if (priority > 3) {
-            // 우선순위 4 이상 - 건너뜀
+        } else if (priority > 10) {
+            // 우선순위 10 초과 - 건너뜀
             videosInGroup.forEach(video => {
-                skippedVideos.push({ video, reason: `우선순위 ${priority} (3 초과, 업로드 제외)` });
+                skippedVideos.push({ video, reason: `우선순위 ${priority} (10 초과, 업로드 제외)` });
             });
         } else {
-            // 우선순위 1-3만 업로드 - 최대 4개만 선택
+            // 우선순위 1-10 업로드 - 최대 4개만 선택
             const selectedCount = Math.min(videosInGroup.length, MAX_ACCOUNTS);
             filteredVideos.push(...videosInGroup.slice(0, selectedCount));
 
@@ -425,16 +425,33 @@ async function batchUpload() {
     const uploadPlan = [];
     let tempStats = { ...stats };
     let lastUsedAccount = null;
+    const MAX_VIDEOS_PER_ACCOUNT = 3; // 계정당 최대 업로드 수
+    const accountVideoCount = {}; // 계정별 업로드 수 추적
 
     // Load AccountManager for account names
     const accountManager = new AccountManager();
 
     for (let i = 0; i < videos.length; i++) {
+        // 계정당 최대 3개 제한 - 모든 계정이 꽉 찼으면 중단
+        const allAccountsFull = [1, 2, 3, 4].every(
+            acc => (accountVideoCount[acc] || 0) >= MAX_VIDEOS_PER_ACCOUNT
+        );
+        if (allAccountsFull) {
+            console.log(`⚠️  모든 계정이 최대 ${MAX_VIDEOS_PER_ACCOUNT}개 업로드에 도달. 나머지 건너뜀.`);
+            break;
+        }
+
+        // 아직 3개 미만인 계정 중에서 선택
         const bestAccount = findBestAccount(tempStats, lastUsedAccount);
 
         if (!bestAccount) {
             console.error('❌ 사용 가능한 계정이 없습니다.');
             return;
+        }
+
+        // 해당 계정이 이미 최대 개수에 도달했으면 건너뜀
+        if ((accountVideoCount[bestAccount] || 0) >= MAX_VIDEOS_PER_ACCOUNT) {
+            continue;
         }
 
         // Get account name from AccountManager (no API call during planning)
@@ -453,6 +470,7 @@ async function batchUpload() {
             index: i + 1
         });
 
+        accountVideoCount[bestAccount] = (accountVideoCount[bestAccount] || 0) + 1;
         tempStats[bestAccount] = (tempStats[bestAccount] || 0) + 1;
         lastUsedAccount = bestAccount;
     }

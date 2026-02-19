@@ -7,9 +7,148 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.join(__dirname, '..');
 const OUTPUTS_DIR = path.join(PROJECT_ROOT, 'outputs');
+const OUTPUTS2_DIR = path.join(PROJECT_ROOT, 'outputs 2');
 const ACCOUNTS_FILE = path.join(PROJECT_ROOT, 'instagram_accounts.json');
 const STATS_FILE = path.join(PROJECT_ROOT, 'instagram-upload-stats.json');
 const PROFILES_DIR = path.join(PROJECT_ROOT, '.instagram-profiles');
+
+// ============================================================
+// 🔀 업로드 모드 설정
+// USE_RANDOM_TITLES = false → 기존 방식 (info.txt 제목 사용)
+// USE_RANDOM_TITLES = true  → 랜덤 제목 방식 (아래 목록에서 랜덤 선택)
+// ============================================================
+const USE_RANDOM_TITLES = false;
+
+const RANDOM_TITLES = [
+    '인스타 팔로워 1000명 빠르게 늘리는 법',
+    '팔로워 0명에서 1만명까지 비법 공개',
+    '인스타 팔로워 하루 100명 늘리는 방법',
+    '팔로워 폭발적으로 늘어나는 게시물 비법',
+    '인스타 알고리즘 완전 정복 팔로워 늘리기',
+    '팔로워 안 늘어나는 이유 TOP 5',
+    '인스타 프로필 세팅만으로 팔로워 2배',
+    '릴스 하나로 팔로워 5000명 늘린 방법',
+    '인스타 팔로워 빠르게 늘리는 해시태그 전략',
+    '팔로워 1만명 달성한 계정 분석 결과',
+    '인스타 팔로워 매일 늘리는 루틴 공개',
+    '팔로워 폭발하는 최적 업로드 시간대',
+    '인스타 팔로워 늘리는 댓글 전략',
+    '팔로워 0명도 가능한 인스타 성장법',
+    '인스타 릴스로 팔로워 1만명 만든 비법',
+    '팔로워 늘리는 인스타 프로필 사진 꿀팁',
+    '인스타 팔로워 늘리는 스토리 활용법',
+    '팔로워 급증하는 인스타 게시물 패턴',
+    '인스타 팔로워 빠르게 모으는 콘텐츠 전략',
+    '팔로워 늘리는 인스타 바이오 작성법',
+    '인스타 팔로워 1만 달성 현실 후기',
+    '팔로워 안 늘 때 시도해야 할 방법',
+    '인스타 팔로워 늘리기 꿀팁 총정리',
+    '팔로워 폭증하는 릴스 제작 방법',
+    '인스타 팔로워 늘리는 협업 전략',
+    '팔로워 1000명에서 1만명 가는 방법',
+    '인스타 팔로워 늘리는 DM 활용법',
+    '팔로워 늘리는 인스타 피드 구성법',
+    '인스타 팔로워 자동으로 늘리는 방법',
+    '팔로워 늘리는 인스타 라이브 활용법',
+    '인스타 팔로워 폭발하는 첫 3초 공식',
+    '팔로워 늘리는 릴스 편집 꿀팁',
+    '인스타 팔로워 매달 1000명씩 늘리는 법',
+    '팔로워 늘리는 인스타 공유 전략',
+    '인스타 팔로워 늘리는 저장 유도 방법',
+    '팔로워 10배 늘린 인스타 운영 비법',
+    '인스타 팔로워 늘리는 콘텐츠 기획법',
+    '팔로워 급상승하는 인스타 글쓰기 방법',
+    '인스타 팔로워 늘리는 릴스 길이 비법',
+    '팔로워 늘리는 인스타 음악 선택법',
+    '인스타 팔로워 1만명 달성 기간 단축법',
+    '팔로워 늘리는 인스타 트렌드 활용법',
+    '인스타 팔로워 무료로 늘리는 방법',
+    '팔로워 늘리는 인스타 릴스 커버 꿀팁',
+    '인스타 팔로워 늘리는 게시물 길이 비법',
+    '팔로워 증가하는 인스타 댓글 작성법',
+    '인스타 팔로워 늘리는 틈새시장 공략법',
+    '팔로워 폭발하는 인스타 첫 게시물 방법',
+    '인스타 팔로워 늘리는 릴스 주제 선정법',
+    '팔로워 빠르게 늘리는 인스타 교류법',
+    '인스타 팔로워 늘리는 스토리 설문 활용',
+    '팔로워 늘리는 인스타 저장수 올리는 법',
+    '인스타 팔로워 늘리는 릴스 자막 전략',
+    '팔로워 1만명 계정 공통점 분석',
+    '인스타 팔로워 늘리는 카드뉴스 제작법',
+    '팔로워 늘리는 인스타 공감 게시물 공식',
+    '인스타 팔로워 늘리는 릴스 섬네일 꿀팁',
+    '팔로워 빠른 증가 인스타 업로드 빈도',
+    '인스타 팔로워 늘리는 타겟 설정법',
+    '팔로워 안 떠나게 하는 인스타 운영법',
+    '인스타 팔로워 늘리는 키워드 활용법',
+    '팔로워 늘리는 인스타 계정 테마 설정',
+    '인스타 팔로워 늘리는 셀카 업로드 전략',
+    '팔로워 늘리는 인스타 일상 콘텐츠 방법',
+    '인스타 팔로워 늘리는 정보성 게시물 작성',
+    '팔로워 증가하는 인스타 릴스 배경음악',
+    '인스타 팔로워 늘리는 브랜딩 전략',
+    '팔로워 늘리는 인스타 링크 활용법',
+    '인스타 팔로워 늘리는 릴스 훅 만드는 법',
+    '팔로워 늘어나는 인스타 게시물 시간대',
+    '인스타 팔로워 늘리는 챌린지 참여법',
+    '팔로워 빠르게 늘리는 인스타 스토리 꿀팁',
+    '인스타 팔로워 늘리는 위치 태그 활용법',
+    '팔로워 늘리는 인스타 멘션 전략',
+    '인스타 팔로워 늘리는 콜라보 방법',
+    '팔로워 빠른 성장 인스타 계정 색감 전략',
+    '인스타 팔로워 늘리는 주제 전문성 방법',
+    '팔로워 늘리는 인스타 첫 줄 캡션 공식',
+    '인스타 팔로워 늘리는 릴스 조회수 올리기',
+    '팔로워 1만명 이후 유지하는 방법',
+    '인스타 팔로워 늘리는 공개 계정 전략',
+    '팔로워 늘리는 인스타 피드 색상 통일법',
+    '인스타 팔로워 늘리는 빈도 최적화 방법',
+    '팔로워 늘리는 인스타 구독자 분석법',
+    '인스타 팔로워 늘리는 릴스 공유 유도법',
+    '팔로워 급증하는 인스타 정보 제공 방법',
+    '인스타 팔로워 늘리는 인사이트 활용법',
+    '팔로워 빠르게 늘리는 인스타 소통 방법',
+    '인스타 팔로워 늘리는 릴스 포맷 선택법',
+    '팔로워 늘리는 인스타 계정 분리 전략',
+    '인스타 팔로워 늘리는 스토리 하이라이트',
+    '팔로워 늘리는 인스타 게시물 연속성',
+    '인스타 팔로워 늘리는 릴스 길이 최적화',
+    '팔로워 빠른 증가를 위한 인스타 기초',
+    '인스타 팔로워 늘리는 반응형 게시물 방법',
+    '팔로워 늘리는 인스타 알림 활용 전략',
+    '인스타 팔로워 늘리는 팔로우 맞팔 전략',
+    '팔로워 늘리는 인스타 저장 유도 캡션',
+    '인스타 팔로워 늘리는 최신 트렌드 반영법',
+    '팔로워 1만명 달성하는 인스타 90일 플랜',
+];
+
+// 이미 사용한 제목 추적 (중복 방지)
+const USED_TITLES_FILE = path.join(PROJECT_ROOT, 'instagram-used-titles.json');
+
+function getRandomTitle() {
+    let usedTitles = [];
+    if (fs.existsSync(USED_TITLES_FILE)) {
+        try {
+            usedTitles = JSON.parse(fs.readFileSync(USED_TITLES_FILE, 'utf8'));
+        } catch (e) {
+            usedTitles = [];
+        }
+    }
+
+    // 모든 제목이 사용됐으면 초기화
+    let availableTitles = RANDOM_TITLES.filter(t => !usedTitles.includes(t));
+    if (availableTitles.length === 0) {
+        console.log('🔄 모든 제목 사용 완료 - 제목 목록 초기화');
+        usedTitles = [];
+        availableTitles = [...RANDOM_TITLES];
+        fs.writeFileSync(USED_TITLES_FILE, JSON.stringify([], null, 2));
+    }
+
+    const title = availableTitles[Math.floor(Math.random() * availableTitles.length)];
+    usedTitles.push(title);
+    fs.writeFileSync(USED_TITLES_FILE, JSON.stringify(usedTitles, null, 2));
+    return title;
+}
 
 // Ensure profiles directory exists
 if (!fs.existsSync(PROFILES_DIR)) {
@@ -75,59 +214,99 @@ function saveUploadStats(stats) {
 /**
  * Find all videos in outputs folder
  */
-function findAllVideos() {
+function findAllVideos(folderChoice = 'both') {
     const videos = [];
-    const folders = fs.readdirSync(OUTPUTS_DIR).filter(item => {
-        const fullPath = path.join(OUTPUTS_DIR, item);
-        return fs.statSync(fullPath).isDirectory() && !item.startsWith('.');
-    });
 
-    for (const folder of folders) {
-        const folderPath = path.join(OUTPUTS_DIR, folder);
-        const files = fs.readdirSync(folderPath);
+    // 스캔할 폴더 목록: folderChoice에 따라 결정
+    const scanTargets = [];
+    if (folderChoice === 'outputs' || folderChoice === 'both') {
+        scanTargets.push({ dir: OUTPUTS_DIR, useRandomTitle: USE_RANDOM_TITLES });
+    }
+    if ((folderChoice === 'outputs2' || folderChoice === 'both') && fs.existsSync(OUTPUTS2_DIR)) {
+        scanTargets.push({ dir: OUTPUTS2_DIR, useRandomTitle: true });
+    }
 
-        for (const file of files) {
-            if (file.endsWith('.mp4')) {
-                const videoPath = path.join(folderPath, file);
-                const infoPath = path.join(folderPath, 'info.txt');
+    for (const { dir, useRandomTitle } of scanTargets) {
+        const items = fs.readdirSync(dir).filter(item => !item.startsWith('.'));
 
+        // MP4가 바로 있는지 (flat) vs 서브폴더 안에 있는지 확인
+        const hasFlatMp4 = items.some(item => item.endsWith('.mp4'));
+
+        if (hasFlatMp4) {
+            // outputs 2처럼 MP4 파일이 폴더 바로 아래 있는 경우
+            for (const file of items) {
+                if (!file.endsWith('.mp4')) continue;
+                const videoPath = path.join(dir, file);
                 let title = path.basename(file, '.mp4');
-                let description = '';
-                let hashtags = '';
 
-                // Read info.txt for metadata
-                let priority = 999;
-                if (fs.existsSync(infoPath)) {
-                    try {
-                        const infoContent = fs.readFileSync(infoPath, 'utf8');
-                        const lines = infoContent.split('\n');
-
-                        for (const line of lines) {
-                            if (line.startsWith('제목:')) {
-                                title = line.replace('제목:', '').trim();
-                            } else if (line.startsWith('설명:')) {
-                                description = line.replace('설명:', '').trim();
-                            } else if (line.startsWith('우선순위:')) {
-                                priority = parseInt(line.replace('우선순위:', '').trim()) || 999;
-                            } else if (line.startsWith('#')) {
-                                hashtags += line.trim() + ' ';
-                            }
-                        }
-                    } catch (err) {
-                        console.error(`⚠️  info.txt 읽기 실패: ${folder}`);
-                    }
+                if (useRandomTitle) {
+                    title = getRandomTitle();
                 }
 
-                // Build Instagram caption (title + hashtags only, no description)
-                const caption = `${title}\n\n${hashtags}`.trim();
-
+                const caption = title.trim();
                 videos.push({
                     path: videoPath,
-                    folder: folder,
+                    folder: path.basename(dir),
                     title: title,
                     caption: caption,
-                    priority: priority
+                    priority: 999
                 });
+            }
+        } else {
+            // outputs처럼 서브폴더 안에 MP4가 있는 경우
+            const folders = items.filter(item => {
+                const fullPath = path.join(dir, item);
+                return fs.statSync(fullPath).isDirectory();
+            });
+
+            for (const folder of folders) {
+                const folderPath = path.join(dir, folder);
+                const files = fs.readdirSync(folderPath);
+
+                for (const file of files) {
+                    if (!file.endsWith('.mp4')) continue;
+
+                    const videoPath = path.join(folderPath, file);
+                    const infoPath = path.join(folderPath, 'info.txt');
+
+                    let title = path.basename(file, '.mp4');
+                    let description = '';
+                    let hashtags = '';
+                    let priority = 999;
+
+                    if (fs.existsSync(infoPath)) {
+                        try {
+                            const infoContent = fs.readFileSync(infoPath, 'utf8');
+                            const lines = infoContent.split('\n');
+                            for (const line of lines) {
+                                if (line.startsWith('제목:')) {
+                                    title = line.replace('제목:', '').trim();
+                                } else if (line.startsWith('설명:')) {
+                                    description = line.replace('설명:', '').trim();
+                                } else if (line.startsWith('우선순위:')) {
+                                    priority = parseInt(line.replace('우선순위:', '').trim()) || 999;
+                                } else if (line.startsWith('#')) {
+                                    hashtags += line.trim() + ' ';
+                                }
+                            }
+                        } catch (err) {
+                            console.error(`⚠️  info.txt 읽기 실패: ${folder}`);
+                        }
+                    }
+
+                    if (useRandomTitle) {
+                        title = getRandomTitle();
+                    }
+
+                    const caption = `${title}\n\n${hashtags}`.trim();
+                    videos.push({
+                        path: videoPath,
+                        folder: folder,
+                        title: title,
+                        caption: caption,
+                        priority: priority
+                    });
+                }
             }
         }
     }
@@ -1015,7 +1194,8 @@ async function setupAccount(accountNum, accountName, headless) {
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--window-size=1280,900'
+            '--window-size=1280,900',
+            '--mute-audio'
         ]
     });
 
@@ -1047,7 +1227,7 @@ async function setupAccount(accountNum, accountName, headless) {
 /**
  * Upload videos for a specific account
  */
-async function uploadForAccount(accountNum, accountName, videos, headless) {
+async function uploadForAccount(accountNum, accountName, videos, headless, deleteAfterUpload = false) {
     const profileDir = path.join(PROFILES_DIR, `account${accountNum}`);
 
     console.log(`\n${'━'.repeat(80)}`);
@@ -1062,7 +1242,8 @@ async function uploadForAccount(accountNum, accountName, videos, headless) {
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--window-size=1280,900'
+            '--window-size=1280,900',
+            '--mute-audio'
         ]
     });
 
@@ -1078,6 +1259,15 @@ async function uploadForAccount(accountNum, accountName, videos, headless) {
 
             if (success) {
                 successCount++;
+                // outputs 2 영상은 업로드 성공 후 삭제
+                if (deleteAfterUpload && videos[i].path) {
+                    try {
+                        fs.unlinkSync(videos[i].path);
+                        console.log(`🗑️  파일 삭제: ${path.basename(videos[i].path)}`);
+                    } catch (err) {
+                        console.error(`⚠️  파일 삭제 실패: ${err.message}`);
+                    }
+                }
             } else {
                 failCount++;
             }
@@ -1101,9 +1291,50 @@ async function uploadForAccount(accountNum, accountName, videos, headless) {
  * Main batch upload function
  */
 async function batchUpload() {
-    console.log('🔍 outputs 폴더에서 비디오 검색 중...\n');
+    // 폴더 선택 프롬프트
+    const outputs2Exists = fs.existsSync(OUTPUTS2_DIR);
+    console.log('━'.repeat(80));
+    console.log('📁 업로드할 폴더를 선택하세요');
+    console.log('━'.repeat(80));
+    console.log('  1) outputs       (기존 영상 - info.txt 제목 사용)');
+    if (outputs2Exists) {
+        console.log('  2) outputs 2     (추가 영상 - 랜덤 제목 사용)');
+        console.log('  3) 둘 다');
+    }
+    console.log('━'.repeat(80));
 
-    const videos = findAllVideos();
+    const folderChoice = await new Promise(resolve => {
+        process.stdout.write('선택 (1/2/3): ');
+        process.stdin.once('data', data => {
+            const input = data.toString().trim();
+            if (input === '2' && outputs2Exists) resolve('outputs2');
+            else if (input === '3' && outputs2Exists) resolve('both');
+            else resolve('outputs');
+        });
+    });
+
+    const folderLabel = folderChoice === 'outputs2' ? 'outputs 2'
+        : folderChoice === 'both' ? 'outputs + outputs 2'
+        : 'outputs';
+    console.log(`\n✅ 선택: ${folderLabel}\n`);
+
+    // outputs 2 선택 시 계정당 업로드 수 입력
+    let perAccountLimit = null;
+    const deleteAfterUpload = folderChoice === 'outputs2';
+    if (folderChoice === 'outputs2') {
+        perAccountLimit = await new Promise(resolve => {
+            process.stdout.write('계정당 업로드할 영상 수를 입력하세요 (예: 3): ');
+            process.stdin.once('data', data => {
+                const num = parseInt(data.toString().trim());
+                resolve(isNaN(num) || num < 1 ? 1 : num);
+            });
+        });
+        console.log(`✅ 계정당 ${perAccountLimit}개 업로드\n`);
+    }
+
+    console.log('🔍 비디오 검색 중...\n');
+
+    const videos = findAllVideos(folderChoice);
 
     if (videos.length === 0) {
         console.log('❌ 업로드할 비디오를 찾을 수 없습니다.');
@@ -1150,6 +1381,10 @@ async function batchUpload() {
     for (const item of distribution) {
         if (!accountGroups[item.accountNum]) {
             accountGroups[item.accountNum] = [];
+        }
+        // outputs 2 모드: 계정당 업로드 수 제한
+        if (perAccountLimit !== null && accountGroups[item.accountNum].length >= perAccountLimit) {
+            continue;
         }
         accountGroups[item.accountNum].push(item.video);
     }
@@ -1231,7 +1466,7 @@ async function batchUpload() {
         }
 
         // Upload videos for this account
-        const result = await uploadForAccount(accountNum, accountName, accountVideos, headless);
+        const result = await uploadForAccount(accountNum, accountName, accountVideos, headless, deleteAfterUpload);
 
         totalSuccess += result.successCount;
         totalFail += result.failCount;
