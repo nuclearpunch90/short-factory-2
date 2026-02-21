@@ -327,6 +327,27 @@ async function batchUpload() {
         return;
     }
 
+    // 업로드 순서 선택 프롬프트
+    console.log('━'.repeat(80));
+    console.log('📊 업로드 순서를 선택하세요');
+    console.log('━'.repeat(80));
+    console.log('  1) 정상 순서 (우선순위 1 → 2 → 3 ...)');
+    console.log('  2) 역순 (우선순위 10 → 9 → 8 ...)');
+    console.log('━'.repeat(80));
+
+    const uploadOrder = await new Promise(resolve => {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+        rl.question('선택 (1/2): ', answer => {
+            rl.close();
+            resolve(answer.trim() === '2' ? 'reverse' : 'normal');
+        });
+    });
+
+    const orderLabel = uploadOrder === 'reverse' ? '역순 (10→1)' : '정상 순서 (1→10)';
+    console.log(`\n✅ 선택: ${orderLabel}\n`);
     console.log(`✅ ${videos.length}개의 비디오를 찾았습니다.\n`);
 
     // Display priority-sorted video list
@@ -357,8 +378,10 @@ async function batchUpload() {
         }
     });
 
-    // 우선순위 역순 정렬 (3→2→1 순서로 업로드)
-    const sortedPriorities = Array.from(priorityGroups.keys()).sort((a, b) => b - a);
+    // 우선순위 정렬 (사용자 선택에 따라)
+    const sortedPriorities = Array.from(priorityGroups.keys()).sort((a, b) =>
+        uploadOrder === 'reverse' ? b - a : a - b
+    );
 
     // 각 우선순위별로 최대 4개씩 선택 (우선순위 1-10)
     sortedPriorities.forEach(priority => {
