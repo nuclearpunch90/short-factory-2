@@ -18,6 +18,82 @@ const CREDENTIALS_PATH = path.join(PROJECT_ROOT, 'client_secret.json');
 const OUTPUTS_DIR = path.join(PROJECT_ROOT, 'outputs');
 const STATS_PATH = path.join(PROJECT_ROOT, 'youtube-upload-stats.json');
 
+// 인스타 팔로워 관련 랜덤 제목 리스트
+const FOLLOWER_TITLES = [
+    "인스타 팔로워 늘리는 비법",
+    "팔로워 1000명 만드는 법",
+    "인스타 성장 꿀팁",
+    "팔로워 폭발적으로 늘리기",
+    "인스타 계정 성장 전략",
+    "팔로워 늘리는 5가지 방법",
+    "인스타 알고리즘 공략법",
+    "팔로워 급증 비결",
+    "인스타 인기 계정 되는 법",
+    "팔로워 늘리는 핵심 전략",
+    "인스타 성장 가이드",
+    "팔로워 1만 만드는 노하우",
+    "인스타 계정 키우는 법",
+    "팔로워 늘리는 실전 팁",
+    "인스타 바이럴 만들기",
+    "팔로워 증가 비법",
+    "인스타 성공 전략",
+    "팔로워 폭발 성장법",
+    "인스타 계정 성장 꿀팁",
+    "팔로워 늘리는 마법",
+    "인스타 인플루언서 되기",
+    "팔로워 증가 핵심 전략",
+    "인스타 성장 로드맵",
+    "팔로워 1천명 돌파 비법",
+    "인스타 계정 키우기",
+    "팔로워 늘리는 방법",
+    "인스타 성장 전략",
+    "팔로워 급증 노하우",
+    "인스타 알고리즘 활용법",
+    "팔로워 늘리는 기술",
+    "인스타 성공 비결",
+    "팔로워 증가 전략",
+    "인스타 계정 성장기",
+    "팔로워 늘리는 핵심",
+    "인스타 바이럴 전략",
+    "팔로워 폭발 비법",
+    "인스타 성장 노하우",
+    "팔로워 1만명 달성법",
+    "인스타 인기 계정 만들기",
+    "팔로워 증가 꿀팁",
+    "인스타 계정 성장 가이드",
+    "팔로워 늘리는 비밀",
+    "인스타 성공 노하우",
+    "팔로워 급증 전략",
+    "인스타 알고리즘 마스터",
+    "팔로워 늘리는 실전 전략",
+    "인스타 성장 비법",
+    "팔로워 증가 로드맵",
+    "인스타 계정 폭발 성장",
+    "팔로워 늘리는 방법론"
+];
+
+// 사용한 제목 추적
+const usedTitles = new Set();
+
+/**
+ * 랜덤 제목 가져오기 (중복 없이)
+ */
+function getRandomTitle() {
+    // 모든 제목을 사용했으면 리셋
+    if (usedTitles.size >= FOLLOWER_TITLES.length) {
+        usedTitles.clear();
+    }
+
+    // 사용 안 한 제목만 필터링
+    const availableTitles = FOLLOWER_TITLES.filter(title => !usedTitles.has(title));
+
+    // 랜덤 선택
+    const randomTitle = availableTitles[Math.floor(Math.random() * availableTitles.length)];
+    usedTitles.add(randomTitle);
+
+    return randomTitle;
+}
+
 /**
  * Load upload statistics from file
  */
@@ -155,6 +231,23 @@ function findAllVideos() {
         return videos;
     }
 
+    // 1. 루트 폴더에서 직접 .mp4 파일 스캔 (generated_reel_* 등)
+    const rootFiles = fs.readdirSync(OUTPUTS_DIR);
+    for (const file of rootFiles) {
+        const fullPath = path.join(OUTPUTS_DIR, file);
+        if (fs.statSync(fullPath).isFile() && file.endsWith('.mp4')) {
+            videos.push({
+                path: fullPath,
+                title: getRandomTitle(), // 랜덤 제목 사용
+                description: '',
+                folder: '(root)',
+                folderPath: OUTPUTS_DIR,
+                priority: 11 // 우선순위 1-10 다음에 업로드
+            });
+        }
+    }
+
+    // 2. 서브디렉토리 스캔
     const folders = fs.readdirSync(OUTPUTS_DIR).filter(item => {
         const fullPath = path.join(OUTPUTS_DIR, item);
         return fs.statSync(fullPath).isDirectory() && !item.startsWith('.');
@@ -392,13 +485,13 @@ async function batchUpload() {
             videosInGroup.forEach(video => {
                 skippedVideos.push({ video, reason: '우선순위 없음 (업로드 제외)' });
             });
-        } else if (priority > 10) {
-            // 우선순위 10 초과 - 건너뜀
+        } else if (priority > 11) {
+            // 우선순위 11 초과 - 건너뜀
             videosInGroup.forEach(video => {
-                skippedVideos.push({ video, reason: `우선순위 ${priority} (10 초과, 업로드 제외)` });
+                skippedVideos.push({ video, reason: `우선순위 ${priority} (11 초과, 업로드 제외)` });
             });
         } else {
-            // 우선순위 1-10 업로드 - 최대 4개만 선택
+            // 우선순위 1-11 업로드 - 최대 4개만 선택
             const selectedCount = Math.min(videosInGroup.length, MAX_ACCOUNTS);
             filteredVideos.push(...videosInGroup.slice(0, selectedCount));
 
