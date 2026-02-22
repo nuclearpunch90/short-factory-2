@@ -195,7 +195,7 @@ function loadUploadStats() {
     }
 
     // Ensure all accounts 1-8 exist in stats
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 18; i++) {
         if (stats[i] === undefined) {
             stats[i] = 0;
         }
@@ -322,6 +322,7 @@ function distributeVideos(videos, accounts, stats) {
     const enabledAccounts = Object.keys(accounts)
         .filter(key => accounts[key].enabled)
         .map(key => parseInt(key.replace('account', '')))
+        .filter(num => num >= 18) // 18번 이상만 포함
         .sort((a, b) => a - b);
 
     if (enabledAccounts.length === 0) {
@@ -1315,7 +1316,7 @@ async function batchUpload() {
 
     const folderLabel = folderChoice === 'outputs2' ? 'outputs 2'
         : folderChoice === 'both' ? 'outputs + outputs 2'
-        : 'outputs';
+            : 'outputs';
     console.log(`\n✅ 선택: ${folderLabel}\n`);
 
     // outputs 2 선택 시 계정당 업로드 수 입력
@@ -1389,7 +1390,7 @@ async function batchUpload() {
         accountGroups[item.accountNum].push(item.video);
     }
 
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 18; i++) {
         const accountVideos = accountGroups[i] || [];
         const count = accountVideos.length;
         const accountName = accounts[`account${i}`]?.name || `account${i}`;
@@ -1459,11 +1460,8 @@ async function batchUpload() {
         const accountNum = parseInt(accountNumStr);
         const accountName = accounts[`account${accountNum}`].name;
 
-        // Ensure account is set up
-        const profileDir = path.join(PROFILES_DIR, `account${accountNum}`);
-        if (!fs.existsSync(profileDir)) {
-            await setupAccount(accountNum, accountName, headless);
-        }
+        // Ensure account is logged in and set up
+        await setupAccount(accountNum, accountName, headless);
 
         // Upload videos for this account
         const result = await uploadForAccount(accountNum, accountName, accountVideos, headless, deleteAfterUpload);
@@ -1492,7 +1490,7 @@ async function batchUpload() {
     console.log('━'.repeat(80));
 
     console.log('\n📈 계정별 누적 통계:');
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 18; i++) {
         const accountName = accounts[`account${i}`]?.name || `account${i}`;
         const count = stats[i] || 0;
         console.log(`   계정 ${i} (${accountName}): 총 ${count}개 업로드됨`);
