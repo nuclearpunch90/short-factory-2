@@ -236,12 +236,19 @@ function findAllVideos() {
     for (const file of rootFiles) {
         const fullPath = path.join(OUTPUTS_DIR, file);
         if (fs.statSync(fullPath).isFile() && file.endsWith('.mp4')) {
+            // 이미 업로드된 영상 건너뜀
+            const uploadedMarker = path.join(OUTPUTS_DIR, file.replace('.mp4', '.uploaded.txt'));
+            if (fs.existsSync(uploadedMarker)) {
+                console.log(`⏭️  이미 업로드됨 (건너뜀): ${file}`);
+                continue;
+            }
             videos.push({
                 path: fullPath,
                 title: getRandomTitle(), // 랜덤 제목 사용
                 description: '',
                 folder: '(root)',
                 folderPath: OUTPUTS_DIR,
+                uploadedMarkerPath: uploadedMarker,
                 priority: 11 // 우선순위 1-10 다음에 업로드
             });
         }
@@ -261,6 +268,16 @@ function findAllVideos() {
             if (file.endsWith('.mp4')) {
                 const videoPath = path.join(folderPath, file);
                 const infoPath = path.join(folderPath, 'info.txt');
+                const uploadedMarker = path.join(folderPath, 'uploaded.txt');
+
+                // 이미 업로드된 폴더 건너뜀
+                if (fs.existsSync(uploadedMarker)) {
+                    const markerContent = fs.readFileSync(uploadedMarker, 'utf8');
+                    const titleMatch = markerContent.match(/제목: (.+)/);
+                    const titleStr = titleMatch ? titleMatch[1] : path.basename(file, '.mp4');
+                    console.log(`⏭️  이미 업로드됨 (건너뜀): ${titleStr}`);
+                    continue;
+                }
 
                 let title = path.basename(file, '.mp4');
                 let description = ''; // 항상 빈 상태로 업로드
@@ -296,6 +313,7 @@ function findAllVideos() {
                     description: description,
                     folder: folder,
                     folderPath: folderPath,
+                    uploadedMarkerPath: uploadedMarker,
                     priority: priority
                 });
             }
@@ -392,7 +410,7 @@ async function uploadVideo(auth, videoInfo, privacyStatus, index, total, channel
                 console.log('✅ 업로드 성공!');
                 console.log(`📺 Video ID: ${res.data.id}`);
                 console.log(`🔗 Watch URL: https://www.youtube.com/watch?v=${res.data.id}`);
-                resolve({ success: true, videoId: res.data.id, folderPath: videoInfo.folderPath });
+                resolve({ success: true, videoId: res.data.id, folderPath: videoInfo.folderPath, uploadedMarkerPath: videoInfo.uploadedMarkerPath });
             }
         );
     });
@@ -693,16 +711,25 @@ async function batchUpload() {
             saveUploadStats(stats);
             console.log(`📈 Account ${plan.accountNumber} 누적: ${stats[plan.accountNumber]}개`);
 
-            // 업로드 성공 시 폴더 삭제 (비활성화됨)
-            // if (result.folderPath && !deletedFolders.has(result.folderPath)) {
-            //     try {
-            //         fs.rmSync(result.folderPath, { recursive: true, force: true });
-            //         console.log(`🗑️  폴더 삭제: ${path.basename(result.folderPath)}`);
-            //         deletedFolders.add(result.folderPath);
-            //     } catch (err) {
-            //         console.error(`⚠️  폴더 삭제 실패: ${err.message}`);
-            //     }
-            // }
+            // 업로드 완료 마커 파일 생성 (중복 업로드 방지)
+            if (plan.video.uploadedMarkerPath) {
+                try {
+                    const uploadedAt = new Date().toLocaleString('ko-KR');
+                    const accountNum = plan.accountNumber;
+                    const channelName = plan.channelInfo ? plan.channelInfo.title : '알 수 없음';
+                    const markerContent = [
+                        `제목: ${plan.video.title}`,
+                        `업로드 계정: Account ${accountNum} (${channelName})`,
+                        `업로드 일시: ${uploadedAt}`,
+                        `Video ID: ${result.videoId}`,
+                        `URL: https://www.youtube.com/watch?v=${result.videoId}`
+                    ].join('\n');
+                    fs.writeFileSync(plan.video.uploadedMarkerPath, markerContent, 'utf8');
+                    console.log(`📝 업로드 기록 저장: ${plan.video.uploadedMarkerPath}`);
+                } catch (err) {
+                    console.error(`⚠️  업로드 기록 저장 실패: ${err.message}`);
+                }
+            }
         } else if (result.error) {
             errorCount++;
         }
