@@ -194,8 +194,8 @@ function loadUploadStats() {
         console.warn('⚠️  통계 파일 로드 실패, 초기화합니다.');
     }
 
-    // Ensure all accounts 1-8 exist in stats
-    for (let i = 1; i <= 18; i++) {
+    // Ensure all accounts 1-30 exist in stats
+    for (let i = 1; i <= 30; i++) {
         if (stats[i] === undefined) {
             stats[i] = 0;
         }
@@ -322,7 +322,7 @@ function distributeVideos(videos, accounts, stats) {
     const enabledAccounts = Object.keys(accounts)
         .filter(key => accounts[key].enabled)
         .map(key => parseInt(key.replace('account', '')))
-        .filter(num => num >= 18) // 18번 이상만 포함
+        .filter(num => num >= 10) // 10번 이상만 포함
         .sort((a, b) => a - b);
 
     if (enabledAccounts.length === 0) {
@@ -1160,12 +1160,38 @@ function delay(ms) {
  */
 async function checkLogin(page) {
     try {
-        await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle2' });
-        await delay(2000);
+        await page.goto('https://www.instagram.com/', { waitUntil: 'networkidle2', timeout: 30000 });
+        await delay(3000);
 
-        // Check for logged-in indicators
-        const isLoggedIn = await page.$('svg[aria-label="Home"]') !== null;
-        return isLoggedIn;
+        // 로그인 페이지인지 확인 (로그인 안 된 경우)
+        const currentUrl = page.url();
+        if (currentUrl.includes('/accounts/login')) {
+            return false;
+        }
+
+        // 여러 셀렉터로 로그인 상태 확인
+        const loggedInSelectors = [
+            'svg[aria-label="Home"]',
+            'svg[aria-label="홈"]',
+            'a[href="/"]',
+            'nav a[href*="direct"]',
+            'svg[aria-label="Direct"]',
+            'svg[aria-label="메시지"]',
+            'a[aria-label="Profile"]',
+        ];
+
+        for (const selector of loggedInSelectors) {
+            const el = await page.$(selector);
+            if (el) return true;
+        }
+
+        // URL이 홈이고 로그인 폼이 없으면 로그인된 것으로 간주
+        const hasLoginForm = await page.$('input[name="username"]') !== null;
+        if (!hasLoginForm && (currentUrl === 'https://www.instagram.com/' || currentUrl === 'https://www.instagram.com')) {
+            return true;
+        }
+
+        return false;
     } catch (error) {
         console.error('로그인 체크 실패:', error.message);
         return false;
@@ -1390,7 +1416,7 @@ async function batchUpload() {
         accountGroups[item.accountNum].push(item.video);
     }
 
-    for (let i = 1; i <= 18; i++) {
+    for (let i = 1; i <= 30; i++) {
         const accountVideos = accountGroups[i] || [];
         const count = accountVideos.length;
         const accountName = accounts[`account${i}`]?.name || `account${i}`;
@@ -1490,7 +1516,7 @@ async function batchUpload() {
     console.log('━'.repeat(80));
 
     console.log('\n📈 계정별 누적 통계:');
-    for (let i = 1; i <= 18; i++) {
+    for (let i = 1; i <= 30; i++) {
         const accountName = accounts[`account${i}`]?.name || `account${i}`;
         const count = stats[i] || 0;
         console.log(`   계정 ${i} (${accountName}): 총 ${count}개 업로드됨`);

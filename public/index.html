@@ -341,8 +341,8 @@
                                 </div>
                             </label>
                             <label style="flex: 1; cursor: pointer;">
-                                <input type="radio" name="scriptMode" value="batch"
-                                    onchange="toggleScriptMode()" style="display: none;">
+                                <input type="radio" name="scriptMode" value="batch" onchange="toggleScriptMode()"
+                                    style="display: none;">
                                 <div class="script-mode-chip"
                                     style="padding: 10px; text-align: center; border-radius: 6px; transition: all 0.2s;">
                                     📝 주제 일괄 생성
@@ -367,6 +367,7 @@
                                     transform: translateX(100%);
                                     opacity: 0;
                                 }
+
                                 to {
                                     transform: translateX(0);
                                     opacity: 1;
@@ -378,6 +379,7 @@
                                     transform: translateX(0);
                                     opacity: 1;
                                 }
+
                                 to {
                                     transform: translateX(100%);
                                     opacity: 0;
@@ -387,145 +389,147 @@
 
                         <!-- Business/Entertainment Mode Content -->
                         <div id="businessModeContent">
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                                <span id="labelName">🏪 가게 이름</span>
-                            </label>
-                            <div style="display: flex; gap: 0.5rem;">
-                                <input type="text" id="storeName" class="form-control"
-                                    style="flex: 1; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
-                                    placeholder="예: 고양시 맛집 할매순대국">
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="checkbox" id="includeName" checked>
-                                    <label for="includeName" style="font-size: 0.9rem;"><span
-                                            id="labelDetailInclude">이름</span> 포함</label>
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                    <span id="labelName">🏪 가게 이름</span>
+                                </label>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <input type="text" id="storeName" class="form-control"
+                                        style="flex: 1; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
+                                        placeholder="예: 고양시 맛집 할매순대국">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="checkbox" id="includeName" checked>
+                                        <label for="includeName" style="font-size: 0.9rem;"><span
+                                                id="labelDetailInclude">이름</span> 포함</label>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="form-group" id="locationGroup" style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📍 위치 정보
-                                (선택)</label>
-                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                <input type="text" id="storeLocation" class="form-control"
-                                    style="flex: 1; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
-                                    placeholder="예: 홍대입구역 3번 출구 도보 5분">
-                            </div>
-                            <div style="display: flex; gap: 1rem; font-size: 0.9rem;">
-                                <label><input type="radio" name="locationIn" value="intro" checked> 인트로에 넣기</label>
-                                <label><input type="radio" name="locationIn" value="outro"> 아웃트로에 넣기</label>
-                            </div>
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
-                                <span id="labelDescription">✏️ 가게 설명 / 특징</span>
-                            </label>
-                            <textarea id="storeDescription" class="form-control"
-                                style="width: 100%; min-height: 100px; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px; resize: vertical;"
-                                placeholder="예: 40년 전통의 순대국 전문점입니다. 국물이 진하고 고기가 많아요. 24시간 영업합니다."></textarea>
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">🎨 대본 스타일 (다중 선택
-                                가능)</label>
-                            <div class="style-grid" id="scriptStyleGrid">
-                                <!-- JS puts chips here -->
-                            </div>
-                        </div>
-
-                        <div class="form-group" style="margin-bottom: 1rem;">
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
-                                <div>
-                                    <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">🌐
-                                        언어</label>
-                                    <select id="scriptLanguage"
-                                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
-                                        <option value="Korean">한국어</option>
-                                        <option value="English">English</option>
-                                        <option value="Japanese">Japanese</option>
-                                        <option value="Chinese">Chinese</option>
-                                    </select>
+                            <div class="form-group" id="locationGroup" style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📍 위치 정보
+                                    (선택)</label>
+                                <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <input type="text" id="storeLocation" class="form-control"
+                                        style="flex: 1; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
+                                        placeholder="예: 홍대입구역 3번 출구 도보 5분">
                                 </div>
-                                <div>
-                                    <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">🎤
-                                        인트로</label>
-                                    <select id="introStyle"
-                                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
-                                        <!-- JS populates -->
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">🎬
-                                        아웃트로</label>
-                                    <select id="outroStyle"
-                                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
-                                        <!-- JS populates -->
-                                    </select>
+                                <div style="display: flex; gap: 1rem; font-size: 0.9rem;">
+                                    <label><input type="radio" name="locationIn" value="intro" checked> 인트로에 넣기</label>
+                                    <label><input type="radio" name="locationIn" value="outro"> 아웃트로에 넣기</label>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="form-group"
-                            style="margin-bottom: 1rem; padding: 0.75rem; background: var(--color-bg-secondary); border-radius: 8px;">
-                            <label
-                                style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display: block;">🔊
-                                TTS 설정 (오디오 생성용)</label>
-                            <select id="ttsProvider"
-                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
-                                <option value="Google">Google Cloud TTS (기본)</option>
-                                <option value="Azure">Azure Speech (고품질)</option>
-                                <!-- <option value="ElevenLabs">ElevenLabs (프리미엄)</option> -->
-                            </select>
-                        </div>
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                    <span id="labelDescription">✏️ 가게 설명 / 특징</span>
+                                </label>
+                                <textarea id="storeDescription" class="form-control"
+                                    style="width: 100%; min-height: 100px; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px; resize: vertical;"
+                                    placeholder="예: 40년 전통의 순대국 전문점입니다. 국물이 진하고 고기가 많아요. 24시간 영업합니다."></textarea>
+                            </div>
 
-                        <!-- Video Filter Settings -->
-                        <div class="form-group"
-                            style="margin-bottom: 1rem; padding: 0.75rem; background: var(--color-bg-secondary); border-radius: 8px;">
-                            <label
-                                style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display: block;">🎨
-                                영상 필터</label>
-                            <select id="videoFilter"
-                                style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
-                                <option value="none">원본 (기본)</option>
-                                <option value="western">서양식 감성 (따뜻한 톤 + 고대비)</option>
-                            </select>
-                        </div>
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">🎨 대본 스타일 (다중 선택
+                                    가능)</label>
+                                <div class="style-grid" id="scriptStyleGrid">
+                                    <!-- JS puts chips here -->
+                                </div>
+                            </div>
 
-                        <!-- Count and Batch Options -->
-                        <div class="form-group"
-                            style="margin-bottom: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                            <div>
-                                <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">📝 생성
-                                    개수</label>
-                                <input type="number" id="scriptCount" value="1" min="1" max="10"
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+                                    <div>
+                                        <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">🌐
+                                            언어</label>
+                                        <select id="scriptLanguage"
+                                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                            <option value="Korean">한국어</option>
+                                            <option value="English">English</option>
+                                            <option value="Japanese">Japanese</option>
+                                            <option value="Chinese">Chinese</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">🎤
+                                            인트로</label>
+                                        <select id="introStyle"
+                                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                            <!-- JS populates -->
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">🎬
+                                            아웃트로</label>
+                                        <select id="outroStyle"
+                                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                            <!-- JS populates -->
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group"
+                                style="margin-bottom: 1rem; padding: 0.75rem; background: var(--color-bg-secondary); border-radius: 8px;">
+                                <label
+                                    style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display: block;">🔊
+                                    TTS 설정 (오디오 생성용)</label>
+                                <select id="ttsProvider"
                                     style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                    <option value="Google">Google Cloud TTS (기본)</option>
+                                    <option value="Azure">Azure Speech (고품질)</option>
+                                    <!-- <option value="ElevenLabs">ElevenLabs (프리미엄)</option> -->
+                                </select>
                             </div>
-                            <div style="display: flex; align-items: flex-end; padding-bottom: 0.5rem;">
-                                <div style="display: flex; align-items: center;">
-                                    <input type="checkbox" id="autoAddToBatch" checked
-                                        style="width: 1.1em; height: 1.1em; margin-right: 0.5rem; cursor: pointer;">
-                                    <label for="autoAddToBatch"
-                                        style="font-size: 0.85rem; font-weight: 600; cursor: pointer;">배치 생성기에 자동
-                                        추가</label>
+
+                            <!-- Video Filter Settings -->
+                            <div class="form-group"
+                                style="margin-bottom: 1rem; padding: 0.75rem; background: var(--color-bg-secondary); border-radius: 8px;">
+                                <label
+                                    style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display: block;">🎨
+                                    영상 필터</label>
+                                <select id="videoFilter"
+                                    style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                    <option value="none">원본 (기본)</option>
+                                    <option value="western">서양식 감성 (따뜻한 톤 + 고대비)</option>
+                                </select>
+                            </div>
+
+                            <!-- Count and Batch Options -->
+                            <div class="form-group"
+                                style="margin-bottom: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                <div>
+                                    <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem;">📝 생성
+                                        개수</label>
+                                    <input type="number" id="scriptCount" value="1" min="1" max="20"
+                                        style="width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: 6px;">
+                                </div>
+                                <div style="display: flex; align-items: flex-end; padding-bottom: 0.5rem;">
+                                    <div style="display: flex; align-items: center;">
+                                        <input type="checkbox" id="autoAddToBatch" checked
+                                            style="width: 1.1em; height: 1.1em; margin-right: 0.5rem; cursor: pointer;">
+                                        <label for="autoAddToBatch"
+                                            style="font-size: 0.85rem; font-weight: 600; cursor: pointer;">배치 생성기에 자동
+                                            추가</label>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <button id="generateScriptsBtn" class="btn btn-primary" onclick="generateScripts()"
-                            style="width: 100%; padding: 1rem; font-weight: 700;">
-                            ✨ 대본 생성 시작
-                        </button>
+                            <button id="generateScriptsBtn" class="btn btn-primary" onclick="generateScripts()"
+                                style="width: 100%; padding: 1rem; font-weight: 700;">
+                                ✨ 대본 생성 시작
+                            </button>
                         </div><!-- End Business/Entertainment Mode Content -->
 
                         <!-- Batch Topic Mode Content -->
                         <div id="batchModeContent" style="display: none;">
-                            <div style="background: var(--color-bg-tertiary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                                <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--color-gray-800);">
+                            <div
+                                style="background: var(--color-bg-tertiary); padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                                <div
+                                    style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--color-gray-800);">
                                     💡 사용 방법
                                 </div>
                                 <div style="font-size: 0.85rem; color: var(--color-gray-700); line-height: 1.5;">
-                                    • 최대 3개 주제 입력 가능 (각 주제당 최대 10개)<br>
+                                    • 최대 3개 주제 입력 가능 (각 주제당 최대 20개)<br>
                                     • 각 주제당 우선순위 자동 부여 (주제1=우선1, 주제2=우선2, 주제3=우선3)<br>
                                     • 총 (주제 수 × 생성 개수)개 대본 생성<br>
                                     • 생성된 대본은 자동으로 "여러개 생성"에 추가됨<br>
@@ -541,70 +545,80 @@
                             </div>
 
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 2 (선택)</label>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 2
+                                    (선택)</label>
                                 <input type="text" id="batchTopic2" class="form-control"
                                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
                                     placeholder="예: 자기계발 방법">
                             </div>
 
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 3 (선택)</label>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 3
+                                    (선택)</label>
                                 <input type="text" id="batchTopic3" class="form-control"
                                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
                                     placeholder="예: 연애 꿀팁">
                             </div>
 
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 4 (선택)</label>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 4
+                                    (선택)</label>
                                 <input type="text" id="batchTopic4" class="form-control"
                                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
                                     placeholder="예: 건강 관리법">
                             </div>
 
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 5 (선택)</label>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 5
+                                    (선택)</label>
                                 <input type="text" id="batchTopic5" class="form-control"
                                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
                                     placeholder="예: 재테크 팁">
                             </div>
 
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 6 (선택)</label>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 6
+                                    (선택)</label>
                                 <input type="text" id="batchTopic6" class="form-control"
                                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
                                     placeholder="예: 시간 관리법">
                             </div>
 
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 7 (선택)</label>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 7
+                                    (선택)</label>
                                 <input type="text" id="batchTopic7" class="form-control"
                                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
                                     placeholder="예: 효율적인 공부법">
                             </div>
 
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 8 (선택)</label>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 8
+                                    (선택)</label>
                                 <input type="text" id="batchTopic8" class="form-control"
                                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
                                     placeholder="예: 성공하는 습관">
                             </div>
 
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 9 (선택)</label>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 9
+                                    (선택)</label>
                                 <input type="text" id="batchTopic9" class="form-control"
                                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
                                     placeholder="예: 인간관계 꿀팁">
                             </div>
 
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 10 (선택)</label>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">📌 주제 10
+                                    (선택)</label>
                                 <input type="text" id="batchTopic10" class="form-control"
                                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
                                     placeholder="예: 스트레스 해소법">
                             </div>
 
                             <div class="form-group" style="margin-bottom: 1rem;">
-                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">🔢 각 주제당 생성 개수</label>
+                                <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">🔢 각 주제당 생성
+                                    개수</label>
                                 <select id="batchCount"
                                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: 8px;"
                                     onchange="updateBatchTotal()">
@@ -618,6 +632,16 @@
                                     <option value="8">8개</option>
                                     <option value="9">9개</option>
                                     <option value="10">10개</option>
+                                    <option value="11">11개</option>
+                                    <option value="12">12개</option>
+                                    <option value="13">13개</option>
+                                    <option value="14">14개</option>
+                                    <option value="15">15개</option>
+                                    <option value="16">16개</option>
+                                    <option value="17">17개</option>
+                                    <option value="18">18개</option>
+                                    <option value="19">19개</option>
+                                    <option value="20">20개</option>
                                 </select>
                             </div>
 
@@ -654,12 +678,13 @@
                                 </select>
                             </div>
 
-                            <div style="background: var(--color-bg-tertiary); padding: 1rem; border-radius: 8px; text-align: center; font-weight: 600; color: var(--color-primary); margin-bottom: 1rem;">
+                            <div
+                                style="background: var(--color-bg-tertiary); padding: 1rem; border-radius: 8px; text-align: center; font-weight: 600; color: var(--color-primary); margin-bottom: 1rem;">
                                 총 <span id="batchTotalCount">0</span>개 대본이 생성됩니다
                             </div>
 
-                            <button id="generateBatchScriptsBtn" class="btn btn-primary" onclick="generateBatchScripts()"
-                                style="width: 100%; padding: 1rem; font-weight: 700;">
+                            <button id="generateBatchScriptsBtn" class="btn btn-primary"
+                                onclick="generateBatchScripts()" style="width: 100%; padding: 1rem; font-weight: 700;">
                                 ✨ 일괄 대본 생성 시작
                             </button>
                         </div><!-- End Batch Mode Content -->

@@ -249,8 +249,8 @@ router.post('/generate-batch', async (req, res) => {
         }
 
         const generationCount = parseInt(count) || 1;
-        if (generationCount < 1 || generationCount > 10) {
-            return res.status(400).json({ error: '생성 개수는 1~10개 사이여야 합니다' });
+        if (generationCount < 1 || generationCount > 20) {
+            return res.status(400).json({ error: '생성 개수는 1~20개 사이여야 합니다' });
         }
 
         const apiKey = process.env.GEMINI_API_KEY;
